@@ -41,7 +41,8 @@ internal class AiMailViewModel(
             val mail = assistant.mail(location)
             mutableState.update { it.copy(mail = mail, missing = mail == null) }
             if (mail == null) return@launch
-            if (mode == AiMailActivity.MODE_READ || !assistant.available()) readMail() else summarize()
+            // without the Helper the summary screen only says so (reading aloud stays one tap away)
+            if (mode == AiMailActivity.MODE_READ) readMail() else summarize()
         }
     }
 
