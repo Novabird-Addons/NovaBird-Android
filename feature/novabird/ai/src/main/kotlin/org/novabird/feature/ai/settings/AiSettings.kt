@@ -18,8 +18,11 @@ enum class KeepLoaded(val minutes: Int?) {
 }
 
 data class AiSettings(
-    /** Compute vectors on the phone (model download needed). */
-    val localEnabled: Boolean = false,
+    /**
+     * Compute on the phone (model download on Wi-Fi): semantic search also when the Helper is not reachable,
+     * and without Helper the index vectors (only while charging). On by default.
+     */
+    val localEnabled: Boolean = true,
     val keepLoaded: KeepLoaded = KeepLoaded.WITH_APP,
     /** CPU threads for the model; 0 = automatic ([defaultThreads]). */
     val threads: Int = 0,
@@ -72,7 +75,7 @@ internal class SharedPreferencesAiSettingsRepository(context: Context) : AiSetti
             preferences.edit { putString(KEY_CLIENT_ID, clientId) }
         }
         return AiSettings(
-            localEnabled = preferences.getBoolean(KEY_LOCAL, false),
+            localEnabled = preferences.getBoolean(KEY_LOCAL, true),
             keepLoaded = preferences.getString(KEY_KEEP, null)
                 ?.let { name -> KeepLoaded.entries.firstOrNull { it.name == name } } ?: KeepLoaded.WITH_APP,
             threads = preferences.getInt(KEY_THREADS, 0),

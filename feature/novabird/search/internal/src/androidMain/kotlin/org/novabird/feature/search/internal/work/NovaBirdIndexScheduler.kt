@@ -14,7 +14,10 @@ import org.novabird.feature.search.NovaBirdIndexTrigger
  * Schedules the indexer: once after each sync ([requestIndexing], debounced by WorkManager's unique work) and
  * periodically as a fallback, so no hooks in the K-9 storage code are needed.
  */
-class NovaBirdIndexScheduler(private val context: Context) : NovaBirdIndexTrigger {
+class NovaBirdIndexScheduler(
+    private val context: Context,
+    private val vectorsOnlyWhileCharging: () -> Boolean = { false },
+) : NovaBirdIndexTrigger {
 
     /** Call after a sync (or at app start); runs the indexer soon, at most one run queued at a time. */
     override fun requestIndexing() {
@@ -31,7 +34,13 @@ class NovaBirdIndexScheduler(private val context: Context) : NovaBirdIndexTrigge
      */
     override fun requestVectors() {
         val request = OneTimeWorkRequestBuilder<NovaBirdVectorWorker>()
-            .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).setRequiresBatteryNotLow(true).build())
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresStorageNotLow(true)
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiresCharging(vectorsOnlyWhileCharging())
+                    .build(),
+            )
             .build()
         // append: a request during a run (new texts queued) gets its own run after it
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_VECTORS, ExistingWorkPolicy.APPEND_OR_REPLACE, request)

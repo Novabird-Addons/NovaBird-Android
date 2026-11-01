@@ -55,7 +55,12 @@ sealed interface DownloadState {
 class ModelDownloads(private val context: Context) {
     private val workManager get() = WorkManager.getInstance(context)
 
-    fun start(allowMobileData: Boolean) {
+    /** Downloads the model on Wi-Fi if computing on the phone is on and the model is missing (at app start). */
+    fun ensureModel(enabled: Boolean, files: ModelFiles) {
+        if (enabled && !files.isComplete()) start(allowMobileData = false, restart = false)
+    }
+
+    fun start(allowMobileData: Boolean, restart: Boolean = true) {
         val request = OneTimeWorkRequestBuilder<ModelDownloadWorker>()
             .setConstraints(
                 Constraints.Builder()
@@ -65,7 +70,8 @@ class ModelDownloads(private val context: Context) {
             )
             .apply { if (allowMobileData) addTag(TAG_MOBILE) }
             .build()
-        workManager.enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
+        val policy = if (restart) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+        workManager.enqueueUniqueWork(WORK_NAME, policy, request)
     }
 
     fun cancel() {

@@ -75,7 +75,8 @@ class LocalEmbedder(
     private fun load(threads: Int) {
         embedder?.close()
         if (tokenizer == null) tokenizer = BpeTokenizer(files.file("tokenizer.json").readText())
-        embedder = OnnxEmbedder(files.file(files.model.onnxPath), EmbedDevice.CPU, threads)
+        // without arena/memory patterns: about 530 MB instead of 1.2 GB after a 512-token text, same speed (measured)
+        embedder = OnnxEmbedder(files.file(files.model.onnxPath), EmbedDevice.CPU, threads, lowMemory = true)
         loadedThreads = threads
         logger.info(TAG) { "Model loaded ($threads threads)" }
     }
@@ -97,9 +98,9 @@ class LocalEmbedder(
 
     suspend fun unload() = mutex.withLock {
         if (embedder != null) logger.info(TAG) { "Model unloaded" }
+        // the tokenizer (a few MB) stays: loading it again would take half a second of the 0.9 s reload
         embedder?.close()
         embedder = null
-        tokenizer = null
     }
 
     private companion object {

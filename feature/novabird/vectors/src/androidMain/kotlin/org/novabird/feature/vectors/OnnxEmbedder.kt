@@ -24,6 +24,8 @@ class OnnxEmbedder(
     threads: Int,
     private val fixedLength: Int? = null,
     private val dims: Int = EmbeddingModel.JINA_DE.dims,
+    /** No memory arena and no memory patterns: less RAM held between runs, maybe slightly slower. */
+    lowMemory: Boolean = false,
 ) : AutoCloseable {
     private val env = OrtEnvironment.getEnvironment()
     private val session: OrtSession
@@ -33,6 +35,10 @@ class OnnxEmbedder(
             // fp16 model: higher optimization levels fail (SimplifiedLayerNormFusion), as in the Helper
             setOptimizationLevel(OrtSession.SessionOptions.OptLevel.BASIC_OPT)
             setIntraOpNumThreads(threads)
+            if (lowMemory) {
+                setCPUArenaAllocator(false)
+                setMemoryPatternOptimization(false)
+            }
             fixedLength?.let {
                 setSymbolicDimensionValue("batch", 1)
                 setSymbolicDimensionValue("sequence", it.toLong())

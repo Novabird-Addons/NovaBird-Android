@@ -89,12 +89,14 @@ class VectorBenchActivity : Activity() {
     }
 
     private fun bench(config: String, model: File, cases: List<Case>, ids: List<LongArray>): List<FloatArray> {
-        val (device, threads, fixed) = parse(config)
+        val lowMemory = config.endsWith("lm")
+        val (device, threads, fixed) = parse(config.removeSuffix("lm"))
         val pssBefore = Debug.getPss()
         var t = SystemClock.elapsedRealtime()
         log("$config: creating session")
-        OnnxEmbedder(model, device, threads, fixed).use { embedder ->
+        OnnxEmbedder(model, device, threads, fixed, lowMemory = lowMemory).use { embedder ->
             val load = SystemClock.elapsedRealtime() - t
+            val pssAfterLoad = Debug.getPss() - pssBefore
             log("$config: session ready in $load ms, warm-up")
             embedder.embed(ids[0]) // warm-up
             val out = ArrayList<FloatArray>()
@@ -107,8 +109,10 @@ class VectorBenchActivity : Activity() {
             }
             val cos = cases.indices.map { cosine(out[it], cases[it].vector) }
             val pss = (Debug.getPss() - pssBefore) / 1024
+            val pssLoaded = pssAfterLoad / 1024
             log(
-                "$config: load $load ms, +PSS $pss MB, ms per text ${times.joinToString(",")} " +
+                "$config: load $load ms, +PSS after load $pssLoaded MB, after runs $pss MB, " +
+                    "ms per text ${times.joinToString(",")} " +
                     "(tokens ${ids.joinToString(",") { it.size.toString() }}), " +
                     "cos vs PC min ${"%.6f".format(cos.min())} mean ${"%.6f".format(cos.average())}",
             )

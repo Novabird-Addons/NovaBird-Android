@@ -23,10 +23,11 @@
     <string name="novabird_ai_error_unreachable">Helper not reachable (same Wi-Fi? correct address?)</string>
 
     <string name="novabird_ai_local_title">Compute on the phone</string>
-    <string name="novabird_ai_local_enable">Compute vectors on the phone</string>
+    <string name="novabird_ai_local_enable">Semantic search on the phone</string>
+    <string name="novabird_ai_local_enable_note">Also without Helper, e.g. on the go. Downloads 320 MB once on Wi-Fi.</string>
     <string name="novabird_ai_local_with_helper">While a Helper is paired, it computes the vectors. The phone then only computes search queries when the Helper is not reachable (e.g. on the go).</string>
     <string name="novabird_ai_local_hint_title">Compute on the phone?</string>
-    <string name="novabird_ai_local_hint_text">Computing the vectors can take a long time (about half a second per message) – best while charging. The model needs 320 MB of storage and about 1.2 GB of memory while loaded.</string>
+    <string name="novabird_ai_local_hint_text">Without Helper the phone computes the vectors itself. This takes about half a second per message, so it only runs while charging. The model needs 320 MB of storage and about 500 MB of memory while loaded.</string>
     <string name="novabird_ai_local_hint_confirm">Turn on</string>
     <string name="novabird_ai_local_keep">Keep model loaded</string>
     <string name="novabird_ai_keep_always">Always (while the app runs)</string>

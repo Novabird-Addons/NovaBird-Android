@@ -44,7 +44,12 @@ val novaBirdSearchModule = module {
     single<NovaBirdSearchIndexer> {
         NovaBirdIndexer(core = get(), mailStore = get(), logger = get(), semanticIndex = get())
     }
-    single { NovaBirdIndexScheduler(androidContext()) }
+    single {
+        val scope = this
+        NovaBirdIndexScheduler(androidContext()) {
+            scope.getOrNull<NovaBirdVectorBackend>()?.indexOnlyWhileCharging == true
+        }
+    }
     single<NovaBirdIndexTrigger> { get<NovaBirdIndexScheduler>() }
     viewModel { NovaBirdSearchViewModel(search = get(), logger = get()) }
 }

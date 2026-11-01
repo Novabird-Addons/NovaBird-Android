@@ -37,6 +37,7 @@ internal fun LocalSection(state: AiSettingsUiState, actions: AiSettingsActions, 
         TextTitleMedium(text = stringResource(R.string.novabird_ai_local_title))
         SwitchRow(
             title = stringResource(R.string.novabird_ai_local_enable),
+            note = stringResource(R.string.novabird_ai_local_enable_note),
             checked = state.settings.localEnabled,
             onChange = { on -> if (on) showHint = true else actions.setLocalEnabled(false) },
         )

@@ -36,6 +36,9 @@ class AiVectorBackend(
 
     override fun isEnabled() = isHelperPaired() || settings.settings.value.localEnabled
 
+    // without Helper the phone computes the index itself: about half a second per mail, so only while charging
+    override val indexOnlyWhileCharging: Boolean get() = !isHelperPaired()
+
     /** Helper client for the paired Helper, or null. */
     fun helper(timeoutMs: Int = HelperClient.DEFAULT_TIMEOUT_MS): HelperClient? {
         val s = settings.settings.value

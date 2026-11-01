@@ -6,6 +6,9 @@ import net.thunderbird.app.common.FeatureFlagApplication
 import net.thunderbird.core.android.account.LegacyAccountDto
 import org.koin.android.ext.android.inject
 import org.koin.core.module.Module
+import org.novabird.feature.ai.local.ModelDownloads
+import org.novabird.feature.ai.local.ModelFiles
+import org.novabird.feature.ai.settings.AiSettingsRepository
 import org.novabird.feature.search.internal.work.NovaBirdIndexScheduler
 import org.novabird.feature.sync.backfill.PartialMessageBackfillScheduler
 
@@ -13,6 +16,9 @@ class NovaBirdApp : FeatureFlagApplication() {
     private val messagingController: MessagingController by inject()
     private val backfillScheduler: PartialMessageBackfillScheduler by inject()
     private val indexScheduler: NovaBirdIndexScheduler by inject()
+    private val aiSettings: AiSettingsRepository by inject()
+    private val modelFiles: ModelFiles by inject()
+    private val modelDownloads: ModelDownloads by inject()
 
     override fun provideAppModule(): Module = appModule
 
@@ -36,5 +42,7 @@ class NovaBirdApp : FeatureFlagApplication() {
         backfillScheduler.start()
         indexScheduler.schedulePeriodic()
         indexScheduler.requestIndexing()
+        // semantic search on the phone is on by default: fetch the model on Wi-Fi if it is missing
+        modelDownloads.ensureModel(aiSettings.settings.value.localEnabled, modelFiles)
     }
 }

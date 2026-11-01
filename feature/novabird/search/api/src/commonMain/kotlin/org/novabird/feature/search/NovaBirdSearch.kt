@@ -35,6 +35,9 @@ interface NovaBirdVectorBackend {
     /** True if vectors should be collected (Helper paired or computing on the phone switched on). */
     fun isEnabled(): Boolean
 
+    /** True if computing index vectors is expensive here (on the phone), so it should only run while charging. */
+    val indexOnlyWhileCharging: Boolean get() = false
+
     /** Vector for a search query, or null if no backend is reachable right now. */
     suspend fun embedQuery(text: String): FloatArray?
 
