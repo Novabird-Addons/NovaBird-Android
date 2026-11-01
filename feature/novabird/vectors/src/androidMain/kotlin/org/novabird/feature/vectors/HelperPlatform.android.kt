@@ -61,6 +61,8 @@ internal actual object HelperCrypto {
     actual fun random(bytes: Int) = ByteArray(bytes).also { rng.nextBytes(it) }
 
     actual fun nowMillis() = System.currentTimeMillis()
+
+    actual fun sleep(ms: Long) = Thread.sleep(ms)
 }
 
 internal actual object HelperHttp {

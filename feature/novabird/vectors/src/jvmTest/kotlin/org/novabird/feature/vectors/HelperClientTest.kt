@@ -31,21 +31,58 @@ class HelperClientTest {
         assertThat(HelperClient.baseUrl("http://pc")).isEqualTo("http://pc:47531")
     }
 
-    // Against a test Helper (tools/testhelper, nbhelper --server-console --loopback); skipped when it isn't running
     @Test
-    fun `helper vectors match the PC reference`() {
+    fun `withoutThink removes closed and open think blocks`() {
+        assertThat(HelperClient.withoutThink("<think>a\nb</think>\n Text")).isEqualTo("Text")
+        assertThat(HelperClient.withoutThink("Text<think>noch offen")).isEqualTo("Text")
+    }
+
+    // Against a test Helper (tools/testhelper, nbhelper --server-console --loopback); skipped when it isn't running
+    private fun testHelper(): HelperClient {
         val log = File(System.getProperty("novabird.testhelper.log"))
         assumeTrue("test Helper not running", log.isFile)
         val start = Json.parseToJsonElement(log.readLines().first()).jsonObject
         val url = "http://127.0.0.1:${start.getValue("port").jsonPrimitive.content}"
-        val client =
-            HelperClient(
-                url,
-                HelperClient.deriveKey(start.getValue("code").jsonPrimitive.content),
-                "jvmtest-0001",
-                "JVM-Test",
-            )
+        return HelperClient(
+            url,
+            HelperClient.deriveKey(start.getValue("code").jsonPrimitive.content),
+            "jvmtest-0001",
+            "JVM-Test",
+            timeoutMs = 180_000,
+        )
+    }
 
+    @Test
+    fun `helper chat streams an answer`() {
+        val client = testHelper()
+        val info = client.hello()
+        assumeTrue("no language model in the test Helper", info.chatModel != null)
+        val pieces = mutableListOf<String>()
+        val text = client.chatText(
+            listOf(
+                ChatMessage("system", "Antworte mit genau einem Wort."),
+                ChatMessage("user", "Wie heißt die Hauptstadt von Frankreich?"),
+            ),
+            maxNew = 20,
+        ) { pieces += it }
+        println("chat (${info.chatModel}): $text")
+        assertThat(text.contains("Paris")).isTrue()
+        assertThat(pieces.size).isGreaterThan(0)
+    }
+
+    @Test
+    fun `helper reads a sentence aloud as WAV`() {
+        val client = testHelper()
+        assumeTrue("no speech in the test Helper", client.hello().speech)
+        val wav = client.tts("Guten Morgen, das ist ein Test.", "german")
+        println("tts: ${wav.size} bytes")
+        assertThat(wav.copyOfRange(0, 4).decodeToString()).isEqualTo("RIFF")
+        assertThat(wav.size).isGreaterThan(10_000)
+    }
+
+    @Test
+    fun `helper vectors match the PC reference`() {
+        val client = testHelper()
         val info = client.hello()
         assertThat(info.modelMatch).isTrue()
 

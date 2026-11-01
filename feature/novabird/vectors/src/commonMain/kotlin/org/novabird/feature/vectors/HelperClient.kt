@@ -5,9 +5,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -43,9 +45,104 @@ class HelperClient(
             modelReady = msg["modelReady"]?.jsonPrimitive?.boolean ?: false,
             modelMatch = msg["modelMatch"]?.jsonPrimitive?.boolean ?: false,
             group = msg["group"]?.jsonPrimitive?.contentOrNull,
-            speech = msg["speech"]?.let { it !is kotlinx.serialization.json.JsonNull } ?: false,
+            speech = (msg["speech"] as? JsonObject)?.get("available")?.jsonPrimitive?.booleanOrNull ?: false,
             chatModel = msg["chatModel"]?.jsonPrimitive?.contentOrNull,
         )
+    }
+
+    /**
+     * Starts an answer of the language model chosen in the Helper (summary, overview). [messages] are role/content pairs;
+     * [meta] only for summaries (lets the Helper apply its own instruction). Returns the job id for [chatPoll].
+     */
+    fun chat(messages: List<ChatMessage>, maxNew: Int, meta: ChatMeta? = null): String {
+        val msg = call(
+            "chat",
+            buildJsonObject {
+                put(
+                    "messages",
+                    buildJsonArray {
+                        messages.forEach { m ->
+                            add(
+                                buildJsonObject {
+                                    put("role", m.role)
+                                    put("content", m.content)
+                                },
+                            )
+                        }
+                    },
+                )
+                put("maxNew", maxNew)
+                meta?.let {
+                    put(
+                        "meta",
+                        buildJsonObject {
+                            put("lang", it.lang)
+                            put("thread", it.thread)
+                            put("target", it.target)
+                            put("open", it.open)
+                            put("close", it.close)
+                        },
+                    )
+                }
+            },
+        )
+        return msg.getValue("id").jsonPrimitive.content
+    }
+
+    /** New text since the last poll (the Helper waits up to 1 s for it); [ChatPoll.done] at the end. */
+    fun chatPoll(id: String): ChatPoll {
+        val msg = call("chatPoll", buildJsonObject { put("id", id) })
+        val stats = msg["stats"] as? JsonObject
+        return ChatPoll(
+            text = msg["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            done = msg["done"]?.jsonPrimitive?.booleanOrNull ?: false,
+            error = msg["error"]?.jsonPrimitive?.contentOrNull,
+            model = stats?.get("model")?.jsonPrimitive?.contentOrNull,
+            tokPerSec = stats?.get("tokPerSec")?.jsonPrimitive?.doubleOrNull,
+        )
+    }
+
+    fun chatCancel(id: String) {
+        call("chatCancel", buildJsonObject { put("id", id) })
+    }
+
+    /** Whole answer: polls until done, [onText] gets the text so far (think blocks removed); [cancelled] stops early. */
+    fun chatText(
+        messages: List<ChatMessage>,
+        maxNew: Int,
+        meta: ChatMeta? = null,
+        cancelled: () -> Boolean = { false },
+        onText: (String) -> Unit = {},
+    ): String {
+        val id = chat(messages, maxNew, meta)
+        val text = StringBuilder()
+        while (true) {
+            if (cancelled()) {
+                runCatching { chatCancel(id) }
+                throw HelperException("cancelled")
+            }
+            val r = chatPoll(id)
+            if (r.text.isNotEmpty()) {
+                text.append(r.text)
+                onText(withoutThink(text.toString()))
+            }
+            r.error?.let { throw HelperException(it) }
+            if (r.done) return withoutThink(text.toString())
+            if (r.text.isEmpty()) HelperCrypto.sleep(POLL_IDLE_MS)
+        }
+    }
+
+    /** One sentence read aloud by the Helper (at most [MAX_TTS_CHARS]): WAV bytes. [lang] e.g. "german", "english". */
+    fun tts(text: String, lang: String, voice: String? = null): ByteArray {
+        val msg = call(
+            "tts",
+            buildJsonObject {
+                put("text", text)
+                put("lang", lang)
+                voice?.let { put("voice", it) }
+            },
+        )
+        return Base64.decode(msg.getValue("wav").jsonPrimitive.content)
     }
 
     /**
@@ -161,6 +258,13 @@ class HelperClient(
         private const val CODE_LENGTH = 20
         private const val SALT = "NovaBird-Net-1"
         const val DEFAULT_TIMEOUT_MS = 60_000
+        const val MAX_TTS_CHARS = 600
+        private const val POLL_IDLE_MS = 20L
+        private val THINK = Regex("<think>[\\s\\S]*?</think>")
+        private val THINK_OPEN = Regex("<think>[\\s\\S]*$")
+
+        /** Removes think blocks of some models (also one still open), like ai/ai.js clean(). */
+        fun withoutThink(text: String) = text.replace(THINK, "").replace(THINK_OPEN, "").trimStart()
         private const val HTTP_OK = 200
         private const val HTTP_FORBIDDEN = 403
         private const val CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // without 0/O, 1/I
@@ -212,6 +316,13 @@ data class HelperInfo(
 
 data class VectorKey(val messageId: String, val textHash: String)
 
+data class ChatMessage(val role: String, val content: String)
+
+/** For the Helper's own summary instruction: language, thread or single mail, target language text and markers. */
+data class ChatMeta(val lang: String, val thread: Boolean, val target: String, val open: String, val close: String)
+
+data class ChatPoll(val text: String, val done: Boolean, val error: String?, val model: String?, val tokPerSec: Double?)
+
 class HelperException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 private fun readIntLe(b: ByteArray, o: Int) =
@@ -234,6 +345,7 @@ internal expect object HelperCrypto {
     fun sha256(data: ByteArray): ByteArray
     fun random(bytes: Int): ByteArray
     fun nowMillis(): Long
+    fun sleep(ms: Long)
 }
 
 /** Plain HTTP POST of a JSON body; returns status and body text. */
