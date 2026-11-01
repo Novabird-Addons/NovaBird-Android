@@ -1,6 +1,7 @@
 package org.novabird.mail.featureflag
 
 import net.thunderbird.core.featureflag.inject.featureFlagModule
+import net.thunderbird.core.featureflag.keys.GeneratedFeatureFlagKey
 import net.thunderbird.core.featureflag.model.AppVariantOverrides
 import net.thunderbird.core.featureflag.model.BaseAppVariantOverrides
 import net.thunderbird.core.featureflag.model.EmptyAppVariantOverride
@@ -16,9 +17,17 @@ val novaBirdFeatureFlagModule = module {
 
 /**
  * Feature flag overrides for the NovaBird build variants (debug, release).
+ *
+ * NovaBird uses the Thunderbird flags of the catalog and adds [NOVABIRD_OVERRIDES] to every build variant.
  */
-class NovaBirdOverrides(wrapper: Map<String, FlagOverrides>) : BaseAppVariantOverrides(wrapper) {
+class NovaBirdOverrides(wrapper: Map<String, FlagOverrides>) :
+    BaseAppVariantOverrides(wrapper.mapValues { (_, overrides) -> overrides + NOVABIRD_OVERRIDES }) {
     companion object {
         val Factory = AppVariantOverrides.Factory { wrapper -> NovaBirdOverrides(wrapper) }
+
+        internal val NOVABIRD_OVERRIDES: FlagOverrides = mapOf(
+            // Thundermail is a Thunderbird service: hide its sign-in and QR code buttons in the account setup.
+            GeneratedFeatureFlagKey.THUNDERMAIL_ONBOARDING_ENABLED.key to false,
+        )
     }
 }
