@@ -114,10 +114,12 @@ class FakeK9MailStore(private val account: K9Account) : K9MailStore {
             else -> 1L
         }
         if (part.onDisk && part.body != null) files[id] = part.body
+        // K-9 stores the header as bytes (SaveMessageOperations: values.put("header", headerBytes)) in a TEXT column
         exec(
             "INSERT INTO message_parts (id, type, root, parent, seq, mime_type, decoded_body_size, header, encoding, " +
                 "charset, data_location, data) VALUES (?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            id, rootId ?: id, parent, seq, part.mimeType, part.body?.size?.toLong() ?: 0L, part.header, part.encoding,
+            id, rootId ?: id, parent, seq, part.mimeType, part.body?.size?.toLong() ?: 0L,
+            part.header.encodeToByteArray(), part.encoding,
             part.charset, location, if (location == 1L) part.body else null,
         )
         part.children.forEachIndexed { index, child ->

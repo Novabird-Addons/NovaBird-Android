@@ -124,7 +124,11 @@ internal class K9MessageReader(
                 id = r[0] as Long,
                 parent = r[1] as Long? ?: -1L,
                 mimeType = (r[2] as String?)?.lowercase().orEmpty(),
-                header = r[3] as String?,
+                // K-9 writes the header as bytes into a TEXT column
+                header = when (val header = r[3]) {
+                    is ByteArray -> header.decodeToString()
+                    else -> header as String?
+                },
                 encoding = r[4] as String?,
                 charset = r[5] as String?,
                 dataLocation = r[6] as Long? ?: 0L,
