@@ -67,18 +67,20 @@ class LlmBenchActivity : Activity() {
         log("done")
     }
 
-    private fun bench(config: String, model: File, cases: List<Map<String, String>>) {
+    private fun bench(name: String, model: File, cases: List<Map<String, String>>) {
         val backend = when {
-            config == "gpu" -> Backend.GPU()
-            config.startsWith("cpu") && config.length > 3 -> Backend.CPU(threadCount = config.drop(3).toInt())
+            name == "gpu" -> Backend.GPU()
+            name.startsWith("cpu") && name.length > 3 -> Backend.CPU(threadCount = name.drop(3).toInt())
             else -> Backend.CPU()
         }
         val before = pssMb()
         val t0 = SystemClock.elapsedRealtime()
-        Engine(EngineConfig(modelPath = model.path, backend = backend, maxNumTokens = MAX_TOKENS, cacheDir = cacheDir.path))
+        val config =
+            EngineConfig(modelPath = model.path, backend = backend, maxNumTokens = MAX_TOKENS, cacheDir = cacheDir.path)
+        Engine(config)
             .use { engine ->
                 engine.initialize()
-                log("$config: loaded in ${SystemClock.elapsedRealtime() - t0} ms, PSS ${before} -> ${pssMb()} MB")
+                log("$name: loaded in ${SystemClock.elapsedRealtime() - t0} ms, PSS $before -> ${pssMb()} MB")
                 for (c in cases) {
                     val header = MailPrompts.header(c.getValue("subject"), c.getValue("from"), c.getValue("date"))
                     val prompt = MailPrompts.summary(c.getValue("lang"), false, header, c.getValue("text"))
@@ -103,7 +105,7 @@ class LlmBenchActivity : Activity() {
                         val total = SystemClock.elapsedRealtime() - start
                         val perSec = if (total > first) (pieces - 1) * 1000.0 / (total - first) else 0.0
                         log(
-                            "$config ${c["id"]}: first ${first} ms, ${"%.1f".format(perSec)} pieces/s, " +
+                            "$name ${c["id"]}: first $first ms, ${"%.1f".format(perSec)} pieces/s, " +
                                 "${text.length} chars in $total ms, peak PSS ${maxOf(peak, pssMb())} MB",
                         )
                         log("--- ${c["id"]} ---\n$text\n---")
