@@ -22,6 +22,7 @@ import app.k9mail.feature.account.common.ui.item.defaultItemPadding
 import app.k9mail.feature.account.setup.R
 import app.k9mail.feature.account.setup.domain.entity.EmailCheckFrequency
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
+import app.k9mail.feature.account.setup.domain.entity.EmailSyncPeriod
 import app.k9mail.feature.account.setup.ui.options.sync.SyncOptionsContract.Event
 import app.k9mail.feature.account.setup.ui.options.sync.SyncOptionsContract.State
 import net.thunderbird.components.ui.bolt.atom.text.TextLabelSmall
@@ -91,6 +92,19 @@ internal fun SyncOptionsContent(
                     label = stringResource(id = R.string.account_setup_options_email_display_count_label),
                     contentPadding = defaultItemPadding(),
                 )
+            }
+
+            state.syncPeriod?.let { syncPeriod ->
+                item {
+                    SelectInput(
+                        options = EmailSyncPeriod.all(),
+                        optionToStringTransformation = { it.toResourceString(resources) },
+                        selectedOption = syncPeriod,
+                        onOptionChange = { onEvent(Event.OnSyncPeriodChanged(it)) },
+                        label = stringResource(id = R.string.account_setup_options_sync_period_label),
+                        contentPadding = defaultItemPadding(),
+                    )
+                }
             }
 
             item {

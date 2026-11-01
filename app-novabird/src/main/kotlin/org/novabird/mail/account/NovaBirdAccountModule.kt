@@ -1,7 +1,9 @@
 package org.novabird.mail.account
 
 import app.k9mail.feature.account.setup.AccountSetupExternalContract.MessageDisplayCountProvider
+import app.k9mail.feature.account.setup.AccountSetupExternalContract.SyncPeriodProvider
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
+import app.k9mail.feature.account.setup.domain.entity.EmailSyncPeriod
 import net.thunderbird.core.android.account.AccountDefaultsProvider
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -16,5 +18,10 @@ internal val novaBirdAccountModule = module {
         MessageDisplayCountProvider {
             EmailDisplayCount.fromCount(NovaBirdAccountDefaultsProvider.ALL_MESSAGES)
         }
+    }
+
+    // The setup wizard also asks how far back to sync (user decision: limit by time, one year preselected).
+    single<SyncPeriodProvider>(named("app")) {
+        SyncPeriodProvider { EmailSyncPeriod.fromDays(NovaBirdAccountDefaultsProvider.SYNC_PERIOD_ONE_YEAR) }
     }
 }

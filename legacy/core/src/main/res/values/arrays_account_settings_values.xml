@@ -40,6 +40,7 @@
         <item>84</item>
         <item>168</item>
         <item>365</item>
+        <item>730</item>
     </string-array>
 
     <string-array name="autodownload_message_size_values" translatable="false">

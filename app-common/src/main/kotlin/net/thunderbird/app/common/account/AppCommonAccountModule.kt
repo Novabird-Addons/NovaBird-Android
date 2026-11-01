@@ -68,6 +68,15 @@ internal val appCommonAccountModule = module {
         getOrNull(named("app")) ?: get(named("default"))
     }
 
+    // no sync period question by default; apps may bind a provider under "app"
+    single<AccountSetupExternalContract.SyncPeriodProvider>(named("default")) {
+        AccountSetupExternalContract.SyncPeriodProvider { null }
+    }
+
+    single<AccountSetupExternalContract.SyncPeriodProvider> {
+        getOrNull(named("app")) ?: get(named("default"))
+    }
+
     factory<ImmutableList<Int>>(named("AccountColors")) {
         androidContext().resources.getIntArray(
             ThemeCommonR.array.account_colors,

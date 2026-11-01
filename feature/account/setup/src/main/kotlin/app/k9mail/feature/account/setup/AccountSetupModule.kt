@@ -135,6 +135,7 @@ val featureAccountSetupModule: Module = module {
         SyncOptionsViewModel(
             accountStateRepository = get(),
             messageDisplayCountProvider = get(),
+            syncPeriodProvider = get(),
         )
     }
 

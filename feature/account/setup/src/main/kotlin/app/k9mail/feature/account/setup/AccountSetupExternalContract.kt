@@ -2,6 +2,7 @@ package app.k9mail.feature.account.setup
 
 import app.k9mail.feature.account.common.domain.entity.Account
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
+import app.k9mail.feature.account.setup.domain.entity.EmailSyncPeriod
 
 interface AccountSetupExternalContract {
 
@@ -23,5 +24,13 @@ interface AccountSetupExternalContract {
      */
     fun interface MessageDisplayCountProvider {
         fun getDefaultMessageDisplayCount(): EmailDisplayCount
+    }
+
+    /**
+     * Provides the sync period preselected for a new account. If it returns null, the setup doesn't ask for it and the
+     * account keeps its default.
+     */
+    fun interface SyncPeriodProvider {
+        fun getDefaultSyncPeriod(): EmailSyncPeriod?
     }
 }
