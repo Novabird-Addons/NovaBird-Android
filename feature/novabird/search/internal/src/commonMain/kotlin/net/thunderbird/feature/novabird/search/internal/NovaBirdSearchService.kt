@@ -4,11 +4,11 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.add
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.doubleOrNull
@@ -33,7 +33,9 @@ import net.thunderbird.feature.novabird.search.internal.db.SearchIndexDatabase
  * @param ownEmails own addresses of all accounts, for "von mir" / "an mich" (merged with [SearchOptions.myEmails]).
  * @param now current time in ms; relative dates ("letzte Woche") are resolved against it.
  */
-class NovaBirdSearchService @OptIn(ExperimentalTime::class) constructor(
+class NovaBirdSearchService
+@OptIn(ExperimentalTime::class)
+constructor(
     private val core: NovaBirdSearchCore,
     private val ownEmails: () -> List<String> = { emptyList() },
     private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },

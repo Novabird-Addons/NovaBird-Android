@@ -24,10 +24,12 @@ class FakeK9MailStore(private val account: K9Account) : K9MailStore {
         )
         connection.execSQL(
             "CREATE TABLE messages (id INTEGER PRIMARY KEY, deleted INTEGER default 0, folder_id INTEGER, uid TEXT, " +
-                "subject TEXT, date INTEGER, flags TEXT, sender_list TEXT, to_list TEXT, cc_list TEXT, bcc_list TEXT, " +
+                "subject TEXT, date INTEGER, flags TEXT, sender_list TEXT, to_list TEXT, cc_list TEXT, " +
+                "bcc_list TEXT, " +
                 "reply_to_list TEXT, attachment_count INTEGER, internal_date INTEGER, message_id TEXT, " +
                 "preview_type TEXT default \"none\", preview TEXT, mime_type TEXT, normalized_subject_hash INTEGER, " +
-                "empty INTEGER default 0, read INTEGER default 0, flagged INTEGER default 0, answered INTEGER default 0, " +
+                "empty INTEGER default 0, read INTEGER default 0, flagged INTEGER default 0, " +
+                "answered INTEGER default 0, " +
                 "forwarded INTEGER default 0, message_part_id INTEGER, encryption_type TEXT, " +
                 "new_message INTEGER DEFAULT 0, account_id TEXT)",
         )
@@ -98,9 +100,14 @@ class FakeK9MailStore(private val account: K9Account) : K9MailStore {
     private fun insertPart(part: TestPart, parent: Long, seq: Int, rootId: Long?): Long {
         val id = nextPartId++
         val location = when {
-            part.mimeType.startsWith("multipart/") -> 3L // CHILD_PART_CONTAINS_DATA
-            part.body == null -> 0L // MISSING
+            part.mimeType.startsWith("multipart/") -> 3L
+
+            // CHILD_PART_CONTAINS_DATA
+            part.body == null -> 0L
+
+            // MISSING
             part.onDisk -> 2L
+
             else -> 1L
         }
         if (part.onDisk && part.body != null) files[id] = part.body
@@ -110,7 +117,9 @@ class FakeK9MailStore(private val account: K9Account) : K9MailStore {
             id, rootId ?: id, parent, seq, part.mimeType, part.body?.size?.toLong() ?: 0L, part.header, part.encoding,
             part.charset, location, if (location == 1L) part.body else null,
         )
-        part.children.forEachIndexed { index, child -> insertPart(child, parent = id, seq = index, rootId = rootId ?: id) }
+        part.children.forEachIndexed { index, child ->
+            insertPart(child, parent = id, seq = index, rootId = rootId ?: id)
+        }
         return id
     }
 

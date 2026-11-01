@@ -60,7 +60,10 @@ class SearchIndexDatabaseTest {
 
         val hits = testSubject.select("SELECT rowid FROM t WHERE t MATCH ?", params(JsonPrimitive("\"speiseplan\"")))
         testSubject.execute("DELETE FROM t WHERE rowid = ?", params(JsonPrimitive(1)))
-        val afterDelete = testSubject.select("SELECT count(*) FROM t WHERE t MATCH ?", params(JsonPrimitive("\"plan\"")))
+        val afterDelete = testSubject.select(
+            "SELECT count(*) FROM t WHERE t MATCH ?",
+            params(JsonPrimitive("\"plan\"")),
+        )
 
         assertThat(hits.map { it.jsonArray[0].jsonPrimitive.long }).isEqualTo(listOf(1L))
         assertThat(afterDelete.single().jsonArray[0].jsonPrimitive.long).isEqualTo(1L)

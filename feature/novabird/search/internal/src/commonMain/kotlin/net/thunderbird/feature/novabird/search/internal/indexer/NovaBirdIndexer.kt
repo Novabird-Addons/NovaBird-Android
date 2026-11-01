@@ -143,7 +143,8 @@ class NovaBirdIndexer(
             JsonArray(listOf(JsonPrimitive(accountUuid))),
         ).associate { row ->
             val r = row.jsonArray
-            r[0].jsonPrimitive.long to Known(r[1].jsonPrimitive.long, r[2].jsonPrimitive.content, r[3].jsonPrimitive.content)
+            r[0].jsonPrimitive.long to
+                Known(r[1].jsonPrimitive.long, r[2].jsonPrimitive.content, r[3].jsonPrimitive.content)
         }
 
     private fun SearchIndexDatabase.saveKnown(accountUuid: String, entries: List<K9MessageEntry>) {
@@ -156,8 +157,12 @@ class NovaBirdIndexer(
                             INSERT OR REPLACE INTO nb_android_messages
                               (account_uuid, k9_id, folder_id, uid, header_msg_id, fingerprint) VALUES (?, ?, ?, ?, ?, ?)
                             """.trimIndent(),
-                            JsonPrimitive(accountUuid), JsonPrimitive(e.k9Id), JsonPrimitive(e.folderId),
-                            JsonPrimitive(e.uid), JsonPrimitive(e.headerMessageId), JsonPrimitive(e.fingerprint),
+                            JsonPrimitive(accountUuid),
+                            JsonPrimitive(e.k9Id),
+                            JsonPrimitive(e.folderId),
+                            JsonPrimitive(e.uid),
+                            JsonPrimitive(e.headerMessageId),
+                            JsonPrimitive(e.fingerprint),
                         ),
                     )
                 }
@@ -172,7 +177,8 @@ class NovaBirdIndexer(
                     add(
                         statement(
                             "DELETE FROM nb_android_messages WHERE account_uuid = ? AND k9_id = ?",
-                            JsonPrimitive(accountUuid), JsonPrimitive(id),
+                            JsonPrimitive(accountUuid),
+                            JsonPrimitive(id),
                         ),
                     )
                 }

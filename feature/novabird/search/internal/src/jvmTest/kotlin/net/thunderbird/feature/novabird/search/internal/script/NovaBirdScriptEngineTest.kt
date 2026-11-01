@@ -30,11 +30,21 @@ class NovaBirdScriptEngineTest {
     @Test
     fun `module names resolve relative to the importing module`() {
         assertThat(
-            NovaBirdScriptEngine.resolveModuleName("novabird-android/glue.js", "../novabird-search/src/search.js", emptyMap()),
+            NovaBirdScriptEngine.resolveModuleName(
+                "novabird-android/glue.js",
+                "../novabird-search/src/search.js",
+                emptyMap(),
+            ),
         ).isEqualTo("novabird-search/src/search.js")
         assertThat(
-            NovaBirdScriptEngine.resolveModuleName("novabird-search/src/query/buildSql.js", "../util/normalize.js", emptyMap()),
+            NovaBirdScriptEngine.resolveModuleName(
+                "novabird-search/src/query/buildSql.js",
+                "../util/normalize.js",
+                emptyMap(),
+            ),
         ).isEqualTo("novabird-search/src/util/normalize.js")
-        assertThat(NovaBirdScriptEngine.resolveModuleName("a/b.js", "vitest", mapOf("vitest" to "t/v.js"))).isEqualTo("t/v.js")
+        assertThat(
+            NovaBirdScriptEngine.resolveModuleName("a/b.js", "vitest", mapOf("vitest" to "t/v.js")),
+        ).isEqualTo("t/v.js")
     }
 }

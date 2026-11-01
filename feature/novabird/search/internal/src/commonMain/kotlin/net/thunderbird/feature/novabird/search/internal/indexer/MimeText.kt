@@ -36,6 +36,7 @@ internal object MimeText {
             "", "us-ascii", "ascii", "iso-8859-1", "iso8859-1", "latin1", "l1", "iso_8859-1", "cp819", "ibm819",
             "windows-1252", "cp1252", "x-cp1252",
             -> "windows-1252"
+
             else -> name
         }
     }
@@ -116,14 +117,23 @@ internal object MimeText {
         for ((name, raw) in Regex(""";\s*([^=;\s]+)\s*=\s*("(?:[^"\\]|\\.)*"|[^;]*)""").findAll(value).map {
             it.groupValues[1].lowercase() to it.groupValues[2].trim()
         }) {
-            val unquoted = if (raw.startsWith('"')) raw.substring(1, raw.length - 1).replace(Regex("""\\(.)"""), "$1") else raw
+            val unquoted = if (raw.startsWith(
+                    '"',
+                )
+            ) {
+                raw.substring(1, raw.length - 1).replace(Regex("""\\(.)"""), "$1")
+            } else {
+                raw
+            }
             val continuation = Regex("""^(.+)\*(\d+)\*?$""").find(name)
             when {
                 continuation != null -> {
                     val key = continuation.groupValues[1] + "*" + continuation.groupValues[2].padStart(3, '0')
                     continuations[key] = if (name.endsWith("*")) "*$unquoted" else unquoted
                 }
+
                 name.endsWith("*") -> params[name.dropLast(1)] = decodeRfc2231(unquoted)
+
                 else -> params.putIfAbsent(name, decodeEncodedWords(unquoted))
             }
         }

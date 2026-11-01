@@ -43,7 +43,9 @@ class NovaBirdIndexerTest {
             root = multipart(
                 "multipart/mixed",
                 text(
-                    "text/plain", "quoted-printable", "utf-8",
+                    "text/plain",
+                    "quoted-printable",
+                    "utf-8",
                     "Hallo zusammen,=0Aanbei die Speisepl=C3=A4ne f=C3=BCr die n=C3=A4chsten Wochen.=0A=0A" +
                         "-- =0AJonas=0A",
                 ),
@@ -56,7 +58,9 @@ class NovaBirdIndexerTest {
             subject = "Rechnung Oktober", date = day(2026, 10, 1),
             sender = "kanzlei@steuer.example;\u0001Steuerbüro", to = "leitung@firma.example",
             root = text(
-                "text/html", "base64", "iso-8859-1",
+                "text/html",
+                "base64",
+                "iso-8859-1",
                 base64("<html><body><p>Ihre Rechnung &uuml;ber 120 \u0080 für die Wartung</p></body></html>"),
             ),
         )
@@ -64,10 +68,12 @@ class NovaBirdIndexerTest {
         mailStore.insertMessage(
             id = 12, folderId = 3, uid = "u12", messageId = "<m12@firma.example>",
             subject = "Re: Urlaubsplanung 2027", date = day(2026, 9, 25),
-            sender = "leitung@firma.example;\u0001Firma Leitung", to = "petra.schneider@firma.example;\u0001Petra Schneider",
+            sender = "leitung@firma.example;\u0001Firma Leitung",
+            to = "petra.schneider@firma.example;\u0001Petra Schneider",
             root = TestPart(
                 "text/plain",
-                "Content-Type: text/plain; charset=utf-8\r\nReferences: <m5@firma.example>\r\n",
+                "Content-Type: text/plain; charset=utf-8\r\n" +
+                    "References: <m5@firma.example>\r\n",
                 body = "Danke Petra, ich trage mich ein.\n\n> Bitte tragt eure Urlaubswünsche ein".encodeToByteArray(),
                 charset = "utf-8",
                 onDisk = true,
@@ -187,8 +193,14 @@ class NovaBirdIndexerTest {
 
         val indexTime = measureTime { testSubject.indexChanges() }
         val queries = listOf(
-            "Speiseplan", "Rechnungen von Person 7", "Wartung seit März mit Anhang", "Urlaub oder Termin",
-            "Bericht im Juni", "Rechnnung", "ueber Angebot", "",
+            "Speiseplan",
+            "Rechnungen von Person 7",
+            "Wartung seit März mit Anhang",
+            "Urlaub oder Termin",
+            "Bericht im Juni",
+            "Rechnnung",
+            "ueber Angebot",
+            "",
         )
         search("Speiseplan") // warm up
         val times = queries.map { q -> q to measureTime { search(q, sort = SearchSort.RELEVANCE) } }
