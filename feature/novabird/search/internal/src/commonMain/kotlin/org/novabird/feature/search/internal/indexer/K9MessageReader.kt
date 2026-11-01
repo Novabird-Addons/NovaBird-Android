@@ -142,8 +142,10 @@ internal class K9MessageReader(
     private fun toJson(part: Part, all: List<Part>): JsonObject {
         val headers = MimeText.parseHeaders(part.header)
         val disposition = headers["content-disposition"]?.firstOrNull()
-        val name = MimeText.parameters(disposition)["filename"]
-            ?: MimeText.parameters(headers["content-type"]?.firstOrNull())["name"]
+        val contentType = MimeText.parameters(headers["content-type"]?.firstOrNull())
+        val name = MimeText.parameters(disposition)["filename"] ?: contentType["name"]
+        // K-9 leaves message_parts.charset empty when saving; the Content-Type header has it
+        val charset = contentType["charset"] ?: part.charset
         return buildJsonObject {
             put("contentType", part.mimeType)
             name?.let { put("name", it) }
@@ -151,14 +153,14 @@ internal class K9MessageReader(
             putJsonObject("headers") {
                 disposition?.let { putJsonArray("content-disposition") { add(it) } }
             }
-            textBody(part, isAttachment = name != null || disposition?.startsWith("attachment", true) == true)
+            textBody(part, charset, isAttachment = name != null || disposition?.startsWith("attachment", true) == true)
                 ?.let { put("body", it) }
             val children = all.filter { it.parent == part.id && it.id != part.id }
             if (children.isNotEmpty()) put("parts", buildJsonArray { children.forEach { add(toJson(it, all)) } })
         }
     }
 
-    private fun textBody(part: Part, isAttachment: Boolean): String? {
+    private fun textBody(part: Part, charset: String?, isAttachment: Boolean): String? {
         if (isAttachment || (part.mimeType != "text/plain" && part.mimeType != "text/html")) return null
         val raw = when (part.dataLocation) {
             DATA_IN_DATABASE -> part.data
@@ -166,7 +168,7 @@ internal class K9MessageReader(
             else -> null
         } ?: return null
         val bytes = if (raw.size > MAX_TEXT_BYTES) raw.copyOf(MAX_TEXT_BYTES) else raw
-        return MimeText.decodeBody(bytes, part.encoding, part.charset)
+        return MimeText.decodeBody(bytes, part.encoding, charset)
     }
 
     internal data class PackedAddress(val email: String, val name: String?)
@@ -223,8 +225,11 @@ internal class K9MessageReader(
             for (c in values.joinToString("\u0000") { it?.toString() ?: "\u0001" }) {
                 h = (h xor c.code.toLong()) * FNV_PRIME
             }
-            return h.toULong().toString(16)
+            return "$READER_VERSION-" + h.toULong().toString(16)
         }
+
+        /** Raise when the reader extracts text differently, so that every message is indexed again. */
+        private const val READER_VERSION = 2
 
         private const val FNV_OFFSET = -3750763034362895579L // 0xcbf29ce484222325
         private const val FNV_PRIME = 1099511628211L
