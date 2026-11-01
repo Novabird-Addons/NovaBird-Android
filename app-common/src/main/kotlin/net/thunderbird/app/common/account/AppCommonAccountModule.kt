@@ -47,11 +47,16 @@ internal val appCommonAccountModule = module {
         )
     }
 
-    single<AccountDefaultsProvider> {
+    single<AccountDefaultsProvider>(named("default")) {
         DefaultAccountDefaultsProvider(
             resourceProvider = get(),
             featureFlagProvider = get(),
         )
+    }
+
+    // Apps may bind their own provider under the qualifier "app" (e.g. to change defaults for new accounts).
+    single<AccountDefaultsProvider> {
+        getOrNull(named("app")) ?: get(named("default"))
     }
 
     factory<ImmutableList<Int>>(named("AccountColors")) {
