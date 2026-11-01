@@ -699,7 +699,7 @@ public class MessagingController implements MessagingControllerRegistry, Messagi
             account.getExpungePolicy().toBackendExpungePolicy(),
             account.getEarliestPollDate(),
             account.isSyncRemoteDeletions(),
-            account.getMaximumAutoDownloadMessageSize(),
+            SyncDownloadLimits.getMaximumAutoDownloadMessageSize(account),
             DEFAULT_VISIBLE_LIMIT,
             SYNC_FLAGS);
     }

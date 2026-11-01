@@ -1,0 +1,18 @@
+<!-- Notification icon: swallow only, the small envelope isn't readable at 24 dp -->
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96"
+    >
+    <group
+        android:translateX="0.5"
+        android:translateY="-1"
+        >
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M81,35 L74,37 C70,33 64,33 60,37 C52,30 40,24 24,20 C36,30 44,38 50,46 C40,52 28,58 14,62 C26,62 34,61 40,59 C34,66 26,72 18,78 C32,74 46,66 56,56 C66,54 72,46 74,40 Z"
+            />
+    </group>
+</vector>

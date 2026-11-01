@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="novabird_sync_settings_title">Sync limits</string>
+    <string name="novabird_sync_settings_metered_limit_title">Download messages up to (mobile data)</string>
+    <string name="novabird_sync_settings_metered_limit_description">Per message including attachments. Larger messages are downloaded partially and completed on Wi-Fi.</string>
+    <string name="novabird_sync_settings_unmetered_limit_title">Download messages up to (Wi-Fi)</string>
+    <string name="novabird_sync_settings_unmetered_limit_description">Per message including attachments. Also used to complete partially downloaded messages of the sync period.</string>
+    <string name="novabird_sync_settings_no_limit">No limit</string>
+    <string name="novabird_sync_settings_size_kib">%d KB</string>
+    <string name="novabird_sync_settings_size_mib">%d MB</string>
+</resources>
