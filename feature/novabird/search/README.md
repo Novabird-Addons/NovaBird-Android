@@ -22,6 +22,10 @@ Die Suche von NovaBird-Search (PC) auf Android: Alltagssprache („von Petra im 
   eigenen Tabelle `nb_android_messages`; angestoßen per WorkManager (`NovaBirdIndexScheduler`).
 - **Suchmaske:** `NovaBirdSearchScreen(onOpenMessage, onBack)` (Compose, Bolt-Komponenten, MVI).
 
+**QuickJS:** `quickjs-kt` bringt das originale QuickJS mit, nicht QuickJS-ng. Entscheidung vom 01.11.2026: dabei
+bleiben, im Mai 2027 neu bewerten (gibt es dann eine ausgereifte, gepflegte JNI-Bindung für QuickJS-ng?). Ein Wechsel
+betrifft nur `NovaBirdScriptEngine` und `ScriptSources`.
+
 ## Einbinden (App-Modul)
 
 ```kotlin
