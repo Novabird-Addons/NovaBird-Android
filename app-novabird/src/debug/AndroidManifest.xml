@@ -25,6 +25,13 @@
                 />
         </receiver>
 
+        <!-- NovaBird: language model test (debug only, started via adb); GPU via OpenCL if the phone has it -->
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+        <activity
+            android:name="org.novabird.mail.LlmBenchActivity"
+            android:exported="true"
+            />
+
         <!-- NovaBird: vector benchmark (debug only, started via adb) -->
         <activity
             android:name="org.novabird.mail.VectorBenchActivity"

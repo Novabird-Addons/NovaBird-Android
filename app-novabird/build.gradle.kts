@@ -174,6 +174,7 @@ dependencies {
     implementation(projects.feature.novabird.sync)
     implementation(projects.feature.novabird.vectors)
     debugImplementation(libs.kotlinx.serialization.json)
+    debugImplementation(novabirdLibs.litertlm.android)
 
     implementation(libs.androidx.work.runtime)
 
