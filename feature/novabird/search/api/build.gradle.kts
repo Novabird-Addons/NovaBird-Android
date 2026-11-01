@@ -4,6 +4,6 @@ plugins {
 
 kotlin {
     android {
-        namespace = "net.thunderbird.feature.novabird.search"
+        namespace = "org.novabird.feature.search"
     }
 }

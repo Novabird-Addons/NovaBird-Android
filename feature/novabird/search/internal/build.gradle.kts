@@ -4,7 +4,7 @@ plugins {
 
 kotlin {
     android {
-        namespace = "net.thunderbird.feature.novabird.search.internal"
+        namespace = "org.novabird.feature.search.internal"
     }
     sourceSets {
         commonMain.dependencies {
@@ -30,7 +30,7 @@ kotlin {
 
 compose.resources {
     publicResClass = false
-    packageOfResClass = "net.thunderbird.feature.novabird.search.internal.resources"
+    packageOfResClass = "org.novabird.feature.search.internal.resources"
 }
 
 codeCoverage {
