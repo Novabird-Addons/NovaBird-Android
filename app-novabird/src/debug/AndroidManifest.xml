@@ -4,9 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     >
 
-    <!-- NovaBird: ONNX Runtime needs API 24; the app still allows 23 (decide before Beta 2 ships) -->
-    <uses-sdk tools:overrideLibrary="ai.onnxruntime" />
-
     <application
         tools:ignore="MissingApplicationIcon"
         >
