@@ -9,8 +9,9 @@ android {
         applicationId = "org.novabird.mail"
         testApplicationId = "org.novabird.mail.tests"
 
-        versionCode = 1
-        versionName = "24.0"
+        // versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + stage (1..98 beta, 99 release)
+        versionCode = 10001
+        versionName = "0.1.0-beta1"
 
         buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"NovaBird Mail\"")
     }
