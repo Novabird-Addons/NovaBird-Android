@@ -3,6 +3,7 @@
 
     <application>
 
+        <!-- exported like the sync settings, so the launcher shortcut can open it; it takes no extras -->
         <activity
             android:name="org.novabird.feature.ai.ui.AiSettingsActivity"
             android:exported="true"

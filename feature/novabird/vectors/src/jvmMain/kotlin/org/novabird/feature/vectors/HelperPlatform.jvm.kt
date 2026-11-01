@@ -5,20 +5,44 @@ import java.net.URL
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.SecretKeyFactory
+import javax.crypto.Mac
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 internal actual object HelperCrypto {
     private const val TAG_BITS = 128
+    private const val HMAC = "HmacSHA256"
     private val rng = SecureRandom()
 
+    // PBKDF2-HMAC-SHA256 with Mac (SecretKeyFactory "PBKDF2WithHmacSHA256" needs Android 8, the app allows older)
     actual fun pbkdf2Sha256(password: ByteArray, salt: ByteArray, iterations: Int, bytes: Int): ByteArray {
-        // the pairing code is ASCII (normalized), so chars = bytes
-        val spec = PBEKeySpec(String(password, Charsets.US_ASCII).toCharArray(), salt, iterations, bytes * 8)
-        return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
+        val mac = Mac.getInstance(HMAC).apply { init(SecretKeySpec(password, HMAC)) }
+        val out = ByteArray(bytes)
+        var block = 1
+        var pos = 0
+        while (pos < bytes) {
+            mac.update(salt)
+            mac.update(blockIndex(block))
+            var u = mac.doFinal()
+            val t = u.copyOf()
+            repeat(iterations - 1) {
+                u = mac.doFinal(u)
+                for (i in t.indices) t[i] = (t[i].toInt() xor u[i].toInt()).toByte()
+            }
+            val n = minOf(t.size, bytes - pos)
+            t.copyInto(out, pos, 0, n)
+            pos += n
+            block++
+        }
+        return out
     }
+
+    private fun blockIndex(i: Int) = byteArrayOf(
+        (i ushr 24).toByte(),
+        (i ushr 16).toByte(),
+        (i ushr 8).toByte(),
+        i.toByte(),
+    )
 
     actual fun aesGcmEncrypt(key: ByteArray, iv: ByteArray, aad: ByteArray, plain: ByteArray): ByteArray =
         cipher(Cipher.ENCRYPT_MODE, key, iv, aad).doFinal(plain)

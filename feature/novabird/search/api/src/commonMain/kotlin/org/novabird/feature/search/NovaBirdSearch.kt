@@ -61,6 +61,12 @@ interface NovaBirdVectorIndexer {
     suspend fun indexVectors(shouldStop: () -> Boolean = { false }): VectorIndexStats
 
     suspend fun stats(): VectorIndexStats
+
+    /**
+     * Makes the next index run read all messages once more to collect their texts. Call when vectors get switched on
+     * (Helper paired, computing on the phone enabled): messages indexed while vectors were off were never queued.
+     */
+    suspend fun recollectTexts()
 }
 
 /** Starts index runs in the background (WorkManager); used when settings change. */

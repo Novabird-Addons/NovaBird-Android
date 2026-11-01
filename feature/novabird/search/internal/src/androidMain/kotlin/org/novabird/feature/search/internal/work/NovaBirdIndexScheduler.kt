@@ -33,7 +33,8 @@ class NovaBirdIndexScheduler(private val context: Context) : NovaBirdIndexTrigge
         val request = OneTimeWorkRequestBuilder<NovaBirdVectorWorker>()
             .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).setRequiresBatteryNotLow(true).build())
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(WORK_VECTORS, ExistingWorkPolicy.KEEP, request)
+        // append: a request during a run (new texts queued) gets its own run after it
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_VECTORS, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
     /** Periodic fallback (e.g. after sync from other code paths). */

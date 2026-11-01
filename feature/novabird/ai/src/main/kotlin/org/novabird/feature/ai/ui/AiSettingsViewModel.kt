@@ -59,6 +59,8 @@ internal interface AiSettingsActions {
     fun refreshIndex()
 }
 
+// one function per action of the settings screen (AiSettingsActions)
+@Suppress("TooManyFunctions")
 internal class AiSettingsViewModel(
     private val repository: AiSettingsRepository,
     private val keyVault: HelperKeyVault,
@@ -130,8 +132,7 @@ internal class AiSettingsViewModel(
                 keyVault.save(key)
                 repository.update { it.copy(helperAddress = address.trim()) }
                 mutableState.update { it.copy(pairing = false, helper = HelperStatus.Connected(info)) }
-                indexTrigger.requestIndexing()
-                indexTrigger.requestVectors()
+                startCollecting()
             }.onFailure { e ->
                 mutableState.update { it.copy(pairing = false, pairingError = e.message ?: e::class.simpleName) }
             }
@@ -149,8 +150,7 @@ internal class AiSettingsViewModel(
     override fun setLocalEnabled(enabled: Boolean) {
         repository.update { it.copy(localEnabled = enabled) }
         if (enabled) {
-            indexTrigger.requestIndexing()
-            indexTrigger.requestVectors()
+            viewModelScope.launch { startCollecting() }
         } else {
             viewModelScope.launch { local.unload() }
         }
@@ -170,6 +170,12 @@ internal class AiSettingsViewModel(
             withContext(Dispatchers.IO) { files.delete() }
             mutableState.update { it.copy(modelReady = false) }
         }
+    }
+
+    private suspend fun startCollecting() {
+        runCatching { vectorIndexer.recollectTexts() }
+        indexTrigger.requestIndexing()
+        indexTrigger.requestVectors()
     }
 
     override fun refreshIndex() {

@@ -120,6 +120,12 @@ class SemanticIndex(
         return stats()
     }
 
+    override suspend fun recollectTexts() {
+        core.engine().withMainDatabase { db ->
+            db.execute("DELETE FROM nb_meta WHERE key = ?", JsonArray(listOf(JsonPrimitive(META_TEXT_VERSION))))
+        }
+    }
+
     override suspend fun stats(): VectorIndexStats = core.engine().withMainDatabase { db ->
         val model = backend()?.modelId ?: ""
         VectorIndexStats(

@@ -37,11 +37,19 @@ class LocalEmbedder(
     private var loadedThreads = 0
     private var unloadJob: Job? = null
 
+    @Volatile
+    private var inForeground = false
+
     init {
         scope.launch(Dispatchers.Main) {
             ProcessLifecycleOwner.get().lifecycle.addObserver(
                 object : DefaultLifecycleObserver {
+                    override fun onStart(owner: LifecycleOwner) {
+                        inForeground = true
+                    }
+
                     override fun onStop(owner: LifecycleOwner) {
+                        inForeground = false
                         if (settings.settings.value.keepLoaded == KeepLoaded.WITH_APP) scope.launch { unload() }
                     }
                 },
@@ -73,7 +81,13 @@ class LocalEmbedder(
     }
 
     private fun scheduleUnload() {
-        val minutes = settings.settings.value.keepLoaded.minutes ?: return
+        val keep = settings.settings.value.keepLoaded
+        // used in the background (vector worker) while set to "while open": don't keep 1.2 GB until the next app start
+        if (keep == KeepLoaded.WITH_APP && !inForeground) {
+            scope.launch { unload() }
+            return
+        }
+        val minutes = keep.minutes ?: return
         unloadJob?.cancel()
         unloadJob = scope.launch {
             delay(minutes * MILLIS_PER_MINUTE)
