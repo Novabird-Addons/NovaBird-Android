@@ -106,6 +106,30 @@ class SyncOptionsViewModelTest {
         }
 
     @Test
+    fun `should preselect message display count from provider when account has no sync options`() {
+        val testSubject = SyncOptionsViewModel(
+            accountStateRepository = InMemoryAccountStateRepository(),
+            messageDisplayCountProvider = { EmailDisplayCount.ALL },
+        )
+
+        assertThat(testSubject.state.value).isEqualTo(State(messageDisplayCount = EmailDisplayCount.ALL))
+    }
+
+    @Test
+    fun `should preselect message display count from provider when LoadAccountState event received`() =
+        runMviTest {
+            val testSubject = SyncOptionsViewModel(
+                accountStateRepository = InMemoryAccountStateRepository(),
+                messageDisplayCountProvider = { EmailDisplayCount.ALL },
+                initialState = State(),
+            )
+
+            testSubject.event(Event.LoadAccountState)
+
+            assertThat(testSubject.state.value).isEqualTo(State(messageDisplayCount = EmailDisplayCount.ALL))
+        }
+
+    @Test
     fun `should emit NavigateBack effect when OnBackClicked event received`() = runMviTest {
         val viewModel = testSubject
         val turbines = turbinesWithInitialStateCheck(viewModel, State())

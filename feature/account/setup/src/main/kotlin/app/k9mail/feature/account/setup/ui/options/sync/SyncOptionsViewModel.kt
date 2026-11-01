@@ -1,6 +1,8 @@
 package app.k9mail.feature.account.setup.ui.options.sync
 
 import app.k9mail.feature.account.common.domain.AccountDomainContract
+import app.k9mail.feature.account.setup.AccountSetupExternalContract.MessageDisplayCountProvider
+import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
 import app.k9mail.feature.account.setup.ui.options.sync.SyncOptionsContract.Effect
 import app.k9mail.feature.account.setup.ui.options.sync.SyncOptionsContract.Event
 import app.k9mail.feature.account.setup.ui.options.sync.SyncOptionsContract.State
@@ -9,9 +11,13 @@ import net.thunderbird.core.ui.contract.mvi.BaseViewModel
 
 internal class SyncOptionsViewModel(
     private val accountStateRepository: AccountDomainContract.AccountStateRepository,
+    private val messageDisplayCountProvider: MessageDisplayCountProvider =
+        MessageDisplayCountProvider { EmailDisplayCount.DEFAULT },
     initialState: State? = null,
 ) : BaseViewModel<State, Event, Effect>(
-    initialState = initialState ?: accountStateRepository.getState().toSyncOptionsState(),
+    initialState = initialState ?: accountStateRepository.getState().toSyncOptionsState(
+        defaultMessageDisplayCount = messageDisplayCountProvider.getDefaultMessageDisplayCount(),
+    ),
 ),
     ViewModel {
 
@@ -45,7 +51,9 @@ internal class SyncOptionsViewModel(
 
     private fun loadAccountState() {
         updateState {
-            accountStateRepository.getState().toSyncOptionsState()
+            accountStateRepository.getState().toSyncOptionsState(
+                defaultMessageDisplayCount = messageDisplayCountProvider.getDefaultMessageDisplayCount(),
+            )
         }
     }
 

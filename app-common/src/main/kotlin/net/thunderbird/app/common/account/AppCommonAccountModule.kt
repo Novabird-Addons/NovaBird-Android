@@ -2,6 +2,7 @@ package net.thunderbird.app.common.account
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import app.k9mail.feature.account.setup.AccountSetupExternalContract
+import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import net.thunderbird.app.common.account.data.DefaultAccountProfileLocalDataSource
@@ -56,6 +57,14 @@ internal val appCommonAccountModule = module {
 
     // Apps may bind their own provider under the qualifier "app" (e.g. to change defaults for new accounts).
     single<AccountDefaultsProvider> {
+        getOrNull(named("app")) ?: get(named("default"))
+    }
+
+    single<AccountSetupExternalContract.MessageDisplayCountProvider>(named("default")) {
+        AccountSetupExternalContract.MessageDisplayCountProvider { EmailDisplayCount.DEFAULT }
+    }
+
+    single<AccountSetupExternalContract.MessageDisplayCountProvider> {
         getOrNull(named("app")) ?: get(named("default"))
     }
 

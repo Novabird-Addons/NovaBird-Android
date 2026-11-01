@@ -5,11 +5,17 @@ import app.k9mail.feature.account.setup.R
 import app.k9mail.feature.account.setup.domain.entity.EmailCheckFrequency
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
 
-internal fun EmailDisplayCount.toResourceString(resources: Resources) = resources.getQuantityString(
-    R.plurals.account_setup_options_email_display_count_messages,
-    count,
-    count,
-)
+internal fun EmailDisplayCount.toResourceString(resources: Resources): String {
+    return if (this == EmailDisplayCount.ALL) {
+        resources.getString(R.string.account_setup_options_email_display_count_all)
+    } else {
+        resources.getQuantityString(
+            R.plurals.account_setup_options_email_display_count_messages,
+            count,
+            count,
+        )
+    }
+}
 
 @Suppress("MagicNumber")
 internal fun EmailCheckFrequency.toResourceString(resources: Resources): String {
