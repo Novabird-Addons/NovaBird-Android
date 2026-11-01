@@ -35,6 +35,9 @@ single<K9AccountProvider> { K9AccountProvider { /* Konten: UUID + eigene Adresse
 
 - Nach jeder Synchronisierung `get<NovaBirdIndexScheduler>().requestIndexing()`, beim Start `schedulePeriodic()`.
 - Treffer öffnen: `MessageLocation(accountUuid, folderId, uid)` → `MessageReference` → vorhandene Nachrichtenansicht.
+- Packaging: Liegt `kotlin-reflect` im Laufzeit-Klassenpfad der App, darf sie `kotlin/**` (die `*.kotlin_builtins`)
+  nicht aus den Ressourcen entfernen. Sonst scheitert `QuickJs.evaluate<T>` (`typeOf<T>()`) am Gerät mit
+  `KotlinReflectionInternalError: Unresolved class: class java.lang.Object`; die JVM-Tests sehen das nicht.
 
 ## Suchkern aktualisieren
 
