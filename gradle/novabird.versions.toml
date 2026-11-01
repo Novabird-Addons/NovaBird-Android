@@ -1,0 +1,12 @@
+# NovaBird: Bibliotheken der NovaBird-Module (getrennt von libs.versions.toml, damit Upstream-Updates nicht kollidieren)
+
+[versions]
+# SQLite mit FTS5 (trigram, contentless_delete, fts5vocab); Public Domain, AndroidX-Hülle Apache 2.0
+androidxSqlite = "2.7.1"
+# QuickJS (MIT) über quickjs-kt (Apache 2.0), Android und JVM (Windows/Linux/macOS)
+quickjsKt = "1.0.15"
+
+[libraries]
+androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "androidxSqlite" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidxSqlite" }
+quickjs-kt = { module = "io.github.dokar3:quickjs-kt", version.ref = "quickjsKt" }

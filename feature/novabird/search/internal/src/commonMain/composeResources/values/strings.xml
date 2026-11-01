@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="novabird_search_title">Search</string>
+    <string name="novabird_search_hint">e.g. from Petra in March with PDF</string>
+    <string name="novabird_search_back">Back</string>
+    <string name="novabird_search_did_you_mean">Did you mean: %1$s</string>
+    <string name="novabird_search_no_results">No messages found</string>
+    <string name="novabird_search_error">Search is not available right now</string>
+    <string name="novabird_search_remove_chip">Remove %1$s</string>
+</resources>
