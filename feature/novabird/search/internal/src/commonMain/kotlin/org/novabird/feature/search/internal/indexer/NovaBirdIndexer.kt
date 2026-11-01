@@ -13,6 +13,7 @@ import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import net.thunderbird.core.logging.Logger
 import org.novabird.feature.search.IndexStats
+import org.novabird.feature.search.K9MailStore
 import org.novabird.feature.search.NovaBirdSearchIndexer
 import org.novabird.feature.search.internal.NovaBirdSearchCore
 import org.novabird.feature.search.internal.db.SearchIndexDatabase

@@ -9,6 +9,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import org.novabird.feature.search.K9MailDatabase
 
 /** A message as listed in the K-9 database, with a fingerprint of everything the index depends on. */
 internal data class K9MessageEntry(

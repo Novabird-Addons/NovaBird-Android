@@ -3,19 +3,14 @@ package org.novabird.feature.search.internal
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import org.novabird.feature.search.K9AccountProvider
+import org.novabird.feature.search.K9MailStore
 import org.novabird.feature.search.NovaBirdSearch
 import org.novabird.feature.search.NovaBirdSearchIndexer
 import org.novabird.feature.search.internal.indexer.AndroidK9MailStore
-import org.novabird.feature.search.internal.indexer.K9Account
-import org.novabird.feature.search.internal.indexer.K9MailStore
 import org.novabird.feature.search.internal.indexer.NovaBirdIndexer
 import org.novabird.feature.search.internal.ui.NovaBirdSearchViewModel
 import org.novabird.feature.search.internal.work.NovaBirdIndexScheduler
-
-/** Accounts to index; bound by the app module (e.g. from the account manager). */
-fun interface K9AccountProvider {
-    fun accounts(): List<K9Account>
-}
 
 /** Index file next to the K-9 databases, but a separate file. */
 private const val INDEX_DATABASE = "novabird-search.db"

@@ -3,7 +3,6 @@ src/db/capabilities.js
 src/db/health.js
 src/db/repository.js
 src/db/schema.js
-src/indexer/indexer.js
 src/indexer/record.js
 src/indexer/terms.js
 src/parser/chips.js

@@ -5,6 +5,9 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import java.io.File
+import org.novabird.feature.search.K9Account
+import org.novabird.feature.search.K9MailDatabase
+import org.novabird.feature.search.K9MailStore
 
 /**
  * [K9MailStore] for the K-9 databases of the app: `<accountUuid>.db` with attachments in `<accountUuid>.db_att`

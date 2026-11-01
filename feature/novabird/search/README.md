@@ -7,7 +7,7 @@ Die Suche von NovaBird-Search (PC) auf Android: Alltagssprache („von Petra im 
 
 | Modul | Inhalt |
 |---|---|
-| `:feature:novabird:search:api` | `NovaBirdSearch`, `NovaBirdSearchIndexer`, Ergebnis-Typen, `MessageLocation` |
+| `:feature:novabird:search:api` | `NovaBirdSearch`, `NovaBirdSearchIndexer`, Ergebnis-Typen, `MessageLocation`, `K9AccountProvider`, `K9MailStore` |
 | `:feature:novabird:search:internal` | alles andere (KMP: `commonMain` + `androidMain`, Tests als `jvmTest`) |
 
 - **Index:** eigene Datei `novabird-search.db` (neben den K-9-Datenbanken), geöffnet mit `androidx.sqlite`
@@ -38,7 +38,8 @@ single<K9AccountProvider> { K9AccountProvider { /* Konten: UUID + eigene Adresse
 
 ## Suchkern aktualisieren
 
-`novabird-search/db/src` nach `composeResources/files/novabird-search/src` kopieren, `manifest.txt` neu erzeugen
+`novabird-search/db/src` nach `composeResources/files/novabird-search/src` kopieren (ohne `indexer/indexer.js`, der nur
+nach `internal/src/jvmTest/resources/novabird-search/src/indexer/` kommt), `manifest.txt` neu erzeugen
 (`find src -name "*.js" | sort > manifest.txt`), `novabird-search/db/tests` nach
 `internal/src/jvmTest/resources/novabird-search/tests` kopieren, Commit in beiden `SOURCE.md` eintragen, dann
 `./gradlew :feature:novabird:search:internal:jvmTest`. Die vitest-Dateien laufen unverändert (Ersatz für `vitest`,

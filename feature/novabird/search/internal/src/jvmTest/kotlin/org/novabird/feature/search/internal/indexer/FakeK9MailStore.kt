@@ -7,6 +7,9 @@ import androidx.sqlite.SQLITE_DATA_TEXT
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
+import org.novabird.feature.search.K9Account
+import org.novabird.feature.search.K9MailDatabase
+import org.novabird.feature.search.K9MailStore
 
 /**
  * K-9 database for tests: the relevant tables with the columns of `StoreSchemaDefinition` (schema 91), in memory.

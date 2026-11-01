@@ -1,4 +1,4 @@
-package org.novabird.feature.search.internal.indexer
+package org.novabird.feature.search
 
 /**
  * Read-only access to the K-9 message database of one account (`<accountUuid>.db`, tables `messages`,
@@ -21,10 +21,15 @@ data class K9Account(
     val emails: List<String>,
 )
 
-/** Lists the accounts and opens their K-9 databases. Bound in the app module. */
+/** Lists the accounts and opens their K-9 databases. */
 interface K9MailStore {
     fun accounts(): List<K9Account>
 
     /** Opens the database of [accountUuid] read-only, or `null` if there is none (yet). */
     fun open(accountUuid: String): K9MailDatabase?
+}
+
+/** Accounts to index; bound by the app module (e.g. from the account manager). */
+fun interface K9AccountProvider {
+    fun accounts(): List<K9Account>
 }

@@ -12,6 +12,7 @@ import kotlin.test.Test
 import kotlin.time.measureTime
 import kotlinx.coroutines.runBlocking
 import net.thunderbird.core.logging.testing.TestLogger
+import org.novabird.feature.search.K9Account
 import org.novabird.feature.search.MessageLocation
 import org.novabird.feature.search.SearchOptions
 import org.novabird.feature.search.SearchResult

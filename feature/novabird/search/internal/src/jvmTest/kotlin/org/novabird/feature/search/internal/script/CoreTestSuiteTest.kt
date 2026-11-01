@@ -106,8 +106,11 @@ class CoreTestSuiteTest {
         private const val TEST_ROOT = "novabird-search/tests"
         private const val SHIM_ROOT = "novabird-test"
 
+        // indexer/indexer.js (Thunderbird variant) is not shipped in the app, only needed by indexer.test.js
+        private const val TEST_ONLY_CORE = "novabird-search/src"
+
         private val testSources: Map<String, String> by lazy {
-            listOf(TEST_ROOT, SHIM_ROOT).flatMap { root ->
+            listOf(TEST_ROOT, SHIM_ROOT, TEST_ONLY_CORE).flatMap { root ->
                 val dir = File(checkNotNull(CoreTestSuiteTest::class.java.classLoader.getResource(root)).toURI())
                 dir.walkTopDown().filter { it.isFile }.map { file ->
                     "$root/" + file.relativeTo(dir).invariantSeparatorsPath to file.readText()
