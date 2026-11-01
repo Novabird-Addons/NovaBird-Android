@@ -156,6 +156,8 @@ dependencies {
     implementation(projects.feature.thundermail.k9mail)
 
     implementation(projects.feature.novabird.branding)
+    implementation(projects.feature.novabird.search.api)
+    implementation(projects.feature.novabird.search.internal)
     implementation(projects.feature.novabird.sync)
 
     implementation(libs.androidx.work.runtime)

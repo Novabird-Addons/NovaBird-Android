@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,18 +51,27 @@ import org.novabird.feature.search.internal.ui.NovaBirdSearchContract.State
  * Entry point of the NovaBird search screen; the app module shows it and opens hits in the existing message view.
  *
  * @param onOpenMessage called with the K-9 location of a tapped hit.
+ * @param initialQuery query to search for when the screen opens (e.g. typed into the search field of the message
+ *   list), unless the screen already has a query.
  */
 @Composable
 fun NovaBirdSearchScreen(
     onOpenMessage: (MessageLocation) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    initialQuery: String? = null,
 ) {
     val viewModel: NovaBirdSearchViewModel = koinViewModel()
     val (state, dispatch) = viewModel.observe { effect ->
         when (effect) {
             is Effect.OpenMessage -> onOpenMessage(effect.location)
             Effect.NavigateBack -> onBack()
+        }
+    }
+    LaunchedEffect(initialQuery) {
+        if (!initialQuery.isNullOrBlank() && state.value.query.isEmpty()) {
+            dispatch(Event.QueryChanged(initialQuery))
+            dispatch(Event.Submit)
         }
     }
     NovaBirdSearchContent(state = state.value, onEvent = dispatch, modifier = modifier)

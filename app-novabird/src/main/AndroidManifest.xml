@@ -23,6 +23,27 @@
                 />
         </activity>
 
+        <!-- NovaBird search replaces the K-9 search results screen. The search field of the message list starts
+             com.fsck.k9.activity.MessageSearchActivity explicitly; the alias with that name opens the NovaBird search
+             instead, so no upstream code needs to change. -->
+        <activity
+            android:name="com.fsck.k9.activity.MessageSearchActivity"
+            tools:node="remove"
+            />
+
+        <activity
+            android:name="org.novabird.mail.search.NovaBirdSearchActivity"
+            android:exported="false"
+            android:label="@string/search_action"
+            android:windowSoftInputMode="adjustResize"
+            />
+
+        <activity-alias
+            android:name="com.fsck.k9.activity.MessageSearchActivity"
+            android:exported="false"
+            android:targetActivity="org.novabird.mail.search.NovaBirdSearchActivity"
+            />
+
         <activity
             android:name="com.fsck.k9.ui.settings.account.OpenPgpAppSelectDialog"
             android:configChanges="locale"

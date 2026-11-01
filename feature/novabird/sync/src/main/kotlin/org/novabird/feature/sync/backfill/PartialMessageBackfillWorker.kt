@@ -9,6 +9,13 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 /**
+ * Notified after partially downloaded messages were completed, e.g. to update a search index. Optional Koin binding.
+ */
+fun interface PartialMessageBackfillListener {
+    fun onMessagesCompleted(count: Int)
+}
+
+/**
  * Runs [PartialMessageBackfiller]. Scheduled with the constraint "unmetered network" by [PartialMessageBackfillScheduler].
  *
  * Created by WorkManager's default factory (`K9WorkerFactory` only handles classes in `com.fsck.k9`).
@@ -21,6 +28,10 @@ class PartialMessageBackfillWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val result = backfiller.run(isStopped = { isStopped })
+
+        if (result.downloaded > 0) {
+            getKoin().getOrNull<PartialMessageBackfillListener>()?.onMessagesCompleted(result.downloaded)
+        }
 
         if (result.stopped) Result.retry() else Result.success()
     }

@@ -15,6 +15,7 @@ import org.novabird.mail.dev.developmentModuleAdditions
 import org.novabird.mail.feature.featureModule
 import org.novabird.mail.featureflag.novaBirdFeatureFlagModule
 import org.novabird.mail.provider.providerModule
+import org.novabird.mail.search.novaBirdSearchAppModule
 import org.novabird.mail.widget.provider.MessageListWidgetProvider
 import org.novabird.mail.widget.provider.UnreadWidgetProvider
 import org.novabird.mail.widget.widgetModule
@@ -29,6 +30,7 @@ val appModule = module {
 
     includes(novaBirdSyncModule)
     includes(novaBirdAccountModule)
+    includes(novaBirdSearchAppModule)
 
     single(named("ClientInfoAppName")) { BuildConfig.CLIENT_INFO_APP_NAME }
     single(named("ClientInfoAppVersion")) { BuildConfig.VERSION_NAME }

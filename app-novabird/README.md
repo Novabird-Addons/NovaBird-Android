@@ -10,6 +10,10 @@ and uses its own application ID `org.novabird.mail` (debug: `org.novabird.mail.d
 - New accounts sync all messages of the last year (`NovaBirdAccountDefaultsProvider`).
 - The Compose screens (welcome, account setup) show the NovaBird logo via `NovaBirdBoltTheme` from
   `feature:novabird:branding`.
+- The search field of the message list opens the NovaBird search (`feature:novabird:search`) instead of the K-9
+  search results: the manifest replaces `com.fsck.k9.activity.MessageSearchActivity` with an activity-alias to
+  `NovaBirdSearchActivity`. Hits open in the existing message view. Server-side (remote) search is not available.
+- The search index is updated after each folder sync, after messages were completed on Wi-Fi and every 6 hours.
 - Sync limits for mobile data and Wi-Fi and completing partially downloaded messages on Wi-Fi come from
   `feature:novabird:sync`. The settings screen is reachable via a launcher shortcut (long-press the app icon) and via
   the system's app info screen.
