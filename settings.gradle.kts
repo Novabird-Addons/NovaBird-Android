@@ -317,5 +317,6 @@ include(":feature:changelog:internal")
 // NovaBird
 include(
     ":app-novabird",
+    ":feature:novabird:branding",
     ":feature:novabird:sync",
 )

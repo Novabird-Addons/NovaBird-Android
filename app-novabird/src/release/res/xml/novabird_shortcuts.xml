@@ -3,7 +3,7 @@
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:enabled="true"
-        android:icon="@drawable/ic_app_logo_monochrome"
+        android:icon="@drawable/ic_app_logo"
         android:shortcutId="novabird_sync_limits"
         android:shortcutShortLabel="@string/novabird_shortcut_sync_limits_short"
         >
