@@ -140,6 +140,7 @@ dependencies {
     implementation(projects.core.featureflag)
 
     implementation(projects.feature.account.settings.impl)
+    implementation(projects.feature.account.setup)
     implementation(projects.feature.mail.message.list.api)
     implementation(projects.feature.mail.message.list.internal)
     implementation(projects.feature.mail.message.reader.api)
