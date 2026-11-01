@@ -45,11 +45,15 @@ data class AiSettingsUiState(
 )
 
 /** What the settings screen can do (implemented by [AiSettingsViewModel]). */
+@Suppress("TooManyFunctions") // one function per control of the settings screen
 internal interface AiSettingsActions {
     fun checkHelper()
     fun pair(address: String, code: String)
     fun unpair()
     fun setHelperSearch(enabled: Boolean)
+    fun setHelperChat(enabled: Boolean)
+    fun setHelperSpeech(enabled: Boolean)
+    fun setSpeechRate(rate: Float)
     fun setLocalEnabled(enabled: Boolean)
     fun setKeepLoaded(keep: KeepLoaded)
     fun setThreads(threads: Int)
@@ -146,6 +150,12 @@ internal class AiSettingsViewModel(
     }
 
     override fun setHelperSearch(enabled: Boolean) = repository.update { it.copy(helperSearch = enabled) }
+
+    override fun setHelperChat(enabled: Boolean) = repository.update { it.copy(helperChat = enabled) }
+
+    override fun setHelperSpeech(enabled: Boolean) = repository.update { it.copy(helperSpeech = enabled) }
+
+    override fun setSpeechRate(rate: Float) = repository.update { it.copy(speechRate = rate) }
 
     override fun setLocalEnabled(enabled: Boolean) {
         repository.update { it.copy(localEnabled = enabled) }

@@ -42,7 +42,12 @@ class HelperClientTest {
         val log = File(System.getProperty("novabird.testhelper.log"))
         assumeTrue("test Helper not running", log.isFile)
         val start = Json.parseToJsonElement(log.readLines().first()).jsonObject
-        val url = "http://127.0.0.1:${start.getValue("port").jsonPrimitive.content}"
+        val port = start.getValue("port").jsonPrimitive.content.toInt()
+        val running = runCatching {
+            java.net.Socket().use { it.connect(java.net.InetSocketAddress("127.0.0.1", port), CONNECT_TIMEOUT_MS) }
+        }.isSuccess
+        assumeTrue("test Helper not running", running)
+        val url = "http://127.0.0.1:$port"
         return HelperClient(
             url,
             HelperClient.deriveKey(start.getValue("code").jsonPrimitive.content),
@@ -100,5 +105,9 @@ class HelperClientTest {
         val (found, shared) = client.lookup(keys + VectorKey("<missing@novabird>", "0000000000000000"))
         assertThat(found).isEqualTo(texts.indices.toList())
         assertThat(cosine(shared[0], vectors[0])).isGreaterThan(0.9999)
+    }
+
+    private companion object {
+        const val CONNECT_TIMEOUT_MS = 500
     }
 }

@@ -13,7 +13,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Settings for the semantic search and AI functions: NovaBird Helper (recommended, GPU on the PC) and computing on
- * the phone (model download, keep loaded, threads). Read-aloud and summary are shown greyed until they exist.
+ * the phone (model download, keep loaded, threads), summary and reading aloud.
  */
 class AiSettingsActivity : BaseActivity() {
     private val themeProvider: FeatureThemeProvider by inject()

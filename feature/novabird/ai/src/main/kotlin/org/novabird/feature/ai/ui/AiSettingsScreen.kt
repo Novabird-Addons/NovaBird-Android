@@ -1,5 +1,6 @@
 package org.novabird.feature.ai.ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import java.util.Locale
 import net.thunderbird.components.ui.bolt.atom.DividerHorizontal
 import net.thunderbird.components.ui.bolt.atom.Switch
 import net.thunderbird.components.ui.bolt.atom.button.ButtonFilled
@@ -36,6 +38,7 @@ import net.thunderbird.components.ui.bolt.organism.TopAppBarWithBackButton
 import net.thunderbird.components.ui.bolt.template.Scaffold
 import net.thunderbird.components.ui.bolt.theme.BoltTheme
 import org.novabird.feature.ai.R
+import org.novabird.feature.ai.settings.AiSettings
 import org.novabird.feature.vectors.HelperClient
 
 @Composable
@@ -94,21 +97,42 @@ private fun HelperSection(state: AiSettingsUiState, actions: AiSettingsActions) 
             enabled = paired,
             onChange = { actions.setHelperSearch(it) },
         )
-        // not built yet: the Helper offers "tts" and "chat", the app doesn't use them so far
-        SwitchRow(
-            title = stringResource(R.string.novabird_ai_helper_tts),
-            note = stringResource(R.string.novabird_ai_later),
-            checked = false,
-            enabled = false,
-            onChange = {},
-        )
         SwitchRow(
             title = stringResource(R.string.novabird_ai_helper_summary),
-            note = stringResource(R.string.novabird_ai_later),
-            checked = false,
-            enabled = false,
-            onChange = {},
+            note = stringResource(R.string.novabird_ai_helper_summary_note),
+            checked = paired && state.settings.helperChat,
+            enabled = paired,
+            onChange = { actions.setHelperChat(it) },
         )
+        SwitchRow(
+            title = stringResource(R.string.novabird_ai_helper_tts),
+            note = stringResource(R.string.novabird_ai_helper_tts_note),
+            checked = paired && state.settings.helperSpeech,
+            enabled = paired,
+            onChange = { actions.setHelperSpeech(it) },
+        )
+        SpeechRateRow(state.settings.speechRate, actions::setSpeechRate)
+    }
+}
+
+// reading speed for both voices (the Helper's and the phone's), like the desktop
+@Composable
+private fun SpeechRateRow(rate: Float, onChange: (Float) -> Unit) {
+    TextBodyLarge(text = stringResource(R.string.novabird_ai_speech_rate))
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(BoltTheme.spacings.half),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
+        for (r in AiSettings.SPEECH_RATES) {
+            val label = String.format(Locale.getDefault(), "%.2f", r).trimEnd('0').trimEnd(',', '.') + "×"
+            if (r ==
+                rate
+            ) {
+                ButtonFilled(text = label, onClick = {})
+            } else {
+                ButtonOutlined(text = label, onClick = { onChange(r) })
+            }
+        }
     }
 }
 

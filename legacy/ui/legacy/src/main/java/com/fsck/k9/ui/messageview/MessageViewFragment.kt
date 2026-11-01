@@ -101,6 +101,7 @@ import net.thunderbird.feature.mail.message.reader.api.ui.MessageReaderViewContr
 import net.thunderbird.feature.mail.message.reader.api.ui.MessageReaderViewContract.Event
 import net.thunderbird.feature.mail.message.reader.api.ui.bridge.MessageReaderBottomSheet
 import net.thunderbird.legacy.logging.Log
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
@@ -168,6 +169,9 @@ class MessageViewFragment :
 
     private lateinit var account: LegacyAccountDto
     lateinit var messageReference: MessageReference
+
+    // NovaBird: extra overflow entries bound by the app (MessageViewExtraAction)
+    private val extraActions: List<MessageViewExtraAction> by lazy { getKoin().getAll() }
     private var showAccountIndicator: Boolean = true
 
     private var currentAttachmentViewInfo: AttachmentViewInfo? = null
@@ -311,6 +315,10 @@ class MessageViewFragment :
                 override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                     if (!isActive) return
                     menuInflater.inflate(R.menu.message_view_option_menu, menu)
+                    extraActions.forEachIndexed { i, action ->
+                        menu.add(Menu.NONE, EXTRA_ACTION_ID + i, Menu.CATEGORY_SECONDARY, action.label)
+                            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+                    }
                 }
 
                 override fun onPrepareMenu(menu: Menu) {
@@ -320,7 +328,9 @@ class MessageViewFragment :
 
                 override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                     if (!isActive) return false
-                    return selectMenuItem(menuItem)
+                    val extraAction = extraActions.getOrNull(menuItem.itemId - EXTRA_ACTION_ID)
+                    extraAction?.onClick?.invoke(requireActivity(), messageReference)
+                    return extraAction != null || selectMenuItem(menuItem)
                 }
             },
             viewLifecycleOwner,
@@ -1278,6 +1288,8 @@ class MessageViewFragment :
     }
 
     companion object {
+        // NovaBird: menu ids of the extra entries (MessageViewExtraAction)
+        private const val EXTRA_ACTION_ID = 0x4E42_0000
         const val REQUEST_MASK_LOADER_HELPER = 1 shl 8
         const val REQUEST_MASK_CRYPTO_PRESENTER = 1 shl 9
         const val PROGRESS_THRESHOLD_MILLIS = 500 * 1000

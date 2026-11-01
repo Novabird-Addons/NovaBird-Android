@@ -11,5 +11,17 @@
             android:windowSoftInputMode="adjustResize"
             />
 
+        <activity
+            android:name="org.novabird.feature.ai.ui.AiMailActivity"
+            android:exported="false"
+            android:label="@string/novabird_ai_mail_title"
+            />
+
+        <activity
+            android:name="org.novabird.feature.ai.ui.AiNewsActivity"
+            android:exported="false"
+            android:label="@string/novabird_ai_news_title"
+            />
+
     </application>
 </manifest>

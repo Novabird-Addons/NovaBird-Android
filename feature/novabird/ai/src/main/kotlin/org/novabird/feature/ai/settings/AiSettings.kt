@@ -32,6 +32,15 @@ data class AiSettings(
     val helperSearch: Boolean = true,
     /** Client id for the Helper (one per installation). */
     val clientId: String = "",
+    /** Summary and "Was gibt's Neues" with the Helper's language model. */
+    val helperChat: Boolean = true,
+    /** Read aloud with the Helper's voice when it is reachable; otherwise (or off) with the phone's voice. */
+    val helperSpeech: Boolean = true,
+    /** Reading speed, pitch stays (one of [SPEECH_RATES], like the desktop). */
+    val speechRate: Float = 1f,
+    /** Last choice in "Was gibt's Neues": period in hours and only unread mails. */
+    val newsHours: Int = 24,
+    val newsUnreadOnly: Boolean = true,
 ) {
     fun effectiveThreads(cores: Int = Runtime.getRuntime().availableProcessors()) =
         if (threads > 0) threads.coerceAtMost(cores) else defaultThreads(cores)
@@ -39,6 +48,9 @@ data class AiSettings(
     companion object {
         /** Half of the cores: 8 threads 0.8 s, 4 threads 1.15 s per 512 tokens on a Dimensity 9400 (8 cores). */
         fun defaultThreads(cores: Int) = (cores / 2).coerceAtLeast(1)
+
+        val SPEECH_RATES = listOf(0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.35f, 1.5f)
+        val NEWS_HOURS = listOf(12, 24, 72, 168)
     }
 }
 
@@ -64,6 +76,11 @@ internal class SharedPreferencesAiSettingsRepository(context: Context) : AiSetti
             putString(KEY_HELPER_ADDRESS, s.helperAddress)
             putBoolean(KEY_HELPER_SEARCH, s.helperSearch)
             putString(KEY_CLIENT_ID, s.clientId)
+            putBoolean(KEY_HELPER_CHAT, s.helperChat)
+            putBoolean(KEY_HELPER_SPEECH, s.helperSpeech)
+            putFloat(KEY_SPEECH_RATE, s.speechRate)
+            putInt(KEY_NEWS_HOURS, s.newsHours)
+            putBoolean(KEY_NEWS_UNREAD, s.newsUnreadOnly)
         }
         mutableSettings.value = s
     }
@@ -82,6 +99,12 @@ internal class SharedPreferencesAiSettingsRepository(context: Context) : AiSetti
             helperAddress = preferences.getString(KEY_HELPER_ADDRESS, null).orEmpty(),
             helperSearch = preferences.getBoolean(KEY_HELPER_SEARCH, true),
             clientId = clientId,
+            helperChat = preferences.getBoolean(KEY_HELPER_CHAT, true),
+            helperSpeech = preferences.getBoolean(KEY_HELPER_SPEECH, true),
+            speechRate = preferences.getFloat(KEY_SPEECH_RATE, 1f).takeIf { it in AiSettings.SPEECH_RATES } ?: 1f,
+            newsHours = preferences.getInt(KEY_NEWS_HOURS, DEFAULT_NEWS_HOURS).takeIf { it in AiSettings.NEWS_HOURS }
+                ?: DEFAULT_NEWS_HOURS,
+            newsUnreadOnly = preferences.getBoolean(KEY_NEWS_UNREAD, true),
         )
     }
 
@@ -93,6 +116,12 @@ internal class SharedPreferencesAiSettingsRepository(context: Context) : AiSetti
         const val KEY_HELPER_ADDRESS = "helperAddress"
         const val KEY_HELPER_SEARCH = "helperSearch"
         const val KEY_CLIENT_ID = "clientId"
+        const val KEY_HELPER_CHAT = "helperChat"
+        const val KEY_HELPER_SPEECH = "helperSpeech"
+        const val KEY_SPEECH_RATE = "speechRate"
+        const val KEY_NEWS_HOURS = "newsHours"
+        const val KEY_NEWS_UNREAD = "newsUnreadOnly"
+        const val DEFAULT_NEWS_HOURS = 24
         const val CLIENT_ID_BYTES = 6
     }
 }

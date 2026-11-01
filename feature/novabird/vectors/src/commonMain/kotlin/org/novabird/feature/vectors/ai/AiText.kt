@@ -138,11 +138,17 @@ object AiText {
      * Mail text for the language model like ai/ai.js mailText(): with [onlyNew] without the quoted history (unless the
      * subject says it is forwarded), tidy white space, at most [limit] characters.
      */
-    fun mailText(plain: String, subject: String, onlyNew: Boolean = true, limit: Int = MAX_CHARS): String {
+    fun mailText(
+        plain: String,
+        subject: String,
+        onlyNew: Boolean = true,
+        limit: Int = MAX_CHARS,
+        newPart: String = plain,
+    ): String {
         var text = plain.trim()
         if (onlyNew && !FORWARD_SUBJECT.containsMatchIn(subject)) {
             val whole = text.replace("\r", "")
-            val fresh = stripQuotedText(whole)
+            val fresh = stripQuotedText(newPart.trim().replace("\r", ""))
             if (fresh.length >= 30 && fresh.length < whole.trim().length - 20) text = fresh
         }
         text = text.replace("\r", "").replace(TRAILING_SPACE, "\n").replace(MANY_NEWLINES, "\n\n").trim()

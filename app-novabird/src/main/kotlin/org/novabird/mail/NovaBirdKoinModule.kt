@@ -11,6 +11,7 @@ import org.koin.dsl.module
 import org.novabird.feature.ai.novaBirdAiModule
 import org.novabird.feature.sync.novaBirdSyncModule
 import org.novabird.mail.account.novaBirdAccountModule
+import org.novabird.mail.ai.novaBirdAiAppModule
 import org.novabird.mail.auth.NbOAuthConfigurationFactory
 import org.novabird.mail.dev.developmentModuleAdditions
 import org.novabird.mail.feature.featureModule
@@ -33,6 +34,7 @@ val appModule = module {
     includes(novaBirdAccountModule)
     includes(novaBirdSearchAppModule)
     includes(novaBirdAiModule)
+    includes(novaBirdAiAppModule)
     includes(novaBirdDrawerModule)
 
     single(named("ClientInfoAppName")) { BuildConfig.CLIENT_INFO_APP_NAME }
