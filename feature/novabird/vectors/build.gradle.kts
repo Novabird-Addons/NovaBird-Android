@@ -21,6 +21,9 @@ codeCoverage {
 // Tokenizer test reads tokenizer.json of the downloaded model (override with -Pnovabird.model.dir)
 val modelDir = providers.gradleProperty("novabird.model.dir")
     .orElse(layout.projectDirectory.dir("../../../../tools/models/jina-de").asFile.absolutePath)
+val testHelperLog = layout.projectDirectory.file("../../../../tools/testhelper/out.log").asFile.absolutePath
 tasks.withType<Test>().configureEach {
     systemProperty("novabird.model.dir", modelDir.get())
+    systemProperty("novabird.testhelper.log", testHelperLog)
+    testLogging.showStandardStreams = true
 }

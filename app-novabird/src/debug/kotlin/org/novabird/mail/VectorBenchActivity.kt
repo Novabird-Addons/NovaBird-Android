@@ -18,6 +18,7 @@ import kotlinx.serialization.json.long
 import org.novabird.feature.vectors.BpeTokenizer
 import org.novabird.feature.vectors.EmbedDevice
 import org.novabird.feature.vectors.EmbeddingModel
+import org.novabird.feature.vectors.HelperClient
 import org.novabird.feature.vectors.OnnxEmbedder
 import org.novabird.feature.vectors.cosine
 
@@ -68,7 +69,7 @@ class VectorBenchActivity : Activity() {
             val model = File(dir, EmbeddingModel.JINA_DE.onnxPath)
             val vectors = HashMap<String, List<FloatArray>>()
             for (config in configs) {
-                vectors[config] = bench(config, model, cases, ids)
+                vectors[config] = if (config == "helper") benchHelper(cases) else bench(config, model, cases, ids)
             }
             // Deviation between configs (e.g. CPU vs NNAPI)
             val names = vectors.keys.toList()
@@ -113,6 +114,37 @@ class VectorBenchActivity : Activity() {
             )
             return out
         }
+    }
+
+    // Helper in network mode: url and pairing code from the intent (test Helper via adb reverse)
+    private fun benchHelper(cases: List<Case>): List<FloatArray> {
+        val url = intent.getStringExtra("helperUrl") ?: error("helperUrl missing")
+        val code = intent.getStringExtra("helperCode") ?: error("helperCode missing")
+        var t = SystemClock.elapsedRealtime()
+        val client = HelperClient(url, code, "phonebench-0001", "Handy-Test")
+        log("helper: key derivation ${SystemClock.elapsedRealtime() - t} ms")
+        t = SystemClock.elapsedRealtime()
+        val info = client.hello()
+        log("helper: hello ${SystemClock.elapsedRealtime() - t} ms, ${info.deviceName}, model match ${info.modelMatch}")
+        val queries = listOf("Rechnung Heizung", "Handwerker Küche", "Urlaub 2027", "Meeting Dienstag")
+        val qTimes = queries.map { q ->
+            t = SystemClock.elapsedRealtime()
+            client.embed(listOf(q), query = true)
+            SystemClock.elapsedRealtime() - t
+        }
+        log("helper: query ms ${qTimes.joinToString(",")}")
+        t = SystemClock.elapsedRealtime()
+        val out = client.embed(cases.map { it.text })
+        log("helper: ${cases.size} texts in one call ${SystemClock.elapsedRealtime() - t} ms")
+        // Throughput: 64 long texts (512 tokens each) per call, 4 calls
+        val long = List(HelperClient.MAX_TEXTS) { i -> "$i " + cases.last().text }
+        t = SystemClock.elapsedRealtime()
+        repeat(4) { client.embed(long) }
+        val ms = SystemClock.elapsedRealtime() - t
+        log("helper: 256 texts × 512 tokens in $ms ms = ${"%.1f".format(256_000.0 / ms)} texts/s")
+        val cos = cases.indices.map { cosine(out[it], cases[it].vector) }
+        log("helper: cos vs PC CPU min ${"%.6f".format(cos.min())} mean ${"%.6f".format(cos.average())}")
+        return out
     }
 
     // cpu4, cpu8, xnn4, nnapi512, nnapinocpu512, webgpu0 (dynamic shapes), webgpu512
