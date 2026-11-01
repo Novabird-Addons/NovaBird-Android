@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="novabird_ai_settings_title">Semantic search and AI</string>
+    <string name="novabird_ai_cancel">Cancel</string>
+    <string name="novabird_ai_later">Coming later</string>
+
+    <string name="novabird_ai_helper_title">NovaBird Helper (recommended)</string>
+    <string name="novabird_ai_helper_description">The Helper computes on your PC\'s graphics card, about 50 times faster than the phone, and shares the vectors with all phones of your group. Create a separate group for the phones in the Helper.</string>
+    <string name="novabird_ai_helper_address">PC address (e.g. 192.168.1.20)</string>
+    <string name="novabird_ai_helper_code">Pairing code of the phone group (20 characters)</string>
+    <string name="novabird_ai_helper_pair">Pair</string>
+    <string name="novabird_ai_helper_pairing">Pairing …</string>
+    <string name="novabird_ai_helper_check">Check status</string>
+    <string name="novabird_ai_helper_unpair">Unpair</string>
+    <string name="novabird_ai_helper_checking">Checking connection …</string>
+    <string name="novabird_ai_helper_connected">Connected: %1$s</string>
+    <string name="novabird_ai_helper_group">, group “%1$s”</string>
+    <string name="novabird_ai_helper_search">Search via the Helper</string>
+    <string name="novabird_ai_helper_tts">Read aloud</string>
+    <string name="novabird_ai_helper_summary">AI summary</string>
+    <string name="novabird_ai_error_code">The pairing code doesn\'t match</string>
+    <string name="novabird_ai_error_model">The Helper uses a different model</string>
+    <string name="novabird_ai_error_unreachable">Helper not reachable (same Wi-Fi? correct address?)</string>
+
+    <string name="novabird_ai_local_title">Compute on the phone</string>
+    <string name="novabird_ai_local_enable">Compute vectors on the phone</string>
+    <string name="novabird_ai_local_with_helper">While a Helper is paired, it computes the vectors. The phone then only computes search queries when the Helper is not reachable (e.g. on the go).</string>
+    <string name="novabird_ai_local_hint_title">Compute on the phone?</string>
+    <string name="novabird_ai_local_hint_text">Computing the vectors can take a long time (about half a second per message) – best while charging. The model needs 320 MB of storage and about 1.2 GB of memory while loaded.</string>
+    <string name="novabird_ai_local_hint_confirm">Turn on</string>
+    <string name="novabird_ai_local_keep">Keep model loaded</string>
+    <string name="novabird_ai_keep_always">Always (while the app runs)</string>
+    <string name="novabird_ai_keep_with_app">While NovaBird is open</string>
+    <string name="novabird_ai_keep_minutes">%1$d minutes after last use</string>
+    <string name="novabird_ai_local_threads">CPU threads (%1$d cores)</string>
+    <string name="novabird_ai_local_threads_auto">Automatic (%1$d)</string>
+    <string name="novabird_ai_local_gpu">Graphics card (GPU)</string>
+    <string name="novabird_ai_local_gpu_note">Not available on this device</string>
+
+    <string name="novabird_ai_model_missing">Model not downloaded (320 MB)</string>
+    <string name="novabird_ai_model_ready">Model ready (320 MB)</string>
+    <string name="novabird_ai_model_running">Downloading model: %1$d %%</string>
+    <string name="novabird_ai_model_wait_wifi">Model: waiting for Wi-Fi</string>
+    <string name="novabird_ai_model_wait_network">Model: waiting for a connection</string>
+    <string name="novabird_ai_model_failed">Download failed</string>
+    <string name="novabird_ai_model_download">Download</string>
+    <string name="novabird_ai_model_delete">Delete</string>
+    <string name="novabird_ai_download_mobile_title">Download over mobile data?</string>
+    <string name="novabird_ai_download_mobile_text">The model is 320 MB. You are not on Wi-Fi right now.</string>
+    <string name="novabird_ai_download_mobile_confirm">Download anyway</string>
+    <string name="novabird_ai_download_wifi_only">Wait for Wi-Fi</string>
+
+    <string name="novabird_ai_index_title">Status</string>
+    <string name="novabird_ai_index_stats">Vectors for %1$d of %2$d messages, %3$d waiting</string>
+    <string name="novabird_ai_index_refresh">Update now</string>
+</resources>

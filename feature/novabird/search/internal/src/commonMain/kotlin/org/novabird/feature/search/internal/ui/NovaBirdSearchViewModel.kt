@@ -68,6 +68,16 @@ internal class NovaBirdSearchViewModel(
                     hasError = result.isFailure,
                 )
             }
+            // similar messages (semantic search) after the keyword hits are shown, so typing stays fast
+            val hits = result.getOrNull() ?: return@launch
+            if (hits.isEmptyQuery) return@launch
+            updateState { it.copy(isAddingSimilar = true) }
+            val withSimilar = runCatching { search.addSimilar(state.value.query, hits) }
+            withSimilar.exceptionOrNull()?.let { e ->
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                logger.warn(TAG) { "Semantic search failed: ${e::class.simpleName}" }
+            }
+            updateState { it.copy(result = withSimilar.getOrNull() ?: it.result, isAddingSimilar = false) }
         }
     }
 

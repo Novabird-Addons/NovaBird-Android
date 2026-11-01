@@ -121,7 +121,7 @@ class VectorBenchActivity : Activity() {
         val url = intent.getStringExtra("helperUrl") ?: error("helperUrl missing")
         val code = intent.getStringExtra("helperCode") ?: error("helperCode missing")
         var t = SystemClock.elapsedRealtime()
-        val client = HelperClient(url, code, "phonebench-0001", "Handy-Test")
+        val client = HelperClient(url, HelperClient.deriveKey(code), "phonebench-0001", "Handy-Test")
         log("helper: key derivation ${SystemClock.elapsedRealtime() - t} ms")
         t = SystemClock.elapsedRealtime()
         val info = client.hello()

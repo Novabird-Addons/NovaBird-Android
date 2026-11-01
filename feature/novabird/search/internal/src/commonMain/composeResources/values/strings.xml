@@ -6,4 +6,7 @@
     <string name="novabird_search_no_results">No messages found</string>
     <string name="novabird_search_error">Search is not available right now</string>
     <string name="novabird_search_remove_chip">Remove %1$s</string>
+    <string name="novabird_search_similar_busy">Looking for similar messages …</string>
+    <string name="novabird_search_similar_count">+%1$d similar (by meaning)</string>
+    <string name="novabird_search_similar_label">similar</string>
 </resources>

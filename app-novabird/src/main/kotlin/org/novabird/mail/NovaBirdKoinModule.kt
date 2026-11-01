@@ -8,6 +8,7 @@ import net.thunderbird.app.common.appCommonModule
 import net.thunderbird.core.common.oauth.OAuthConfigurationFactory
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import org.novabird.feature.ai.novaBirdAiModule
 import org.novabird.feature.sync.novaBirdSyncModule
 import org.novabird.mail.account.novaBirdAccountModule
 import org.novabird.mail.auth.NbOAuthConfigurationFactory
@@ -31,6 +32,7 @@ val appModule = module {
     includes(novaBirdSyncModule)
     includes(novaBirdAccountModule)
     includes(novaBirdSearchAppModule)
+    includes(novaBirdAiModule)
 
     single(named("ClientInfoAppName")) { BuildConfig.CLIENT_INFO_APP_NAME }
     single(named("ClientInfoAppVersion")) { BuildConfig.VERSION_NAME }

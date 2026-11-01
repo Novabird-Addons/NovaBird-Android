@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="novabird_ai_settings_title">Vektorsuche und KI</string>
+    <string name="novabird_ai_cancel">Abbrechen</string>
+    <string name="novabird_ai_later">Kommt später</string>
+
+    <string name="novabird_ai_helper_title">NovaBird Helper (empfohlen)</string>
+    <string name="novabird_ai_helper_description">Der Helper rechnet auf der Grafikkarte deines PCs, rund 50-mal schneller als das Handy. Die Vektoren teilt er mit allen Handys deiner Gruppe. Lege im Helper eine eigene Gruppe für die Handys an.</string>
+    <string name="novabird_ai_helper_address">Adresse des PCs (z. B. 192.168.1.20)</string>
+    <string name="novabird_ai_helper_code">Kopplungscode der Handy-Gruppe (20 Zeichen)</string>
+    <string name="novabird_ai_helper_pair">Koppeln</string>
+    <string name="novabird_ai_helper_pairing">Kopple …</string>
+    <string name="novabird_ai_helper_check">Status prüfen</string>
+    <string name="novabird_ai_helper_unpair">Trennen</string>
+    <string name="novabird_ai_helper_checking">Prüfe Verbindung …</string>
+    <string name="novabird_ai_helper_connected">Verbunden: %1$s</string>
+    <string name="novabird_ai_helper_group">, Gruppe „%1$s“</string>
+    <string name="novabird_ai_helper_search">Suche über den Helper</string>
+    <string name="novabird_ai_helper_tts">Vorlesen</string>
+    <string name="novabird_ai_helper_summary">KI-Zusammenfassung</string>
+    <string name="novabird_ai_error_code">Der Kopplungscode passt nicht</string>
+    <string name="novabird_ai_error_model">Der Helper nutzt ein anderes Modell</string>
+    <string name="novabird_ai_error_unreachable">Helper nicht erreichbar (gleiches WLAN? Adresse richtig?)</string>
+
+    <string name="novabird_ai_local_title">Auf dem Handy rechnen</string>
+    <string name="novabird_ai_local_enable">Vektoren auf dem Handy berechnen</string>
+    <string name="novabird_ai_local_with_helper">Solange ein Helper gekoppelt ist, berechnet er die Vektoren. Das Handy rechnet dann nur Suchanfragen, wenn der Helper nicht erreichbar ist (z. B. unterwegs).</string>
+    <string name="novabird_ai_local_hint_title">Auf dem Handy rechnen?</string>
+    <string name="novabird_ai_local_hint_text">Das Berechnen der Vektoren kann lange dauern (rund eine halbe Sekunde je Mail) – am besten am Ladegerät. Das Modell braucht 320 MB Speicher und rund 1,2 GB Arbeitsspeicher, solange es geladen ist.</string>
+    <string name="novabird_ai_local_hint_confirm">Einschalten</string>
+    <string name="novabird_ai_local_keep">Modell geladen halten</string>
+    <string name="novabird_ai_keep_always">Immer (solange die App läuft)</string>
+    <string name="novabird_ai_keep_with_app">Solange NovaBird geöffnet ist</string>
+    <string name="novabird_ai_keep_minutes">%1$d Minuten nach der letzten Nutzung</string>
+    <string name="novabird_ai_local_threads">CPU-Threads (%1$d Kerne)</string>
+    <string name="novabird_ai_local_threads_auto">Automatisch (%1$d)</string>
+    <string name="novabird_ai_local_gpu">Grafikkarte (GPU)</string>
+    <string name="novabird_ai_local_gpu_note">Auf diesem Gerät nicht verfügbar</string>
+
+    <string name="novabird_ai_model_missing">Modell nicht geladen (320 MB)</string>
+    <string name="novabird_ai_model_ready">Modell bereit (320 MB)</string>
+    <string name="novabird_ai_model_running">Modell wird geladen: %1$d %%</string>
+    <string name="novabird_ai_model_wait_wifi">Modell: wartet auf WLAN</string>
+    <string name="novabird_ai_model_wait_network">Modell: wartet auf Verbindung</string>
+    <string name="novabird_ai_model_failed">Laden fehlgeschlagen</string>
+    <string name="novabird_ai_model_download">Laden</string>
+    <string name="novabird_ai_model_delete">Löschen</string>
+    <string name="novabird_ai_download_mobile_title">Über mobile Daten laden?</string>
+    <string name="novabird_ai_download_mobile_text">Das Modell ist 320 MB groß. Du bist gerade nicht im WLAN.</string>
+    <string name="novabird_ai_download_mobile_confirm">Trotzdem laden</string>
+    <string name="novabird_ai_download_wifi_only">Erst im WLAN</string>
+
+    <string name="novabird_ai_index_title">Stand</string>
+    <string name="novabird_ai_index_stats">Vektoren für %1$d von %2$d Mails, %3$d warten</string>
+    <string name="novabird_ai_index_refresh">Jetzt aktualisieren</string>
+</resources>

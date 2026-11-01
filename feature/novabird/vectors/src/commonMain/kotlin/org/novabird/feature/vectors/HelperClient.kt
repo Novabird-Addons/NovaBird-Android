@@ -21,19 +21,17 @@ import kotlinx.serialization.json.put
  */
 class HelperClient(
     url: String,
-    code: String,
+    private val key: ByteArray,
     private val clientId: String,
     private val label: String,
+    private val timeoutMs: Int = DEFAULT_TIMEOUT_MS,
     private val model: EmbeddingModel = EmbeddingModel.JINA_DE,
 ) {
     private val endpoint = url.trim().trimEnd('/') + PATH
-    private val key: ByteArray
 
     init {
-        val normalized = normalizeCode(code)
-        require(normalized.length == CODE_LENGTH) { "code" }
+        require(key.size == KEY_BYTES) { "key" }
         require(CLIENT.matches(clientId)) { "client" }
-        key = HelperCrypto.pbkdf2Sha256(normalized.encodeToByteArray(), SALT.encodeToByteArray(), ITERATIONS, KEY_BYTES)
     }
 
     /** Helper info (device, model state, group); [HelperInfo.modelMatch] is false if the Helper has another model. */
@@ -131,7 +129,7 @@ class HelperClient(
             put("n", Base64.encode(iv))
             put("d", Base64.encode(data))
         }.toString()
-        val (status, text) = HelperHttp.postJson(endpoint, body, TIMEOUT_MS)
+        val (status, text) = HelperHttp.postJson(endpoint, body, timeoutMs)
         if (status == HTTP_FORBIDDEN) throw HelperException("code")
         if (status != HTTP_OK) throw HelperException("http $status")
         val msg = try {
@@ -162,11 +160,34 @@ class HelperClient(
         private const val KEY_BYTES = 32
         private const val CODE_LENGTH = 20
         private const val SALT = "NovaBird-Net-1"
-        private const val TIMEOUT_MS = 60_000
+        const val DEFAULT_TIMEOUT_MS = 60_000
         private const val HTTP_OK = 200
         private const val HTTP_FORBIDDEN = 403
         private const val CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // without 0/O, 1/I
         private val CLIENT = Regex("^[A-Za-z0-9_-]{8,64}$")
+
+        /** Key for [code] (PBKDF2, slow on purpose: about 1.4 s on a phone). Store the key, never the code. */
+        fun deriveKey(code: String): ByteArray {
+            val normalized = normalizeCode(code)
+            require(normalized.length == CODE_LENGTH) { "code" }
+            return HelperCrypto.pbkdf2Sha256(
+                normalized.encodeToByteArray(),
+                SALT.encodeToByteArray(),
+                ITERATIONS,
+                KEY_BYTES,
+            )
+        }
+
+        /** True if [code] has the length of a pairing code after normalizing. */
+        fun isValidCode(code: String) = normalizeCode(code).length == CODE_LENGTH
+
+        /** Address as typed by the user ("192.168.1.5", "pc:47531", "http://…") → base URL with port. */
+        fun baseUrl(address: String): String {
+            val a = address.trim().trimEnd('/')
+            val withScheme = if (a.startsWith("http://") || a.startsWith("https://")) a else "http://$a"
+            val hostPart = withScheme.substringAfter("://")
+            return if (hostPart.contains(':') && !hostPart.startsWith("[")) withScheme else "$withScheme:$DEFAULT_PORT"
+        }
 
         /** Pairing code without spaces, separators and confusable characters, upper case (valid: 20 characters). */
         fun normalizeCode(code: String) = code.uppercase().filter { it in CODE_ALPHABET }

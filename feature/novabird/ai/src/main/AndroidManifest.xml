@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity
+            android:name="org.novabird.feature.ai.ui.AiSettingsActivity"
+            android:exported="true"
+            android:label="@string/novabird_ai_settings_title"
+            android:windowSoftInputMode="adjustResize"
+            />
+
+    </application>
+</manifest>

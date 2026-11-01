@@ -26,6 +26,7 @@ import org.novabird.feature.search.SearchOptions
 import org.novabird.feature.search.SearchResult
 import org.novabird.feature.search.SearchSort
 import org.novabird.feature.search.internal.db.SearchIndexDatabase
+import org.novabird.feature.search.internal.vectors.SemanticIndex
 
 /**
  * [NovaBirdSearch] backed by the NovaBird-Search core (`search.js`) under QuickJS.
@@ -39,6 +40,7 @@ constructor(
     private val core: NovaBirdSearchCore,
     private val ownEmails: () -> List<String> = { emptyList() },
     private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    private val semanticIndex: SemanticIndex? = null,
 ) : NovaBirdSearch {
 
     override suspend fun search(text: String, options: SearchOptions): SearchResult {
@@ -53,6 +55,54 @@ constructor(
     ): SearchResult {
         val json = core.engine().call("searchWithoutChip", previous.parsedQuery, chipId, optionsJson(options))
         return toResult(json)
+    }
+
+    /**
+     * Semantic search as `semanticAugment` in NovaBird-Search: messages similar by meaning are added to the keyword hits
+     * (relevance: both rankings fused like `fuseRanks`, otherwise appended). Only for plain text queries for now: chips like
+     * sender, date or attachment would have to filter the similar messages too.
+     */
+    override suspend fun addSimilar(text: String, result: SearchResult, options: SearchOptions): SearchResult {
+        val index = semanticIndex ?: return result
+        if (result.isEmptyQuery || result.chips.any { it.kind != "text" }) return result
+        val query = SemanticIndex.freeText(text)
+        if (query.length < MIN_SEMANTIC_QUERY) return result
+        val similar = index.similar(query, limit = SEMANTIC_LIMIT * 3) ?: return result
+        if (similar.isEmpty()) return result
+
+        val score = similar.toMap()
+        val have = result.hits.mapTo(HashSet()) { it.headerMessageId }
+        val extraRows = core.engine().withMainDatabase { db ->
+            db.similarRows(similar.map { it.first }.filterNot { it in have }, options.includeTrash)
+        }.sortedByDescending { score[it.text("header_msg_id")] ?: 0.0 }.take(SEMANTIC_LIMIT)
+        if (extraRows.isEmpty()) return result
+        val locations = core.engine().withMainDatabase { db -> db.locationsOf(extraRows) }
+        val extras = extraRows.map { row ->
+            toHit(row, locations[row.text("folder_id") to row.text("header_msg_id")])
+                .copy(score = score[row.text("header_msg_id")], isSimilar = true)
+        }
+        val hits = if (options.sort == SearchSort.RELEVANCE) {
+            val semanticRank = similar.withIndex().associate { (i, s) -> s.first to i }
+            val lexicalRank = result.hits.withIndex().associate { (i, h) -> h.headerMessageId to i }
+            fun fused(id: String) = listOfNotNull(lexicalRank[id], semanticRank[id]).sumOf { 1.0 / (RRF_K + it + 1) }
+            (result.hits + extras).sortedByDescending { fused(it.headerMessageId) }
+        } else {
+            (result.hits + extras).sortedByDescending { it.date }
+        }
+        return result.copy(hits = hits, similarCount = extras.size)
+    }
+
+    private fun SearchIndexDatabase.similarRows(ids: List<String>, includeTrash: Boolean): List<JsonObject> {
+        if (ids.isEmpty()) return emptyList()
+        val skip = if (includeTrash) "" else " AND folder_type NOT IN ('trash', 'junk')"
+        val rows = select(
+            "SELECT ${HIT_COLUMNS.joinToString()} FROM messages WHERE header_msg_id IN (${ids.joinToString(",") {
+                "?"
+            }})$skip",
+            JsonArray(ids.map { JsonPrimitive(it) }),
+        )
+        return rows.map { row -> JsonObject(HIT_COLUMNS.zip(row.jsonArray).toMap()) }
+            .distinctBy { it.text("header_msg_id") }
     }
 
     private fun optionsJson(options: SearchOptions): String = buildJsonObject {
@@ -115,6 +165,16 @@ constructor(
             out[folderKey to headerMessageId] = MessageLocation(accountUuid, folderId, uid)
         }
         return out
+    }
+
+    private companion object {
+        const val MIN_SEMANTIC_QUERY = 3
+        const val SEMANTIC_LIMIT = 50
+        const val RRF_K = 60
+        val HIT_COLUMNS = listOf(
+            "header_msg_id", "folder_id", "folder_name", "folder_type", "date", "author_name", "author_email",
+            "subject", "has_attachment", "is_read", "is_flagged",
+        )
     }
 
     private fun JsonObject.text(key: String): String {

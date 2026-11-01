@@ -13,6 +13,7 @@ internal interface NovaBirdSearchContract {
         val result: SearchResult? = null,
         val isSearching: Boolean = false,
         val hasError: Boolean = false,
+        val isAddingSimilar: Boolean = false,
     )
 
     sealed interface Event {

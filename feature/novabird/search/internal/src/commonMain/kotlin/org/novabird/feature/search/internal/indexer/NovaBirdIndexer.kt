@@ -17,6 +17,7 @@ import org.novabird.feature.search.K9MailStore
 import org.novabird.feature.search.NovaBirdSearchIndexer
 import org.novabird.feature.search.internal.NovaBirdSearchCore
 import org.novabird.feature.search.internal.db.SearchIndexDatabase
+import org.novabird.feature.search.internal.vectors.SemanticIndex
 
 private const val TAG = "NovaBirdIndexer"
 
@@ -29,11 +30,13 @@ class NovaBirdIndexer(
     private val core: NovaBirdSearchCore,
     private val mailStore: K9MailStore,
     private val logger: Logger,
+    private val semanticIndex: SemanticIndex? = null,
     private val batchSize: Int = DEFAULT_BATCH_SIZE,
 ) : NovaBirdSearchIndexer {
 
     override suspend fun indexChanges(): IndexStats {
         val engine = core.engine()
+        semanticIndex?.startFullPassIfNeeded()
         val accounts = mailStore.accounts()
         var indexed = 0
         var removed = 0
@@ -101,7 +104,8 @@ class NovaBirdIndexer(
             val items = batch.mapNotNull { entry -> reader.readItem(entry.k9Id)?.let { entry to it } }
             if (items.isNotEmpty()) {
                 val now = Clock.System.now().toEpochMilliseconds()
-                engine.call("upsert", JsonArray(items.map { it.second }).toString(), now.toString())
+                val texts = engine.call("upsert", JsonArray(items.map { it.second }).toString(), now.toString())
+                semanticIndex?.collect(texts)
                 engine.withMainDatabase { db -> db.saveKnown(accountUuid, items.map { it.first }) }
                 indexed += items.size
             }

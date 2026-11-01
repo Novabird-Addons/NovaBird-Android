@@ -13,4 +13,16 @@
             android:targetPackage="org.novabird.mail.debug"
             />
     </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_app_logo"
+        android:shortcutId="novabird_ai"
+        android:shortcutShortLabel="@string/novabird_shortcut_ai_short"
+        >
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="org.novabird.feature.ai.ui.AiSettingsActivity"
+            android:targetPackage="org.novabird.mail.debug"
+            />
+    </shortcut>
 </shortcuts>

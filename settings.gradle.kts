@@ -325,6 +325,7 @@ dependencyResolutionManagement {
 
 include(
     ":app-novabird",
+    ":feature:novabird:ai",
     ":feature:novabird:branding",
     ":feature:novabird:search:api",
     ":feature:novabird:search:internal",

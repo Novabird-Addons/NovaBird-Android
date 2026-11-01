@@ -8,6 +8,7 @@ import kotlinx.serialization.json.JsonArray
 import org.novabird.feature.search.internal.db.SearchIndexDatabase
 import org.novabird.feature.search.internal.script.NovaBirdScriptEngine
 import org.novabird.feature.search.internal.script.ScriptSources
+import org.novabird.feature.search.internal.vectors.SemanticIndex
 
 /**
  * Owns the NovaBird index database and the QuickJS engine; both are created on first use.
@@ -72,5 +73,6 @@ class NovaBirdSearchCore(
             "CREATE INDEX IF NOT EXISTS nb_android_messages_key ON nb_android_messages(account_uuid, folder_id, header_msg_id)",
             none,
         )
+        SemanticIndex.CREATE_TABLES.forEach { execute(it, none) }
     }
 }

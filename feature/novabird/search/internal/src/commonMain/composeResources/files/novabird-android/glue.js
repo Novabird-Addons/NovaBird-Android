@@ -52,14 +52,18 @@ globalThis.NovaBird = {
     const r = await core.search(db, caps, q, options(JSON.parse(optionsJson)));
     return JSON.stringify({ query: r.query, chips: r.chips, rows: r.rows, empty: r.empty, suggest: r.suggest });
   },
-  /** items: [{ header, part, refs }] (part wie messages.getFull) -> Datensätze wie indexer/indexer.js, dann in den Index. */
+  /**
+   * items: [{ header, part, refs }] (part wie messages.getFull) -> Datensätze wie indexer/indexer.js, dann in den Index.
+   * Antwort: [{ id, subject, body }] je Datensatz für die Vektoren (Betreff und bereinigter Text wie textOf in
+   * semantic/main.js; body gekürzt, Kotlin kürzt genau wie clip()).
+   */
   async upsert(itemsJson, now) {
     const items = JSON.parse(itemsJson);
     const records = items.map((it) =>
       toRecord(it.header, { content: textFromParts(it.part), attachments: attachmentsFromParts(it.part), refs: it.refs }),
     );
     await core.repository.upsertMessages(db, caps, records, Number(now));
-    return records.length;
+    return JSON.stringify(records.map((r) => ({ id: r.headerMessageId, subject: r.subject, body: r.body.slice(0, 1300) })));
   },
   /** keys: [{ headerMessageId, folderId }] */
   async remove(keysJson) {

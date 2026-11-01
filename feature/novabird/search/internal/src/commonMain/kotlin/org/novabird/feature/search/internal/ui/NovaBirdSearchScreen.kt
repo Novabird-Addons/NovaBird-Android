@@ -41,6 +41,9 @@ import org.novabird.feature.search.internal.resources.novabird_search_did_you_me
 import org.novabird.feature.search.internal.resources.novabird_search_error
 import org.novabird.feature.search.internal.resources.novabird_search_hint
 import org.novabird.feature.search.internal.resources.novabird_search_no_results
+import org.novabird.feature.search.internal.resources.novabird_search_similar_busy
+import org.novabird.feature.search.internal.resources.novabird_search_similar_count
+import org.novabird.feature.search.internal.resources.novabird_search_similar_label
 import org.novabird.feature.search.internal.resources.novabird_search_title
 import org.novabird.feature.search.internal.ui.NovaBirdSearchContract.Effect
 import org.novabird.feature.search.internal.ui.NovaBirdSearchContract.Event
@@ -128,8 +131,19 @@ internal fun NovaBirdSearchContent(
             when {
                 state.hasError -> TextBodyMedium(text = stringResource(Res.string.novabird_search_error))
 
-                result != null && result.hits.isEmpty() && !result.isEmptyQuery && !state.isSearching ->
+                result != null && result.hits.isEmpty() && !result.isEmptyQuery && !state.isSearching &&
+                    !state.isAddingSimilar ->
                     TextBodyMedium(text = stringResource(Res.string.novabird_search_no_results))
+
+                state.isAddingSimilar -> TextBodySmall(
+                    text = stringResource(Res.string.novabird_search_similar_busy),
+                    color = BoltTheme.colors.onSurfaceVariant,
+                )
+
+                result != null && result.similarCount > 0 -> TextBodySmall(
+                    text = stringResource(Res.string.novabird_search_similar_count, result.similarCount),
+                    color = BoltTheme.colors.onSurfaceVariant,
+                )
             }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(result?.hits.orEmpty(), key = { "${it.folderName}/${it.headerMessageId}/${it.date}" }) { hit ->
@@ -163,7 +177,8 @@ private fun HitRow(hit: SearchHit, onClick: () -> Unit) {
             val prefix = (if (hit.isRead) "" else "● ") + (if (hit.isFlagged) "★ " else "") +
                 (if (hit.hasAttachment) "📎 " else "")
             TextBodyMedium(text = prefix + hit.subject, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            TextBodySmall(text = hit.folderName, color = BoltTheme.colors.onSurfaceVariant)
+            val similar = if (hit.isSimilar) " · " + stringResource(Res.string.novabird_search_similar_label) else ""
+            TextBodySmall(text = hit.folderName + similar, color = BoltTheme.colors.onSurfaceVariant)
         }
     }
 }

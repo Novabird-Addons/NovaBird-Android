@@ -17,9 +17,11 @@ class NovaBirdIndexWorker(
     parameters: WorkerParameters,
 ) : CoroutineWorker(context, parameters), KoinComponent {
     private val indexer: NovaBirdSearchIndexer by inject()
+    private val scheduler: NovaBirdIndexScheduler by inject()
 
     override suspend fun doWork(): Result {
         indexer.indexChanges()
+        scheduler.requestVectors()
         return Result.success()
     }
 }

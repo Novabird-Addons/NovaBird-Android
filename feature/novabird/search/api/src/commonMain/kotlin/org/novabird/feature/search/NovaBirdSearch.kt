@@ -15,6 +15,61 @@ interface NovaBirdSearch {
         chipId: String,
         options: SearchOptions = SearchOptions(),
     ): SearchResult
+
+    /**
+     * Adds messages that match [text] by meaning (semantic search) to [result]; they are marked [SearchHit.isSimilar].
+     * Returns [result] unchanged if no vector backend is available or there are no vectors yet.
+     */
+    suspend fun addSimilar(text: String, result: SearchResult, options: SearchOptions = SearchOptions()): SearchResult =
+        result
+}
+
+/**
+ * Computes vectors for the semantic search: NovaBird Helper over the network or the model on the phone.
+ * Bound by the app (optional); without it the search stays keyword-only.
+ */
+interface NovaBirdVectorBackend {
+    /** Model id; vectors of another model are not compared. */
+    val modelId: String
+
+    /** True if vectors should be collected (Helper paired or computing on the phone switched on). */
+    fun isEnabled(): Boolean
+
+    /** Vector for a search query, or null if no backend is reachable right now. */
+    suspend fun embedQuery(text: String): FloatArray?
+
+    /**
+     * Vectors for messages to index (at most [MAX_INDEX_BATCH]); null if indexing isn't possible right now (Helper not
+     * reachable, model not downloaded, …), then the indexer tries again later.
+     */
+    suspend fun embedForIndex(items: List<VectorItem>): List<FloatArray>?
+
+    companion object {
+        const val MAX_INDEX_BATCH = 64
+    }
+}
+
+/** A message to compute a vector for: Message-ID, text hash and the text (see org.novabird.feature.vectors.VectorText). */
+data class VectorItem(val messageId: String, val textHash: String, val text: String)
+
+/** State of the vector index, for the settings screen. */
+data class VectorIndexStats(val withVector: Int, val pending: Int, val messages: Int)
+
+/** Vector index of the semantic search; filled from the texts the keyword indexer collects. */
+interface NovaBirdVectorIndexer {
+    /** Computes vectors for queued messages until the queue is empty or the backend is unavailable. */
+    suspend fun indexVectors(shouldStop: () -> Boolean = { false }): VectorIndexStats
+
+    suspend fun stats(): VectorIndexStats
+}
+
+/** Starts index runs in the background (WorkManager); used when settings change. */
+interface NovaBirdIndexTrigger {
+    /** Keyword index run (also collects texts for vectors). */
+    fun requestIndexing()
+
+    /** Vector run for queued messages. */
+    fun requestVectors()
 }
 
 /** Fills the NovaBird index from the locally stored messages. */
@@ -46,6 +101,8 @@ data class SearchResult(
     val isEmptyQuery: Boolean,
     /** Parsed query, opaque. Used by [NovaBirdSearch.searchWithoutChip]. */
     val parsedQuery: String,
+    /** Number of hits added by [NovaBirdSearch.addSimilar]. */
+    val similarCount: Int = 0,
 )
 
 data class SearchChip(
@@ -69,6 +126,8 @@ data class SearchHit(
     val score: Double?,
     /** Where the message is stored locally; `null` if it is no longer known. */
     val location: MessageLocation?,
+    /** Found by meaning (semantic search), not by the words of the query. */
+    val isSimilar: Boolean = false,
 )
 
 /** Identifies a locally stored message (account UUID, local folder ID, message UID). */

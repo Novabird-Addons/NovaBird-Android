@@ -24,6 +24,13 @@ class HelperClientTest {
         assertThat(HelperClient.normalizeCode("abcd-efgh 0O1I")).isEqualTo("ABCDEFGH")
     }
 
+    @Test
+    fun `baseUrl adds scheme and default port`() {
+        assertThat(HelperClient.baseUrl("192.168.1.5")).isEqualTo("http://192.168.1.5:47531")
+        assertThat(HelperClient.baseUrl("pc:4000/")).isEqualTo("http://pc:4000")
+        assertThat(HelperClient.baseUrl("http://pc")).isEqualTo("http://pc:47531")
+    }
+
     // Against a test Helper (tools/testhelper, nbhelper --server-console --loopback); skipped when it isn't running
     @Test
     fun `helper vectors match the PC reference`() {
@@ -31,7 +38,13 @@ class HelperClientTest {
         assumeTrue("test Helper not running", log.isFile)
         val start = Json.parseToJsonElement(log.readLines().first()).jsonObject
         val url = "http://127.0.0.1:${start.getValue("port").jsonPrimitive.content}"
-        val client = HelperClient(url, start.getValue("code").jsonPrimitive.content, "jvmtest-0001", "JVM-Test")
+        val client =
+            HelperClient(
+                url,
+                HelperClient.deriveKey(start.getValue("code").jsonPrimitive.content),
+                "jvmtest-0001",
+                "JVM-Test",
+            )
 
         val info = client.hello()
         assertThat(info.modelMatch).isTrue()

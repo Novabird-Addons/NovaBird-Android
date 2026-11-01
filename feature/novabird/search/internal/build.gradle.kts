@@ -9,6 +9,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.feature.novabird.search.api)
+            implementation(projects.feature.novabird.vectors)
             implementation(projects.core.logging.api)
             implementation(projects.core.ui.contract)
             implementation(libs.koin.compose.viewmodel)
