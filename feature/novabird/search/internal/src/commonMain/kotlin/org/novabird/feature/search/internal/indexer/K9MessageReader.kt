@@ -10,6 +10,8 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import org.novabird.feature.search.K9MailDatabase
+import org.novabird.feature.search.MailForAi
+import org.novabird.feature.search.MessageLocation
 
 /** A message as listed in the K-9 database, with a fingerprint of everything the index depends on. */
 internal data class K9MessageEntry(
@@ -169,6 +171,56 @@ internal class K9MessageReader(
         } ?: return null
         val bytes = if (raw.size > MAX_TEXT_BYTES) raw.copyOf(MAX_TEXT_BYTES) else raw
         return MimeText.decodeBody(bytes, part.encoding, charset)
+    }
+
+    /** K-9 id of the message in [folderId] with [uid], or `null`. */
+    fun findId(folderId: Long, uid: String): Long? = database.query(
+        "SELECT id FROM messages WHERE folder_id = ? AND uid = ? AND deleted = 0 AND empty = 0",
+        listOf(folderId.toString(), uid),
+    ).firstOrNull()?.get(0) as Long?
+
+    /** Messages in inbox folders since [sinceMillis] (K-9 id, date), optionally only unread ones. */
+    fun recentInbox(sinceMillis: Long, unreadOnly: Boolean): List<Pair<Long, Long>> = database.query(
+        """
+        SELECT m.id, m.date FROM messages m JOIN folders f ON f.id = m.folder_id
+        WHERE m.deleted = 0 AND m.empty = 0 AND m.uid IS NOT NULL AND lower(f.type) = 'inbox' AND m.date >= ?
+        """.trimIndent() + if (unreadOnly) " AND m.read = 0" else "",
+        listOf(sinceMillis.toString()),
+    ).map { (it[0] as Long) to (it[1] as Long? ?: 0L) }
+
+    /** Subject, sender, date and the text parts of a message for the AI functions, or `null` if it is gone. */
+    fun readText(k9Id: Long): MailForAi? {
+        val row = database.query(
+            """
+            SELECT m.folder_id, m.uid, m.message_id, m.date, m.internal_date, m.subject, m.sender_list, m.message_part_id
+            FROM messages m WHERE m.id = ? AND m.deleted = 0 AND m.empty = 0
+            """.trimIndent(),
+            listOf(k9Id.toString()),
+        ).firstOrNull() ?: return null
+        val folderId = row[0] as Long
+        val uid = row[1] as String
+        val rootPartId = row[7] as Long?
+        val parts = rootPartId?.let { readParts(it) }.orEmpty()
+        val plain = mutableListOf<String>()
+        val html = mutableListOf<String>()
+        for (part in parts) {
+            val headers = MimeText.parseHeaders(part.header)
+            val disposition = headers["content-disposition"]?.firstOrNull()
+            val contentType = MimeText.parameters(headers["content-type"]?.firstOrNull())
+            val name = MimeText.parameters(disposition)["filename"] ?: contentType["name"]
+            val attachment = name != null || disposition?.startsWith("attachment", true) == true
+            val text = textBody(part, contentType["charset"] ?: part.charset, attachment) ?: continue
+            if (part.mimeType == "text/plain") plain += text else html += text
+        }
+        return MailForAi(
+            location = MessageLocation(accountUuid, folderId, uid),
+            headerMessageId = headerMessageIdOf(row[2] as String?, folderId, uid),
+            subject = row[5] as String? ?: "",
+            from = unpackAddresses(row[6] as String?).firstOrNull()?.let(::formatAddress).orEmpty(),
+            date = (row[3] as Long?)?.takeIf { it > 0 } ?: (row[4] as Long?) ?: 0L,
+            plain = plain.joinToString("\n\n").trim(),
+            html = html.joinToString("\n\n"),
+        )
     }
 
     internal data class PackedAddress(val email: String, val name: String?)

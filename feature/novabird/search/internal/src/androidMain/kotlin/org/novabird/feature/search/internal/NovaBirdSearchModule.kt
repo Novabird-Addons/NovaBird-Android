@@ -6,11 +6,13 @@ import org.koin.dsl.module
 import org.novabird.feature.search.K9AccountProvider
 import org.novabird.feature.search.K9MailStore
 import org.novabird.feature.search.NovaBirdIndexTrigger
+import org.novabird.feature.search.NovaBirdMailTexts
 import org.novabird.feature.search.NovaBirdSearch
 import org.novabird.feature.search.NovaBirdSearchIndexer
 import org.novabird.feature.search.NovaBirdVectorBackend
 import org.novabird.feature.search.NovaBirdVectorIndexer
 import org.novabird.feature.search.internal.indexer.AndroidK9MailStore
+import org.novabird.feature.search.internal.indexer.K9MailTexts
 import org.novabird.feature.search.internal.indexer.NovaBirdIndexer
 import org.novabird.feature.search.internal.ui.NovaBirdSearchViewModel
 import org.novabird.feature.search.internal.vectors.SemanticIndex
@@ -33,6 +35,7 @@ val novaBirdSearchModule = module {
         SemanticIndex(core = get(), backend = { scope.getOrNull<NovaBirdVectorBackend>() }, logger = get())
     }
     single<NovaBirdVectorIndexer> { get<SemanticIndex>() }
+    single<NovaBirdMailTexts> { K9MailTexts(mailStore = get()) }
     single<NovaBirdSearch> {
         val accounts = get<K9AccountProvider>()
         NovaBirdSearchService(
