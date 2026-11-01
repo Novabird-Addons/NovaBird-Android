@@ -329,4 +329,5 @@ include(
     ":feature:novabird:search:api",
     ":feature:novabird:search:internal",
     ":feature:novabird:sync",
+    ":feature:novabird:vectors",
 )

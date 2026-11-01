@@ -4,6 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     >
 
+    <!-- NovaBird: ONNX Runtime needs API 24; the app still allows 23 (decide before Beta 2 ships) -->
+    <uses-sdk tools:overrideLibrary="ai.onnxruntime" />
+
     <application
         tools:ignore="MissingApplicationIcon"
         >
@@ -24,6 +27,12 @@
                 android:resource="@xml/message_list_glance_widget_info"
                 />
         </receiver>
+
+        <!-- NovaBird: vector benchmark (debug only, started via adb) -->
+        <activity
+            android:name="org.novabird.mail.VectorBenchActivity"
+            android:exported="true"
+            />
 
     </application>
 </manifest>

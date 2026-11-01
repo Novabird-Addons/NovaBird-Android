@@ -162,6 +162,8 @@ dependencies {
     implementation(projects.feature.novabird.search.api)
     implementation(projects.feature.novabird.search.internal)
     implementation(projects.feature.novabird.sync)
+    implementation(projects.feature.novabird.vectors)
+    debugImplementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.work.runtime)
 
