@@ -313,3 +313,17 @@ check(JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
     """.trimIndent()
 }
 include(":feature:changelog:internal")
+
+// NovaBird: eigene Module und Bibliotheken (gebündelt, damit das Nachziehen der Release-Tags einfach bleibt)
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("novabirdLibs") {
+            from(files("gradle/novabird.versions.toml"))
+        }
+    }
+}
+
+include(
+    ":feature:novabird:search:api",
+    ":feature:novabird:search:internal",
+)
