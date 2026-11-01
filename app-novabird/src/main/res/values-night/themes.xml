@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.NovaBird.DayNight" parent="Theme.NovaBird.Dark" />
+    <style name="Theme.NovaBird.DayNight.Dialog" parent="Theme.NovaBird.Dark.Dialog" />
+    <style name="Theme.NovaBird.DayNight.Dialog.Translucent" parent="Theme.NovaBird.Dark.Dialog.Translucent" />
+
+</resources>

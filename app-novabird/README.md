@@ -1,0 +1,29 @@
+# NovaBird Mail
+
+App module of NovaBird Mail, a fork of Thunderbird for Android. It is based on `app-thunderbird` (flavor `foss` only)
+and uses its own application ID `org.novabird.mail` (debug: `org.novabird.mail.debug`), name and placeholder icon.
+
+## Differences to `app-thunderbird`
+
+- No Thunderbird OAuth client IDs (`NbOAuthConfigurationFactory` is empty), no telemetry, no funding, no migration from
+  Thunderbird, Thundermail disabled (`thundermail:k9mail`).
+- New accounts sync all messages of the last year (`NovaBirdAccountDefaultsProvider`).
+- Sync limits for mobile data and Wi-Fi and completing partially downloaded messages on Wi-Fi come from
+  `feature:novabird:sync`. The settings screen is reachable via a launcher shortcut (long-press the app icon) and via
+  the system's app info screen.
+
+## Changes to upstream code
+
+Keep these small so that merging new release tags stays easy:
+
+- `settings.gradle.kts`: includes `:app-novabird` and `:feature:novabird:sync`.
+- `legacy/core/.../controller/MessagingController.java` (`createSyncConfig`): uses `SyncDownloadLimits` (new file
+  `SyncDownloadLimitProvider.kt`) instead of the account setting directly.
+- `app-common/.../account/AppCommonAccountModule.kt`: an app may bind its own `AccountDefaultsProvider` as `named("app")`.
+
+## Build
+
+```bash
+./gradlew --no-build-cache :app-novabird:assembleFossDebug
+```
+

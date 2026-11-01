@@ -313,3 +313,9 @@ check(JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
     """.trimIndent()
 }
 include(":feature:changelog:internal")
+
+// NovaBird
+include(
+    ":app-novabird",
+    ":feature:novabird:sync",
+)
