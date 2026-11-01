@@ -42,8 +42,9 @@ class NovaBirdIndexScheduler(
                     .build(),
             )
             .build()
-        // append: a request during a run (new texts queued) gets its own run after it
-        WorkManager.getInstance(context).enqueueUniqueWork(WORK_VECTORS, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        // replace: the constraints may have changed (Helper paired: no charger needed any more); appending would wait for
+        // an older run still waiting for the charger. A replaced running run loses at most its current batch.
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_VECTORS, ExistingWorkPolicy.REPLACE, request)
     }
 
     /** Periodic fallback (e.g. after sync from other code paths). */

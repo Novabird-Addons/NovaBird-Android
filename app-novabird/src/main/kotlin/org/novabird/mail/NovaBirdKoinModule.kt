@@ -33,6 +33,7 @@ val appModule = module {
     includes(novaBirdAccountModule)
     includes(novaBirdSearchAppModule)
     includes(novaBirdAiModule)
+    includes(novaBirdDrawerModule)
 
     single(named("ClientInfoAppName")) { BuildConfig.CLIENT_INFO_APP_NAME }
     single(named("ClientInfoAppVersion")) { BuildConfig.VERSION_NAME }

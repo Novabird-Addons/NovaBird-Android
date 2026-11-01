@@ -26,6 +26,7 @@ internal fun FolderSettingList(
     val isLandscape = windowSizeInfo.size.width > windowSizeInfo.size.height
     val isCompactHeight = windowSizeInfo.sizeClass.heightSizeClass == WindowHeightSizeClass.Compact
     val hideText = isLandscape && isCompactHeight
+    val extraActions = LocalDrawerExtraActions.current
 
     SettingList(
         modifier = modifier
@@ -58,6 +59,7 @@ internal fun FolderSettingList(
                 )
             }
         }
+        extraActionItems(extraActions, hideText)
         item(span = { if (hideText) GridItemSpan(1) else GridItemSpan(maxLineSpan) }) {
             SettingListItem(
                 label = stringResource(id = R.string.navigation_drawer_dropdown_action_settings),

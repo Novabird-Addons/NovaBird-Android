@@ -8,6 +8,7 @@ import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.util.DisplayMetrics
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.LifecycleOwner
 import androidx.work.WorkerParameters
 import app.k9mail.core.ui.compose.common.window.FoldableStateObserver
@@ -54,6 +55,8 @@ class DependencyInjectionTest {
                 Configuration::class,
                 Context::class,
                 Function0::class,
+                Function1::class,
+                ImageVector::class,
                 DisplayMetrics::class,
                 InteractionMode::class,
                 NotificationManager::class,

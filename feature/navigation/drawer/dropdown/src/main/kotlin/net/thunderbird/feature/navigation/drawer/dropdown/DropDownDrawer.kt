@@ -1,6 +1,7 @@
 package net.thunderbird.feature.navigation.drawer.dropdown
 
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
@@ -9,12 +10,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import net.thunderbird.core.ui.theme.api.FeatureThemeProvider
+import net.thunderbird.feature.navigation.drawer.api.DrawerExtraAction
 import net.thunderbird.feature.navigation.drawer.api.NavigationDrawer
 import net.thunderbird.feature.navigation.drawer.api.R
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.UnifiedDisplayAccount
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.UnifiedDisplayFolderType
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.createMailDisplayAccountFolderId
 import net.thunderbird.feature.navigation.drawer.dropdown.ui.DrawerView
+import net.thunderbird.feature.navigation.drawer.dropdown.ui.setting.DrawerExtraActions
+import net.thunderbird.feature.navigation.drawer.dropdown.ui.setting.LocalDrawerExtraActions
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -36,6 +40,7 @@ class DropDownDrawer(
 ) : NavigationDrawer, KoinComponent {
 
     private val themeProvider: FeatureThemeProvider by inject()
+    private val extraActions: List<DrawerExtraAction> by lazy { getKoin().getAll() }
     private val drawer: DrawerLayout = parent.findViewById(R.id.navigation_drawer_layout)
     private val drawerContent: ComposeView = parent.findViewById(R.id.navigation_drawer_content)
 
@@ -53,17 +58,23 @@ class DropDownDrawer(
         drawerContent.setContent {
             themeProvider.WithTheme {
                 val state = drawerState.collectAsStateWithLifecycle()
+                val extra = DrawerExtraActions(extraActions) { action ->
+                    action.onClick(parent)
+                    close()
+                }
 
-                DrawerView(
-                    drawerState = state.value,
-                    openAccount = openAccount,
-                    openFolder = openFolder,
-                    openUnifiedFolder = openUnifiedFolder,
-                    openManageFolders = openManageFolders,
-                    openSettings = openSettings,
-                    openAddAccount = openAddAccount,
-                    closeDrawer = { close() },
-                )
+                CompositionLocalProvider(LocalDrawerExtraActions provides extra) {
+                    DrawerView(
+                        drawerState = state.value,
+                        openAccount = openAccount,
+                        openFolder = openFolder,
+                        openUnifiedFolder = openUnifiedFolder,
+                        openManageFolders = openManageFolders,
+                        openSettings = openSettings,
+                        openAddAccount = openAddAccount,
+                        closeDrawer = { close() },
+                    )
+                }
             }
         }
     }
