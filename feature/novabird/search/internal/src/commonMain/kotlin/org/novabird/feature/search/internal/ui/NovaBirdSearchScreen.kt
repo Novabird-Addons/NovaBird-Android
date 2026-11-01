@@ -22,13 +22,13 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import net.thunderbird.components.ui.bolt.atom.ClickableSurface
 import net.thunderbird.components.ui.bolt.atom.DividerHorizontal
-import net.thunderbird.components.ui.bolt.atom.Surface
 import net.thunderbird.components.ui.bolt.atom.button.ButtonOutlined
 import net.thunderbird.components.ui.bolt.atom.button.ButtonText
 import net.thunderbird.components.ui.bolt.atom.text.TextBodyMedium
 import net.thunderbird.components.ui.bolt.atom.text.TextBodySmall
-import net.thunderbird.components.ui.bolt.atom.text.TextTitleMedium
 import net.thunderbird.components.ui.bolt.molecule.input.TextInput
+import net.thunderbird.components.ui.bolt.organism.TopAppBarWithBackButton
+import net.thunderbird.components.ui.bolt.template.Scaffold
 import net.thunderbird.components.ui.bolt.theme.BoltTheme
 import net.thunderbird.core.ui.contract.mvi.observe
 import org.jetbrains.compose.resources.stringResource
@@ -37,7 +37,6 @@ import org.novabird.feature.search.MessageLocation
 import org.novabird.feature.search.SearchChip
 import org.novabird.feature.search.SearchHit
 import org.novabird.feature.search.internal.resources.Res
-import org.novabird.feature.search.internal.resources.novabird_search_back
 import org.novabird.feature.search.internal.resources.novabird_search_did_you_mean
 import org.novabird.feature.search.internal.resources.novabird_search_error
 import org.novabird.feature.search.internal.resources.novabird_search_hint
@@ -84,20 +83,28 @@ internal fun NovaBirdSearchContent(
     onEvent: (Event) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().padding(BoltTheme.spacings.double)) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                ButtonText(text = stringResource(Res.string.novabird_search_back), onClick = { onEvent(Event.Back) })
-                TextTitleMedium(
-                    text = stringResource(Res.string.novabird_search_title),
-                    modifier = Modifier.padding(top = BoltTheme.spacings.default),
-                )
-            }
+    // the top app bar takes the status bar inset, the scaffold the remaining system bars
+    Scaffold(
+        topBar = {
+            TopAppBarWithBackButton(
+                title = stringResource(Res.string.novabird_search_title),
+                onBackClick = { onEvent(Event.Back) },
+            )
+        },
+        modifier = modifier.fillMaxSize(),
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = BoltTheme.spacings.double),
+        ) {
             TextInput(
                 onTextChange = { onEvent(Event.QueryChanged(it)) },
                 text = state.query,
                 label = stringResource(Res.string.novabird_search_hint),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                // autocorrect would turn "naechsten" into "nächsten" or replace names and rare words
+                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
                 modifier = Modifier.fillMaxWidth(),
             )
 

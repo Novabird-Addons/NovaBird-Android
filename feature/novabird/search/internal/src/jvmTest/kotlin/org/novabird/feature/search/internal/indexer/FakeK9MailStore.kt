@@ -57,7 +57,6 @@ class FakeK9MailStore(private val account: K9Account) : K9MailStore {
         val header: String,
         val body: ByteArray? = null,
         val encoding: String? = null,
-        val charset: String? = null,
         val onDisk: Boolean = false,
         val children: List<TestPart> = emptyList(),
     )
@@ -114,11 +113,13 @@ class FakeK9MailStore(private val account: K9Account) : K9MailStore {
             else -> 1L
         }
         if (part.onDisk && part.body != null) files[id] = part.body
+        // Like K-9's SaveMessageOperations: the header as bytes in a TEXT column, the charset column left empty
+        // (the charset is only in the part's Content-Type header)
         exec(
             "INSERT INTO message_parts (id, type, root, parent, seq, mime_type, decoded_body_size, header, encoding, " +
-                "charset, data_location, data) VALUES (?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            id, rootId ?: id, parent, seq, part.mimeType, part.body?.size?.toLong() ?: 0L, part.header, part.encoding,
-            part.charset, location, if (location == 1L) part.body else null,
+                "data_location, data) VALUES (?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            id, rootId ?: id, parent, seq, part.mimeType, part.body?.size?.toLong() ?: 0L,
+            part.header.encodeToByteArray(), part.encoding, location, if (location == 1L) part.body else null,
         )
         part.children.forEachIndexed { index, child ->
             insertPart(child, parent = id, seq = index, rootId = rootId ?: id)

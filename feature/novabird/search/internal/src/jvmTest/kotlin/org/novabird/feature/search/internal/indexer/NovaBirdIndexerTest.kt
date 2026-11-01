@@ -76,7 +76,6 @@ class NovaBirdIndexerTest {
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                     "References: <m5@firma.example>\r\n",
                 body = "Danke Petra, ich trage mich ein.\n\n> Bitte tragt eure Urlaubswünsche ein".encodeToByteArray(),
-                charset = "utf-8",
                 onDisk = true,
             ),
             flagged = true,
@@ -243,7 +242,6 @@ class NovaBirdIndexerTest {
             body = body.toByteArray(Charsets.ISO_8859_1).takeIf { encoding != null || charset == "us-ascii" }
                 ?: body.encodeToByteArray(),
             encoding = encoding,
-            charset = charset,
         )
 
         fun base64(text: String): String =
