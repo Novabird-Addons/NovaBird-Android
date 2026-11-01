@@ -10,11 +10,17 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.feature.novabird.search.api)
             implementation(projects.core.logging.api)
+            implementation(projects.core.ui.contract)
+            implementation(libs.koin.compose.viewmodel)
             implementation(libs.koin.core.viewmodel)
 
             implementation(novabirdLibs.androidx.sqlite)
             implementation(novabirdLibs.androidx.sqlite.bundled)
             implementation(novabirdLibs.quickjs.kt)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.work.runtime)
+            implementation(libs.koin.android)
         }
         commonTest.dependencies {
             implementation(projects.core.logging.testing)

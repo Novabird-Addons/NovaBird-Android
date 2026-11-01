@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="novabird_search_title">Suche</string>
+    <string name="novabird_search_hint">z. B. von Petra im März mit PDF</string>
+    <string name="novabird_search_back">Zurück</string>
+    <string name="novabird_search_did_you_mean">Meinten Sie: %1$s</string>
+    <string name="novabird_search_no_results">Keine Mails gefunden</string>
+    <string name="novabird_search_error">Die Suche ist gerade nicht verfügbar</string>
+    <string name="novabird_search_remove_chip">%1$s entfernen</string>
+</resources>
