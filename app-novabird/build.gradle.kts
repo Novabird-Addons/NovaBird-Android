@@ -118,9 +118,10 @@ android {
         }
 
         resources {
+            // NovaBird: kotlin/** (*.kotlin_builtins) bleibt drin. kotlin-reflect liegt im Klassenpfad und braucht
+            // die Builtins für typeOf<T>() (QuickJs.evaluate<T> der NovaBird-Suche).
             excludes += listOf(
                 "META-INF/*.kotlin_module",
-                "kotlin/**",
                 "DebugProbesKt.bin",
             )
         }
