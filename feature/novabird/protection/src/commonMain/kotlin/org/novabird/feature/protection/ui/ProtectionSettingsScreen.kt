@@ -41,6 +41,9 @@ import org.novabird.feature.protection.resources.Res
 import org.novabird.feature.protection.resources.novabird_protect_add
 import org.novabird.feature.protection.resources.novabird_protect_add_hint
 import org.novabird.feature.protection.resources.novabird_protect_add_invalid
+import org.novabird.feature.protection.resources.novabird_protect_ai_note
+import org.novabird.feature.protection.resources.novabird_protect_ai_note_none
+import org.novabird.feature.protection.resources.novabird_protect_ai_title
 import org.novabird.feature.protection.resources.novabird_protect_cancel
 import org.novabird.feature.protection.resources.novabird_protect_consent_accept
 import org.novabird.feature.protection.resources.novabird_protect_consent_check
@@ -122,6 +125,19 @@ private fun MainPage(state: ProtectionSettingsViewModel.State, actions: Protecti
         text = stringResource(Res.string.novabird_protect_scope_note),
         color = BoltTheme.colors.onSurfaceVariant,
     )
+    DividerHorizontal()
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            TextBodyLarge(text = stringResource(Res.string.novabird_protect_ai_title))
+            val aiNote = if (state.aiAvailable) {
+                Res.string.novabird_protect_ai_note
+            } else {
+                Res.string.novabird_protect_ai_note_none
+            }
+            TextBodySmall(text = stringResource(aiNote), color = BoltTheme.colors.onSurfaceVariant)
+        }
+        Switch(checked = state.useAi, onCheckedChange = actions::onUseAi, enabled = state.enabled)
+    }
     DividerHorizontal()
     ClickableSurface(onClick = actions::openTrusted, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(vertical = BoltTheme.spacings.default)) {

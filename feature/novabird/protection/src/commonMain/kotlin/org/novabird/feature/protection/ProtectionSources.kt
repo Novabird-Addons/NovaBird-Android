@@ -14,6 +14,17 @@ import kotlinx.serialization.json.longOrNull
 /** A contact of the device address book: display names and email addresses (lower case). */
 data class DeviceContact(val names: List<String>, val emails: List<String>)
 
+/**
+ * Language model for the grey zone (add-on: `useNovaBirdAi`). [extract] returns the model's answer as JSON text in the
+ * add-on's format (`ok`, `claimedOrg`, `claimedDomain`, `asksFor`, `urgency`, `injection`, `model`), or `null` when no
+ * local model is available. It only ever adds signals; see `lib/ai.js` of the add-on.
+ */
+interface ProtectionAi {
+    fun isAvailable(): Boolean
+
+    suspend fun extract(header: String, text: String): String?
+}
+
 /** Contacts of the device; empty if the app may not read them. */
 fun interface ContactsSource {
     fun contacts(): List<DeviceContact>
@@ -102,7 +113,12 @@ interface ProtectionSettings {
     /** Months of mail that count for the sender history (add-on: 1..18, default 12). */
     val historyMonths: Int
 
+    /** Ask the local language model (Helper) in the grey zone; it can only raise a warning, never lower one. */
+    val useAi: Boolean
+
     fun setEnabled(enabled: Boolean, consentVersion: Int, consentAt: Long)
+
+    fun updateUseAi(useAi: Boolean)
 
     fun updateTrustedSenders(senders: List<TrustedSender>)
 }
@@ -114,11 +130,16 @@ class InMemoryProtectionSettings(
     override var consentAt: Long = 0,
     override var trustedSenders: List<TrustedSender> = emptyList(),
     override var historyMonths: Int = HISTORY_MONTHS_DEFAULT,
+    override var useAi: Boolean = true,
 ) : ProtectionSettings {
     override fun setEnabled(enabled: Boolean, consentVersion: Int, consentAt: Long) {
         this.enabled = enabled
         this.consentVersion = consentVersion
         this.consentAt = consentAt
+    }
+
+    override fun updateUseAi(useAi: Boolean) {
+        this.useAi = useAi
     }
 
     override fun updateTrustedSenders(senders: List<TrustedSender>) {

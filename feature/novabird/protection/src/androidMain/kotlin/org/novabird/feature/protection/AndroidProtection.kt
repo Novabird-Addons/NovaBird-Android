@@ -47,6 +47,11 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
         get() = TrustedSender.listFromJson(preferences.getString(KEY_TRUSTED_JSON, null))
     override val historyMonths: Int
         get() = preferences.getInt(KEY_HISTORY_MONTHS, HISTORY_MONTHS_DEFAULT).coerceIn(1, HISTORY_MONTHS_MAX)
+    override val useAi: Boolean get() = preferences.getBoolean(KEY_USE_AI, true)
+
+    override fun updateUseAi(useAi: Boolean) {
+        preferences.edit { putBoolean(KEY_USE_AI, useAi) }
+    }
 
     override fun setEnabled(enabled: Boolean, consentVersion: Int, consentAt: Long) {
         preferences.edit {
@@ -66,5 +71,6 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
         const val KEY_CONSENT_AT = "consent_at"
         const val KEY_TRUSTED_JSON = "trusted_senders_json"
         const val KEY_HISTORY_MONTHS = "history_months"
+        const val KEY_USE_AI = "use_ai"
     }
 }

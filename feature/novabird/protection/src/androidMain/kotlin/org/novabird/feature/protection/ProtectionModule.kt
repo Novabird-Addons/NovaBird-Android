@@ -1,6 +1,8 @@
 package org.novabird.feature.protection
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.android.ext.koin.androidContext
@@ -39,6 +41,8 @@ val novaBirdProtectionModule = module {
             dispatcher = dispatcher,
             now = System::currentTimeMillis,
             onEnabled = { get<ProtectionScheduler>().requestCheck() },
+            ai = getOrNull(),
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         )
     }
     single { ProtectionScheduler(androidContext(), get()) }

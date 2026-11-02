@@ -37,6 +37,15 @@ class ProtectionServiceTest {
     }
     private val settings = InMemoryProtectionSettings()
     private var deviceContacts = emptyList<DeviceContact>()
+    private val aiAnswers = mutableListOf<String>()
+    private var aiAnswer: String? = null
+    private val fakeAi = object : ProtectionAi {
+        override fun isAvailable() = aiAnswer != null
+        override suspend fun extract(header: String, text: String): String? {
+            aiAnswers += header
+            return aiAnswer
+        }
+    }
     private val store = ProtectionStore(":memory:")
     private val engine = lazy {
         runBlocking { ProtectionEngine.create(ProtectionScripts.load(), Dispatchers.Default.limitedParallelism(1)) }
@@ -50,6 +59,7 @@ class ProtectionServiceTest {
         contacts = { deviceContacts },
         dispatcher = Dispatchers.Default.limitedParallelism(1),
         now = { NOW },
+        ai = fakeAi,
     )
 
     @AfterTest
@@ -186,6 +196,47 @@ class ProtectionServiceTest {
             assertThat(settings.trustedSenders).isEqualTo(emptyList())
             assertThat(service.verdictOnOpen(account.uuid, 2)?.level).isEqualTo(ProtectionLevel.SUSPICIOUS)
         }
+
+    @Test
+    fun `the model is asked in the grey zone only and can only add signals`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        aiAnswer = """{"ok":true,"claimedOrg":"Sparkasse","claimedDomain":null,"asksFor":"login","urgency":true,""" +
+            """"injection":false,"model":"test"}"""
+        mail(1, "Kundenservice <info@fremd.example>", "Ihr Zugang", "<p>Bitte melden Sie sich heute noch an.</p>")
+        phishing(2)
+
+        assertThat(service.checkNewMails()).isEqualTo(2)
+
+        // grey zone: the model's claim of a bank that does not match the domain is a new signal
+        val grey = store.get(account.uuid, 1)!!
+        assertThat(grey.verdict.signals.map { it.id }).contains("aiClaimMismatch")
+        // dangerous mails are never sent to the model; only the grey one was asked
+        assertThat(aiAnswers.size).isEqualTo(1)
+        assertThat(aiAnswers.single()).contains("Ihr Zugang")
+
+        // a soothing answer cannot lower a verdict: a second pass with "nothing claimed" keeps the stored signals
+        aiAnswers.clear()
+        service.refineWithAi(account.uuid, 1)
+        assertThat(aiAnswers.size).isEqualTo(0)
+        assertThat(store.get(account.uuid, 1)!!.verdict.signals.map { it.id }).contains("aiClaimMismatch")
+    }
+
+    @Test
+    fun `on open the rules answer first, the model follows and the opened mail is rated again`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        aiAnswer = """{"ok":true,"claimedOrg":"Sparkasse","claimedDomain":null,"asksFor":"login","urgency":true,""" +
+            """"injection":false,"model":"test"}"""
+        mail(1, "Kundenservice <info@fremd.example>", "Ihr Zugang", "<p>Bitte melden Sie sich heute noch an.</p>")
+
+        val first = service.verdictOnOpen(account.uuid, 1)!!
+        assertThat(first.verdict.signals.map { it.id }).doesNotContain("aiClaimMismatch")
+        assertThat(aiAnswers.size).isEqualTo(0)
+
+        service.refineWithAi(account.uuid, 1)
+        val second = service.storedVerdict(account.uuid, 1)!!
+        assertThat(second.verdict.signals.map { it.id }).contains("aiClaimMismatch")
+        assertThat(second.verdict.score > first.verdict.score).isEqualTo(true)
+    }
 
     @Test
     fun `trusted senders survive a round trip through JSON`() {

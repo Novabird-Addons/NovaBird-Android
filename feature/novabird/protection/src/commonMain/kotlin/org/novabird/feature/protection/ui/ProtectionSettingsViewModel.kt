@@ -26,6 +26,8 @@ class ProtectionSettingsViewModel(
 
     data class State(
         val enabled: Boolean = false,
+        val useAi: Boolean = true,
+        val aiAvailable: Boolean = false,
         val page: Page = Page.MAIN,
         val consentChecked: Boolean = false,
         val trusted: List<TrustedSender> = emptyList(),
@@ -35,7 +37,14 @@ class ProtectionSettingsViewModel(
         val undo: TrustedSender? = null,
     )
 
-    private val _state = MutableStateFlow(State(enabled = service.isEnabled, trusted = service.trustedSenders))
+    private val _state = MutableStateFlow(
+        State(
+            enabled = service.isEnabled,
+            useAi = service.useAi,
+            aiAvailable = service.isAiAvailable,
+            trusted = service.trustedSenders,
+        ),
+    )
     val state: StateFlow<State> = _state
     private var undoJob: Job? = null
 
@@ -49,6 +58,11 @@ class ProtectionSettingsViewModel(
                 _state.update { it.copy(enabled = false) }
             }
         }
+    }
+
+    fun onUseAi(on: Boolean) {
+        service.updateUseAi(on)
+        _state.update { it.copy(useAi = on) }
     }
 
     fun onConsentChecked(checked: Boolean) = _state.update { it.copy(consentChecked = checked) }

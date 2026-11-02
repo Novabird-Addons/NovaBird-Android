@@ -6,6 +6,9 @@
     <string name="novabird_protect_off">Off</string>
     <string name="novabird_protect_switch_note">Checks sender, links, attachments and wording against rules; the result shows as a banner in the mail and as a symbol in the list. Everything runs on this phone, nothing is sent anywhere.</string>
     <string name="novabird_protect_scope_note">Only new mails and mails you open are checked. Older mail is not scanned.</string>
+    <string name="novabird_protect_ai_title">Ask the local AI in the grey zone</string>
+    <string name="novabird_protect_ai_note">Helper connected. For mails with some signs, the model tells who the mail claims to be and what it asks for; the rules decide. It can only raise a warning, never lower one.</string>
+    <string name="novabird_protect_ai_note_none">Needs the NovaBird Helper (Settings › Semantic search and AI). No cloud.</string>
     <string name="novabird_protect_trusted_title">Trusted senders</string>
     <string name="novabird_protect_trusted_count">%1$d entries</string>
     <string name="novabird_protect_trusted_hint">No more warnings for these addresses. Forgery hints stay: failed sender checks (DMARC, SPF, DKIM), look-alike links, disguised attachments, extortion. A sender of a mail rated “dangerous” cannot be added with a tap, only here.</string>

@@ -7,12 +7,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.koin.dsl.module
+import org.novabird.feature.protection.ProtectionAi
 import org.novabird.feature.protection.novaBirdProtectionModule
 
 /** Phishing protection in the app: the module plus the hooks for message view, link opening and message list. */
 internal val novaBirdProtectionAppModule = module {
     includes(novaBirdProtectionModule)
 
+    single<ProtectionAi> { HelperProtectionAi(backend = get(), aiSettings = get()) }
     single<MessageViewHook> { ProtectionMessageViewHook(service = get()) }
     single<MessageLinkGate> { ProtectionLinkGate() }
     single<MessageListItemDecorator> {

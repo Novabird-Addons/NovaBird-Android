@@ -19,6 +19,7 @@ import com.fsck.k9.ui.MessageViewHook
 import com.fsck.k9.ui.messageview.MessageTopView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Locale
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import net.thunderbird.core.android.account.LegacyAccountDto
 import org.novabird.feature.protection.ProtectionLevel
@@ -69,6 +70,20 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
                 // a failed check must not look like "no warning"
                 onFailure = { showErrorBanner(container) },
             )
+            // the language model may sharpen the result a little later: show it as soon as it is stored
+            var shown = result.getOrNull()?.verdict?.json
+            service.revision.drop(1).collect {
+                if (messageTopView.getTag(R.id.nb_protection_state) !== state) return@collect
+                val latest = runCatching { service.storedVerdict(state.accountUuid, state.k9Id) }.getOrNull()
+                if (latest?.verdict?.json == shown) return@collect
+                shown = latest?.verdict?.json
+                container.removeAllViews()
+                container.isVisible = false
+                state.level = latest?.level ?: ProtectionLevel.NORMAL
+                if (latest != null && latest.level != ProtectionLevel.NORMAL) {
+                    showBanner(container, messageTopView, state, latest)
+                }
+            }
         }
     }
 

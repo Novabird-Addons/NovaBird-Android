@@ -134,6 +134,12 @@ class ProtectionEngine private constructor(
         }
     }
 
+    /** The model's answer checked and cut to the allowed facts (`lib/ai.js`), or `null` if it is unusable. */
+    suspend fun aiFacts(answer: String): JsonObject? {
+        val json = call("aiFacts", answer)
+        return if (json == "null") null else Json.parseToJsonElement(json).jsonObject
+    }
+
     /** Key under which the add-on compares display names (`text.js` nameKey); empty if the name has none. */
     suspend fun nameKey(name: String): String = call("nameKey", name)
 

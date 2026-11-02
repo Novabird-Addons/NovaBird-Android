@@ -1,8 +1,10 @@
 package org.novabird.feature.protection
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -30,6 +32,8 @@ import org.novabird.feature.search.unpackK9Addresses
  * @param engine the add-on core in QuickJS; created on first use and kept (boot ≈ 0.2 s).
  * @param dispatcher confines the store and all K-9 reads to one thread at a time.
  * @param onEnabled called after switching on (the app schedules the first background check there).
+ * @param ai local language model for the grey zone, or `null`. After a sync it is asked inline; for an opened mail the
+ *   rules answer at once and the model's facts follow in [scope] (the banner and the badge refresh via [revision]).
  */
 @Suppress("LongParameterList")
 class ProtectionService(
@@ -42,6 +46,8 @@ class ProtectionService(
     private val dispatcher: CoroutineDispatcher,
     private val now: () -> Long,
     private val onEnabled: () -> Unit = {},
+    private val ai: ProtectionAi? = null,
+    private val scope: CoroutineScope? = null,
 ) {
     private val mutex = Mutex()
     private var contextLoadedAt = Long.MIN_VALUE
@@ -53,6 +59,13 @@ class ProtectionService(
     val revision: StateFlow<Long> = _revision
 
     val trustedSenders: List<TrustedSender> get() = settings.trustedSenders
+
+    val useAi: Boolean get() = settings.useAi
+
+    /** A local language model is set up (Helper paired and its chat allowed). */
+    val isAiAvailable: Boolean get() = ai?.isAvailable() == true
+
+    fun updateUseAi(on: Boolean) = settings.updateUseAi(on)
 
     /** Switches the protection on after the user accepted notice [consentVersion]. Existing mail stays unchecked. */
     suspend fun enable(consentVersion: Int) = locked {
@@ -118,13 +131,41 @@ class ProtectionService(
         settings.setEnabled(false, settings.consentVersion, settings.consentAt)
     }
 
-    /** Stored result of an opened mail; checks it first if it has none (or one from older rules). */
+    /**
+     * Stored result of an opened mail; checks it first if it has none (or one from older rules). The language model, if
+     * any, is asked afterwards in the background so the banner does not wait for it.
+     */
     suspend fun verdictOnOpen(accountUuid: String, k9Id: Long): StoredVerdict? {
         if (!settings.enabled) return null
-        return locked {
+        val verdict = locked {
             store.get(accountUuid, k9Id)?.takeIf { it.rulesVersion == RULES_VERSION } ?: check(accountUuid, k9Id)
         }
+        if (verdict != null && wantsAi(verdict)) scope?.launch { refineWithAi(accountUuid, k9Id) }
+        return verdict
     }
+
+    /** Asks the language model about a stored grey-zone result and rates the mail again with its facts. */
+    suspend fun refineWithAi(accountUuid: String, k9Id: Long) {
+        val model = ai ?: return
+        val prepared = locked {
+            val stored = store.get(accountUuid, k9Id) ?: return@locked null
+            if (!wantsAi(stored)) return@locked null
+            val mail = texts.mailForCheck(accountUuid, k9Id) ?: return@locked null
+            evaluate(mail)
+        } ?: return
+        // the model call is slow and may use the network: outside the lock
+        val answer = runCatching { model.extract(prepared.header, prepared.text) }.getOrNull()
+        locked {
+            if (store.get(accountUuid, k9Id)?.let(::wantsAi) != true) return@locked
+            save(prepared.withAi(engine(), answer))
+        }
+    }
+
+    /** Grey zone of the add-on: not dangerous, at least one signal, sender not trusted, model not asked yet. */
+    private fun wantsAi(verdict: StoredVerdict): Boolean = ai != null && settings.useAi && ai.isAvailable() &&
+        verdict.level != ProtectionLevel.DANGEROUS && verdict.verdict.signals.isNotEmpty() &&
+        !verdict.verdict.json.containsKey(AI_CHECKED) &&
+        settings.trustedSenders.none { it.address == verdict.sender }
 
     /** Stored result without checking (`null` if none or protection is off). */
     suspend fun storedVerdict(accountUuid: String, k9Id: Long): StoredVerdict? {
@@ -153,7 +194,7 @@ class ProtectionService(
                 val ids = newInboxIds(account.uuid, watermark)
                 val done = store.checkedIds(account.uuid, ids, RULES_VERSION)
                 for (id in ids) {
-                    if (id !in done && check(account.uuid, id) != null) count++
+                    if (id !in done && check(account.uuid, id, withAi = true) != null) count++
                 }
             }
             count
@@ -162,8 +203,51 @@ class ProtectionService(
 
     // ------------------------------------------------------------ check
 
-    private suspend fun check(accountUuid: String, k9Id: Long): StoredVerdict? {
-        val mail = texts.mailForCheck(accountUuid, k9Id) ?: return null
+    /** Features, context and the rules' verdict of one mail, ready for storing or for the model's second pass. */
+    private inner class Evaluation(
+        val mail: MailForCheck,
+        val features: JsonObject,
+        val context: Map<String, JsonElement>,
+        val config: JsonObject,
+        val verdict: Verdict,
+    ) {
+        val sender: String = features["from"]?.let { from ->
+            (from as? JsonObject)?.get("address")?.jsonPrimitive?.content
+        }.orEmpty()
+        val header: String = listOf("subject", "from").joinToString("\n") { name ->
+            val value = mail.headers[name]?.firstOrNull().orEmpty()
+            "${name.replaceFirstChar { it.uppercase() }}: $value"
+        }
+        val text: String = features["text"]?.jsonPrimitive?.content.orEmpty()
+
+        fun record(verdict: Verdict = this.verdict) = StoredVerdict(
+            accountUuid = mail.accountUuid,
+            k9Id = mail.k9Id,
+            folderId = mail.location.folderId,
+            uid = mail.location.uid,
+            headerMessageId = mail.headerMessageId,
+            sender = sender,
+            verdict = verdict,
+            rulesVersion = RULES_VERSION,
+            checkedAt = now(),
+        )
+
+        /** The verdict with the model's facts added (`null` or unusable answer: unchanged), marked as asked. */
+        suspend fun withAi(js: ProtectionEngine, answer: String?): StoredVerdict {
+            val facts = answer?.let { js.aiFacts(it) }
+            val rated = if (facts !=
+                null
+            ) {
+                js.analyze(features, JsonObject(context + ("ai" to facts)), config)
+            } else {
+                verdict
+            }
+            val marked = JsonObject(rated.json + (AI_CHECKED to JsonPrimitive(true)))
+            return record(Verdict.fromJson(marked))
+        }
+    }
+
+    private suspend fun evaluate(mail: MailForCheck): Evaluation {
         val js = engine()
         refreshContext(js)
         val config = JsonObject(
@@ -181,23 +265,24 @@ class ProtectionService(
                 verdict = js.analyze(features, JsonObject(context), config)
             }
         }
-        val sender = features["from"]?.let { from ->
-            (from as? JsonObject)?.get("address")?.jsonPrimitive?.content
-        }.orEmpty()
-        val record = StoredVerdict(
-            accountUuid = accountUuid,
-            k9Id = k9Id,
-            folderId = mail.location.folderId,
-            uid = mail.location.uid,
-            headerMessageId = mail.headerMessageId,
-            sender = sender,
-            verdict = verdict,
-            rulesVersion = RULES_VERSION,
-            checkedAt = now(),
-        )
+        return Evaluation(mail, features, context, config, verdict)
+    }
+
+    private suspend fun check(accountUuid: String, k9Id: Long, withAi: Boolean = false): StoredVerdict? {
+        val mail = texts.mailForCheck(accountUuid, k9Id) ?: return null
+        val evaluation = evaluate(mail)
+        var record = evaluation.record()
+        if (withAi && wantsAi(record)) {
+            val answer = runCatching { ai?.extract(evaluation.header, evaluation.text) }.getOrNull()
+            record = evaluation.withAi(engine(), answer)
+        }
+        save(record)
+        return record
+    }
+
+    private fun save(record: StoredVerdict) {
         store.save(record)
         _revision.value++
-        return record
     }
 
     /** Contacts and sender history in the engine, refreshed at most every [CONTEXT_MAX_AGE] ms. */
@@ -317,6 +402,8 @@ class ProtectionService(
         /** Version of the rules (add-on core + this check); results of other versions are checked again on open. */
         const val RULES_VERSION = "addon-0.9.1+android-1"
 
+        /** Key in the stored verdict JSON: the language model was asked (or was not needed) for this result. */
+        private const val AI_CHECKED = "aiChecked"
         private const val CONTEXT_MAX_AGE = 10 * 60_000L
         private const val MAX_REASONS = 8
         private const val MAX_REASON_CHARS = 160
