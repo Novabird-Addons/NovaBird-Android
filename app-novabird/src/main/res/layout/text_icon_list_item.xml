@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NovaBird: Thunderbird's text_icon_list_item as a row of a white block with the icon on a tinted tile. Keep the ids
+     (icon, text) in sync with legacy/ui/legacy/src/main/res/layout/text_icon_list_item.xml. -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/windowBackground"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/nb_settings_block_margin"
+        android:background="?attr/colorSurfaceContainerLow"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?selectableItemBackground"
+        android:gravity="center_vertical"
+        android:minHeight="56dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="0dp"
+        tools:ignore="UseCompoundDrawables"
+        >
+
+        <ImageView
+            android:id="@+id/icon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/nb_settings_icon_tile"
+            android:contentDescription="@string/account_settings_action"
+            android:padding="8dp"
+            app:tint="?attr/colorOnPrimaryContainer"
+            app:srcCompat="@drawable/ic_settings"
+            />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/text"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:paddingStart="14dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:singleLine="true"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            tools:text="List item with simple text"
+            />
+    </LinearLayout>
+
+</FrameLayout>
