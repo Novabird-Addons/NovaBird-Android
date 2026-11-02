@@ -19,6 +19,8 @@ import com.fsck.k9.ui.MessageViewHook
 import com.fsck.k9.ui.messageview.MessageTopView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Locale
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import net.thunderbird.core.android.account.LegacyAccountDto
@@ -33,6 +35,9 @@ import com.google.android.material.R as MaterialR
 class ProtectionViewState(val accountUuid: String, val k9Id: Long) {
     @Volatile
     var level: ProtectionLevel = ProtectionLevel.NORMAL
+
+    /** Check and refresh of this message; cancelled when the view shows the next one. */
+    var job: Job? = null
 }
 
 /**
@@ -52,11 +57,12 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
         if (container == null || message == null) return
         container.removeAllViews()
         container.isVisible = false
+        (messageTopView.getTag(R.id.nb_protection_state) as? ProtectionViewState)?.job?.cancel()
         val state = ProtectionViewState(account.uuid, message.databaseId)
         messageTopView.setTag(R.id.nb_protection_state, state)
         val owner = messageTopView.findViewTreeLifecycleOwner()
         if (!service.isEnabled || owner == null) return
-        owner.lifecycleScope.launch {
+        state.job = owner.lifecycleScope.launch {
             val result = runCatching { service.verdictOnOpen(state.accountUuid, state.k9Id) }
             // another message is shown meanwhile
             if (messageTopView.getTag(R.id.nb_protection_state) !== state) return@launch
@@ -72,7 +78,7 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
             )
             // the language model may sharpen the result a little later: show it as soon as it is stored
             var shown = result.getOrNull()?.verdict?.json
-            service.revision.drop(1).collect {
+            service.revision.drop(1).conflate().collect {
                 if (messageTopView.getTag(R.id.nb_protection_state) !== state) return@collect
                 val latest = runCatching { service.storedVerdict(state.accountUuid, state.k9Id) }.getOrNull()
                 if (latest?.verdict?.json == shown) return@collect

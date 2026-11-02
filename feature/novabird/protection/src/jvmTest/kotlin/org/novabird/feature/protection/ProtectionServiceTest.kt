@@ -39,10 +39,12 @@ class ProtectionServiceTest {
     private var deviceContacts = emptyList<DeviceContact>()
     private val aiAnswers = mutableListOf<String>()
     private var aiAnswer: String? = null
+    private var aiFails = false
     private val fakeAi = object : ProtectionAi {
         override fun isAvailable() = aiAnswer != null
         override suspend fun extract(header: String, text: String): String? {
             aiAnswers += header
+            if (aiFails) throw IllegalStateException("Helper nicht erreichbar")
             return aiAnswer
         }
     }
@@ -236,6 +238,25 @@ class ProtectionServiceTest {
         val second = service.storedVerdict(account.uuid, 1)!!
         assertThat(second.verdict.signals.map { it.id }).contains("aiClaimMismatch")
         assertThat(second.verdict.score > first.verdict.score).isEqualTo(true)
+    }
+
+    @Test
+    fun `an unreachable model pauses the questions and the mail is asked again later`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        aiAnswer = """{"ok":true,"claimedOrg":"Sparkasse","claimedDomain":null,"asksFor":"login","urgency":true,""" +
+            """"injection":false,"model":"test"}"""
+        aiFails = true
+        mail(1, "Kundenservice <info@fremd.example>", "Ihr Zugang", "<p>Bitte melden Sie sich heute noch an.</p>")
+        mail(2, "Service <info@andere.example>", "Noch ein Zugang", "<p>Bitte melden Sie sich an.</p>")
+
+        service.checkNewMails()
+
+        // the first call failed, the second mail was not even tried; nothing is marked as asked
+        assertThat(aiAnswers.size).isEqualTo(1)
+        assertThat(store.get(account.uuid, 1)!!.verdict.signals.map { it.id }).doesNotContain("aiClaimMismatch")
+        aiFails = false
+        service.refineWithAi(account.uuid, 1)
+        assertThat(aiAnswers.size).isEqualTo(1) // still paused
     }
 
     @Test

@@ -51,6 +51,12 @@ class ProtectionService(
 ) {
     private val mutex = Mutex()
     private var contextLoadedAt = Long.MIN_VALUE
+
+    /** After a failed model call (Helper not reachable) no mail is sent to the model until this time. */
+    private var aiPausedUntil = 0L
+
+    /** Mails whose model call is running (open path), so a second open does not ask twice. */
+    private val aiInFlight = HashSet<Pair<String, Long>>()
     private val _revision = MutableStateFlow(0L)
 
     val isEnabled: Boolean get() = settings.enabled
@@ -140,7 +146,19 @@ class ProtectionService(
         val verdict = locked {
             store.get(accountUuid, k9Id)?.takeIf { it.rulesVersion == RULES_VERSION } ?: check(accountUuid, k9Id)
         }
-        if (verdict != null && wantsAi(verdict)) scope?.launch { refineWithAi(accountUuid, k9Id) }
+        if (verdict != null && wantsAi(verdict) && scope != null) {
+            val key = accountUuid to k9Id
+            val started = locked { aiInFlight.add(key) }
+            if (started) {
+                scope.launch {
+                    try {
+                        refineWithAi(accountUuid, k9Id)
+                    } finally {
+                        locked { aiInFlight.remove(key) }
+                    }
+                }
+            }
+        }
         return verdict
     }
 
@@ -154,10 +172,24 @@ class ProtectionService(
             evaluate(mail)
         } ?: return
         // the model call is slow and may use the network: outside the lock
-        val answer = runCatching { model.extract(prepared.header, prepared.text) }.getOrNull()
+        val answer = askModel(model, prepared) ?: return
         locked {
             if (store.get(accountUuid, k9Id)?.let(::wantsAi) != true) return@locked
             save(prepared.withAi(engine(), answer))
+        }
+    }
+
+    /**
+     * The model's answer for [prepared], or `null` if the model could not be reached: then nothing is stored (the mail
+     * is asked again later) and the model is left alone for [AI_PAUSE_MILLIS].
+     */
+    private suspend fun askModel(model: ProtectionAi, prepared: Evaluation): String? {
+        if (now() < aiPausedUntil) return null
+        return try {
+            model.extract(prepared.header, prepared.text)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            aiPausedUntil = now() + AI_PAUSE_MILLIS
+            null
         }
     }
 
@@ -191,10 +223,15 @@ class ProtectionService(
                     store.setWatermark(account.uuid, maxMessageId(account.uuid))
                     continue
                 }
-                val ids = newInboxIds(account.uuid, watermark)
-                val done = store.checkedIds(account.uuid, ids, RULES_VERSION)
-                for (id in ids) {
-                    if (id !in done && check(account.uuid, id, withAi = true) != null) count++
+                var after: Long = watermark
+                while (true) {
+                    val ids = newInboxIds(account.uuid, after)
+                    val done = store.checkedIds(account.uuid, ids, RULES_VERSION)
+                    for (id in ids) {
+                        if (id !in done && check(account.uuid, id, withAi = true) != null) count++
+                    }
+                    if (ids.size < NEW_MAILS_PER_RUN) break
+                    after = ids.last()
                 }
             }
             count
@@ -272,9 +309,8 @@ class ProtectionService(
         val mail = texts.mailForCheck(accountUuid, k9Id) ?: return null
         val evaluation = evaluate(mail)
         var record = evaluation.record()
-        if (withAi && wantsAi(record)) {
-            val answer = runCatching { ai?.extract(evaluation.header, evaluation.text) }.getOrNull()
-            record = evaluation.withAi(engine(), answer)
+        if (withAi && ai != null && wantsAi(record)) {
+            askModel(ai, evaluation)?.let { answer -> record = evaluation.withAi(engine(), answer) }
         }
         save(record)
         return record
@@ -404,6 +440,7 @@ class ProtectionService(
 
         /** Key in the stored verdict JSON: the language model was asked (or was not needed) for this result. */
         private const val AI_CHECKED = "aiChecked"
+        private const val AI_PAUSE_MILLIS = 5 * 60_000L
         private const val CONTEXT_MAX_AGE = 10 * 60_000L
         private const val MAX_REASONS = 8
         private const val MAX_REASON_CHARS = 160
