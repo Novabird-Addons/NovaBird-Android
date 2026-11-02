@@ -21,10 +21,10 @@ import com.fsck.k9.ui.R as LegacyR
  */
 class ProtectionLinkGate : MessageLinkGate {
 
-    override fun shouldIntercept(webView: WebView, uri: Uri): Boolean {
-        val state = if (uri.scheme == "http" || uri.scheme == "https") findState(webView) else null
+    override fun shouldIntercept(view: View, uri: Uri): Boolean {
+        val state = if (uri.scheme == "http" || uri.scheme == "https") findState(view) else null
         if (state == null || state.level != ProtectionLevel.DANGEROUS) return false
-        val context = webView.context
+        val context = view.context
         MaterialAlertDialogBuilder(context)
             .setTitle(R.string.novabird_protect_link_title)
             .setMessage(context.getString(R.string.novabird_protect_link_text, uri.host ?: uri.toString()))

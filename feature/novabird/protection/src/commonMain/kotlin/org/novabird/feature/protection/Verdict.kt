@@ -28,6 +28,9 @@ data class Verdict(
     val signals: List<Signal>,
     val json: JsonObject,
 ) {
+    /** Text form of the stored verdict; equal for equal results (for callers without the JSON library). */
+    val key: String get() = json.toString()
+
     companion object {
         fun fromJson(json: JsonObject) = Verdict(
             score = json.getValue("score").jsonPrimitive.content.toDouble().toInt(),

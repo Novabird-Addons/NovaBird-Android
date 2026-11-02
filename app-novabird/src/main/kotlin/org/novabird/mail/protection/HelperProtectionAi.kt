@@ -29,8 +29,12 @@ class HelperProtectionAi(
         )
         val from = answer.indexOf('{')
         val to = answer.lastIndexOf('}')
-        if (from < 0 || to <= from) return@withContext null
-        val facts = runCatching { JSONObject(answer.substring(from, to + 1)) }.getOrNull() ?: return@withContext null
+        // the model answered, but not with JSON: like the desktop an error answer, the mail counts as asked
+        val facts = if (from < 0 || to <= from) {
+            null
+        } else {
+            runCatching { JSONObject(answer.substring(from, to + 1)) }.getOrNull()
+        } ?: return@withContext JSONObject().put("ok", false).put("error", "json").toString()
         facts.put("ok", true)
         facts.put("injection", MailPrompts.suspicious(text))
         facts.put("model", "helper")

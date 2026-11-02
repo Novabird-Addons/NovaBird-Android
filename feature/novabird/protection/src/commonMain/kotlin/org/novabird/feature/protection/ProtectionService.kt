@@ -2,6 +2,7 @@ package org.novabird.feature.protection
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ class ProtectionService(
 
     /** Mails whose model call is running (open path), so a second open does not ask twice. */
     private val aiInFlight = HashSet<Pair<String, Long>>()
+    private val aiInFlightMutex = Mutex()
     private val _revision = MutableStateFlow(0L)
 
     val isEnabled: Boolean get() = settings.enabled
@@ -148,13 +150,13 @@ class ProtectionService(
         }
         if (verdict != null && wantsAi(verdict) && scope != null) {
             val key = accountUuid to k9Id
-            val started = locked { aiInFlight.add(key) }
+            val started = aiInFlightMutex.withLock { aiInFlight.add(key) }
             if (started) {
                 scope.launch {
                     try {
                         refineWithAi(accountUuid, k9Id)
                     } finally {
-                        locked { aiInFlight.remove(key) }
+                        withContext(NonCancellable) { aiInFlightMutex.withLock { aiInFlight.remove(key) } }
                     }
                 }
             }
@@ -211,31 +213,39 @@ class ProtectionService(
         return locked { store.levels(accountUuid, k9Ids) }
     }
 
-    /** Checks inbox mails that arrived after switching on and have no result yet. Returns the number checked. */
+    /**
+     * Checks inbox mails that arrived after switching on and have no result yet. Returns the number checked. The lock is
+     * held per mail only, so an opened mail does not wait for the whole run (nor for the model).
+     */
     suspend fun checkNewMails(): Int {
         if (!settings.enabled) return 0
-        return locked {
-            var count = 0
-            for (account in mailStore.accounts()) {
-                val watermark = store.watermark(account.uuid)
-                if (watermark == null) {
+        var count = 0
+        // boot the engine and build the sender history now, not on the first open
+        locked { refreshContext(engine()) }
+        for (account in mailStore.accounts()) {
+            var after: Long = locked {
+                store.watermark(account.uuid) ?: run {
                     // account added after switching on: start from now
                     store.setWatermark(account.uuid, maxMessageId(account.uuid))
-                    continue
+                    null
                 }
-                var after: Long = watermark
-                while (true) {
+            } ?: continue
+            while (true) {
+                val (ids, done) = locked {
                     val ids = newInboxIds(account.uuid, after)
-                    val done = store.checkedIds(account.uuid, ids, RULES_VERSION)
-                    for (id in ids) {
-                        if (id !in done && check(account.uuid, id, withAi = true) != null) count++
-                    }
-                    if (ids.size < NEW_MAILS_PER_RUN) break
-                    after = ids.last()
+                    ids to store.checkedIds(account.uuid, ids, RULES_VERSION)
                 }
+                for (id in ids) {
+                    if (id in done) continue
+                    val record = locked { check(account.uuid, id) } ?: continue
+                    count++
+                    if (wantsAi(record)) refineWithAi(account.uuid, id)
+                }
+                if (ids.size < NEW_MAILS_PER_RUN) break
+                after = ids.last()
             }
-            count
         }
+        return count
     }
 
     // ------------------------------------------------------------ check
@@ -305,13 +315,9 @@ class ProtectionService(
         return Evaluation(mail, features, context, config, verdict)
     }
 
-    private suspend fun check(accountUuid: String, k9Id: Long, withAi: Boolean = false): StoredVerdict? {
+    private suspend fun check(accountUuid: String, k9Id: Long): StoredVerdict? {
         val mail = texts.mailForCheck(accountUuid, k9Id) ?: return null
-        val evaluation = evaluate(mail)
-        var record = evaluation.record()
-        if (withAi && ai != null && wantsAi(record)) {
-            askModel(ai, evaluation)?.let { answer -> record = evaluation.withAi(engine(), answer) }
-        }
+        val record = evaluate(mail).record()
         save(record)
         return record
     }

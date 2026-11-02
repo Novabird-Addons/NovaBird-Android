@@ -77,12 +77,12 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
                 onFailure = { showErrorBanner(container) },
             )
             // the language model may sharpen the result a little later: show it as soon as it is stored
-            var shown = result.getOrNull()?.verdict?.json
+            var shown = result.getOrNull()?.verdict?.key
             service.revision.drop(1).conflate().collect {
                 if (messageTopView.getTag(R.id.nb_protection_state) !== state) return@collect
                 val latest = runCatching { service.storedVerdict(state.accountUuid, state.k9Id) }.getOrNull()
-                if (latest?.verdict?.json == shown) return@collect
-                shown = latest?.verdict?.json
+                if (latest?.verdict?.key == shown) return@collect
+                shown = latest?.verdict?.key
                 container.removeAllViews()
                 container.isVisible = false
                 state.level = latest?.level ?: ProtectionLevel.NORMAL

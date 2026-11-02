@@ -56,6 +56,7 @@ import net.thunderbird.core.ui.theme.api.FeatureThemeProvider
 import net.thunderbird.feature.mail.message.reader.api.domain.mapper.AttachmentViewInfoMapper
 import net.thunderbird.feature.mail.message.reader.api.ui.MessageReaderViewContract
 import net.thunderbird.feature.mail.message.reader.api.ui.component.organism.AttachmentCard
+import com.fsck.k9.ui.MessageLinkGate
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
@@ -67,6 +68,9 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
 
     private val displayHtml: DisplayHtml by inject(named("MessageView"))
     private val webViewConfigProvider: WebViewConfigProvider by inject()
+
+    // NovaBird: links of a mail rated dangerous ask first
+    private val linkGate: MessageLinkGate? by lazy { getKoin().getOrNull() }
     private val clipboardManager: ClipboardManager by inject()
     private val linkTextHandler: LinkTextHandler by inject()
     private val featureThemeProvider: FeatureThemeProvider by inject()
@@ -151,8 +155,10 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
         val listener = MenuItem.OnMenuItemClickListener { item ->
             when (item.itemId) {
                 MENU_ITEM_LINK_VIEW -> {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))
-                    startActivityIfAvailable(context, intent)
+                    val uri = Uri.parse(linkUrl)
+                    if (linkGate?.shouldIntercept(this, uri) != true) {
+                        startActivityIfAvailable(context, Intent(Intent.ACTION_VIEW, uri))
+                    }
                 }
 
                 MENU_ITEM_LINK_SHARE -> {

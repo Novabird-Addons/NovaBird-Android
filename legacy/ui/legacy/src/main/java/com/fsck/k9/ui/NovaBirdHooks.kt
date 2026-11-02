@@ -20,7 +20,10 @@ fun interface MessageListItemDecorator {
     fun decorate(itemView: View, item: MessageListItem)
 }
 
-/** Asked before a link in a message is opened; `true` means the gate took over (e.g. shows a dialog). */
+/**
+ * Asked before a link in a message is opened (tap in the web view, "open link" in its context menu); `true` means the
+ * gate took over (e.g. shows a dialog). [view] is a view inside the message view.
+ */
 fun interface MessageLinkGate {
-    fun shouldIntercept(webView: WebView, uri: Uri): Boolean
+    fun shouldIntercept(view: View, uri: Uri): Boolean
 }
