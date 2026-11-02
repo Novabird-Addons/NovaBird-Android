@@ -23,7 +23,6 @@ import com.fsck.k9.message.MessageBuilder;
 import com.fsck.k9.message.QuotedTextMode;
 import com.fsck.k9.message.SimpleMessageFormat;
 import com.fsck.k9.message.extractors.BodyTextExtractor;
-import com.fsck.k9.message.html.HtmlConverter;
 import com.fsck.k9.message.quote.HtmlQuoteCreator;
 import com.fsck.k9.message.quote.InsertableHtmlContent;
 import com.fsck.k9.message.quote.TextQuoteCreator;
@@ -282,7 +281,7 @@ public class QuotedMessagePresenter {
                     // Grab our reply text.
                     bodyText = text.substring(bodyOffset, bodyOffset + bodyLength);
                 }
-                view.setMessageContentCharacters(HtmlConverter.htmlToText(bodyText));
+                view.setMessageContentHtml(bodyText);
 
                 // Regenerate the quoted html without our user content in it.
                 StringBuilder quotedHTML = new StringBuilder();

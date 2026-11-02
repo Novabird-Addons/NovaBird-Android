@@ -88,6 +88,7 @@ import com.fsck.k9.activity.compose.PgpInlineDialog.OnOpenPgpInlineChangeListene
 import com.fsck.k9.activity.compose.PgpSignOnlyDialog.OnOpenPgpSignOnlyChangeListener;
 import com.fsck.k9.activity.compose.RecipientMvpView;
 import com.fsck.k9.activity.compose.RecipientPresenter;
+import com.fsck.k9.activity.compose.RichTextEditor;
 import com.fsck.k9.activity.compose.ReplyToPresenter;
 import com.fsck.k9.activity.compose.ReplyToView;
 import com.fsck.k9.activity.compose.SaveMessageTask;
@@ -812,6 +813,9 @@ public class MessageCompose extends BaseActivity implements OnClickListener,
     private MessageBuilder createMessageBuilder(boolean isDraft) {
         MessageBuilder builder;
 
+        // NovaBird: formatting may have been added since the format was last chosen
+        updateMessageFormat();
+
         ComposeCryptoStatus cryptoStatus = recipientPresenter.getCurrentCachedCryptoStatus();
         if (cryptoStatus == null) {
             Log.w("Couldn't retrieve crypto status; not creating MessageBuilder!");
@@ -843,7 +847,8 @@ public class MessageCompose extends BaseActivity implements OnClickListener,
                 .setIdentity(identity)
                 .setReplyTo(replyToPresenter.getAddresses())
                 .setMessageFormat(currentMessageFormat)
-                .setText(CrLfConverter.toCrLf(messageContentView.getText()))
+                .setText(CrLfConverter.toCrLf(messageContentText()))
+                .setHtmlText(messageContentHtml())
                 .setAttachments(attachmentPresenter.getAttachments())
                 .setInlineAttachments(attachmentPresenter.getInlineAttachments())
                 .setSignature(CrLfConverter.toCrLf(signatureView.getText()))
@@ -858,6 +863,30 @@ public class MessageCompose extends BaseActivity implements OnClickListener,
         quotedMessagePresenter.builderSetProperties(builder);
 
         return builder;
+    }
+
+    // NovaBird: the message text view may be a rich text editor (see RichTextEditor)
+    private RichTextEditor richTextEditor() {
+        return messageContentView instanceof RichTextEditor ? (RichTextEditor) messageContentView : null;
+    }
+
+    private boolean hasFormattedText() {
+        RichTextEditor editor = richTextEditor();
+        return editor != null && editor.hasFormatting();
+    }
+
+    // a quote of a plain text message exists only as text; HTML would lose it
+    private boolean hasPlainTextQuote() {
+        return quotedMessagePresenter.includeQuotedText() && quotedMessagePresenter.isQuotedTextText();
+    }
+
+    private CharSequence messageContentText() {
+        return hasFormattedText() ? richTextEditor().getPlainText() : messageContentView.getText();
+    }
+
+    private String messageContentHtml() {
+        return hasFormattedText() && currentMessageFormat == SimpleMessageFormat.HTML ?
+                richTextEditor().getHtmlFragment() : null;
     }
 
     private void checkToSendMessage() {
@@ -1829,7 +1858,10 @@ public class MessageCompose extends BaseActivity implements OnClickListener,
             // plain text in those cases.
             messageFormat = SimpleMessageFormat.TEXT;
         } else if (origMessageFormat == MessageFormat.AUTO) {
-            if (action == Action.COMPOSE || quotedMessagePresenter.isQuotedTextText() ||
+            if (hasFormattedText() && !hasPlainTextQuote()) {
+                // NovaBird: formatted text needs HTML
+                messageFormat = SimpleMessageFormat.HTML;
+            } else if (action == Action.COMPOSE || quotedMessagePresenter.isQuotedTextText() ||
                     !quotedMessagePresenter.includeQuotedText()) {
                 // If the message format is set to "AUTO" we use text/plain whenever possible. That
                 // is, when composing new messages and replying to or forwarding text/plain
@@ -1844,6 +1876,16 @@ public class MessageCompose extends BaseActivity implements OnClickListener,
         }
 
         setCurrentMessageFormat(messageFormat);
+
+        RichTextEditor editor = richTextEditor();
+        if (editor != null) {
+            // NovaBird: no formatting while the message has to go out as plain text
+            boolean plainTextOnly = origMessageFormat == MessageFormat.TEXT ||
+                    (quotedMessagePresenter.isForcePlainText() && quotedMessagePresenter.includeQuotedText()) ||
+                    recipientPresenter.isForceTextMessageFormat() ||
+                    (origMessageFormat == MessageFormat.AUTO && hasPlainTextQuote());
+            editor.setRichTextAvailable(!plainTextOnly);
+        }
     }
 
     @Override

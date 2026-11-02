@@ -19,6 +19,8 @@ import com.fsck.k9.mailstore.AttachmentResolver;
 import com.fsck.k9.message.QuotedTextMode;
 import com.fsck.k9.message.SimpleMessageFormat;
 import com.fsck.k9.message.html.DisplayHtml;
+import com.fsck.k9.message.html.HtmlConverter;
+import com.fsck.k9.activity.compose.RichTextEditor;
 import com.fsck.k9.ui.R;
 import com.fsck.k9.ui.helper.DisplayHtmlUiFactory;
 import com.fsck.k9.view.MessageWebView;
@@ -150,6 +152,15 @@ public class QuotedMessageMvpView {
 
     public void setMessageContentCharacters(String text) {
         mMessageContentView.setText(CrLfConverter.toLf(text));
+    }
+
+    public void setMessageContentHtml(String html) {
+        // NovaBird: a rich text editor keeps the formatting of a draft
+        if (mMessageContentView instanceof RichTextEditor) {
+            ((RichTextEditor) mMessageContentView).setHtmlFragment(html);
+        } else {
+            setMessageContentCharacters(HtmlConverter.htmlToText(html));
+        }
     }
 
     public void setMessageContentCursorPosition(int messageContentCursorPosition) {

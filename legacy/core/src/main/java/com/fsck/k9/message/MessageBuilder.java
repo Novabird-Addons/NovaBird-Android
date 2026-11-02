@@ -58,6 +58,8 @@ public abstract class MessageBuilder {
     private Identity identity;
     private SimpleMessageFormat messageFormat;
     private String text;
+    // NovaBird: formatted text from the rich text editor (HTML fragment), used for the HTML part
+    private String htmlText;
     private List<Attachment> attachments;
     private Map<String, Attachment> inlineAttachments;
     private String signature;
@@ -349,6 +351,10 @@ public abstract class MessageBuilder {
             }
         }
 
+        if (simpleMessageFormat == SimpleMessageFormat.HTML) {
+            textBodyBuilder.setMessageContentHtml(htmlText);
+        }
+
         textBodyBuilder.setInsertSeparator(!isDraft);
 
         boolean useSignature = (!isDraft && identity.getSignatureUse());
@@ -436,6 +442,11 @@ public abstract class MessageBuilder {
 
     public MessageBuilder setText(String text) {
         this.text = text;
+        return this;
+    }
+
+    public MessageBuilder setHtmlText(String htmlText) {
+        this.htmlText = htmlText;
         return this;
     }
 

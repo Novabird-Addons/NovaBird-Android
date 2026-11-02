@@ -200,6 +200,7 @@ dependencies {
     debugImplementation(novabirdLibs.litertlm.android)
 
     implementation(libs.androidx.work.runtime)
+    implementation(libs.jsoup)
 
     implementation(projects.feature.autodiscovery.api)
     debugImplementation(projects.backend.demo)
@@ -214,4 +215,5 @@ dependencies {
     testImplementation(projects.feature.changelog.internal)
 
     testImplementation(libs.appauth)
+    testImplementation(libs.robolectric)
 }

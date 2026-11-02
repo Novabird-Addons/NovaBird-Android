@@ -27,4 +27,29 @@
     <string name="novabird_settings_search_off">Off</string>
     <string name="novabird_settings_logos">Show sender logos</string>
     <string name="novabird_settings_logos_note">Company logos (BIMI), loaded from the sender domain</string>
+    <!-- NovaBird: formatting in the compose screen -->
+    <string name="novabird_format_bold">Bold</string>
+    <string name="novabird_format_italic">Italic</string>
+    <string name="novabird_format_underline">Underline</string>
+    <string name="novabird_format_strike">Strikethrough</string>
+    <string name="novabird_format_bullets">Bulleted list</string>
+    <string name="novabird_format_numbers">Numbered list</string>
+    <string name="novabird_format_more">More formatting</string>
+    <string name="novabird_format_indent_less">Decrease indent</string>
+    <string name="novabird_format_indent_more">Increase indent</string>
+    <string name="novabird_format_clear">Clear formatting</string>
+    <string name="novabird_format_paragraph">Paragraph</string>
+    <string name="novabird_format_paragraph_normal">Normal</string>
+    <string name="novabird_format_heading">Heading</string>
+    <string name="novabird_format_subheading">Subheading</string>
+    <string name="novabird_format_quote">Quote</string>
+    <string name="novabird_format_font">Font</string>
+    <string name="novabird_format_font_standard">Standard</string>
+    <string name="novabird_format_font_serif">Serif</string>
+    <string name="novabird_format_font_mono">Mono</string>
+    <string name="novabird_format_size">Size</string>
+    <string name="novabird_format_size_small">Small</string>
+    <string name="novabird_format_size_normal">Normal</string>
+    <string name="novabird_format_size_large">Large</string>
+    <string name="novabird_format_size_huge">Huge</string>
 </resources>

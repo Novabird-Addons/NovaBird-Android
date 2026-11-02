@@ -23,6 +23,8 @@ class TextBodyBuilder {
     private boolean mSignatureIsHtml = false;
 
     private String mMessageContent;
+    // NovaBird: the composed text as HTML from the rich text editor; null means convert mMessageContent
+    private String mMessageContentHtml;
     private String mSignature;
     private String mQuotedText;
     private InsertableHtmlContent mQuotedTextHtml;
@@ -61,7 +63,7 @@ class TextBodyBuilder {
             }
 
             // Convert the text to HTML
-            text = textToHtmlFragment(text);
+            text = mMessageContentHtml != null ? mMessageContentHtml : textToHtmlFragment(text);
 
             // Save length of the body. This is used when thawing drafts.
             composedMessageLength = text.length();
@@ -108,7 +110,7 @@ class TextBodyBuilder {
 
         } else {
             // Convert the text to HTML
-            text = textToHtmlFragment(text);
+            text = mMessageContentHtml != null ? mMessageContentHtml : textToHtmlFragment(text);
 
             composedMessageLength = text.length();
             composedMessageOffset = HTML_AND_BODY_START.length();
@@ -219,6 +221,10 @@ class TextBodyBuilder {
 
     private String textToHtmlFragment(String text) {
         return HtmlConverter.textToHtmlFragment(text);
+    }
+
+    public void setMessageContentHtml(String messageContentHtml) {
+        mMessageContentHtml = messageContentHtml;
     }
 
     public void setSignature(String signature) {
