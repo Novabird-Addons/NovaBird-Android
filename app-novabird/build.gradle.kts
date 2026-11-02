@@ -10,8 +10,8 @@ android {
         testApplicationId = "org.novabird.mail.tests"
 
         // versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + stage (1..98 beta, 99 release)
-        versionCode = 20001
-        versionName = "0.2.0-beta1"
+        versionCode = 30001
+        versionName = "0.3.0-beta1"
 
         // NovaBird: only Android versions that still get security updates (Android 14+, bulletin 2026-10);
         // also covers ONNX Runtime (API 24+). Upstream modules keep their own minSdk.
