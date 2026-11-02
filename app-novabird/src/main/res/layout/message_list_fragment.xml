@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- NovaBird: Thunderbird's message_list_fragment with a bar of quick filters and "What's new?" above the list.
+<!-- NovaBird: Thunderbird's message_list_fragment with the inboxes of the accounts and a bar of quick filters and
+     "What's new?" above the list.
      Keep the views and ids in sync with legacy/ui/legacy/src/main/res/layout/message_list_fragment.xml. -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -27,6 +28,12 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         >
+
+        <org.novabird.mail.ui.AccountInboxesView
+            android:id="@+id/novabird_account_inboxes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
 
         <org.novabird.mail.ui.InboxHeaderView
             android:id="@+id/novabird_inbox_header"

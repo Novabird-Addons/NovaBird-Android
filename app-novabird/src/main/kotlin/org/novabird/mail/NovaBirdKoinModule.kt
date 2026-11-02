@@ -16,6 +16,7 @@ import org.novabird.mail.auth.NbOAuthConfigurationFactory
 import org.novabird.mail.dev.developmentModuleAdditions
 import org.novabird.mail.feature.featureModule
 import org.novabird.mail.featureflag.novaBirdFeatureFlagModule
+import org.novabird.mail.logo.novaBirdLogoModule
 import org.novabird.mail.provider.providerModule
 import org.novabird.mail.search.novaBirdSearchAppModule
 import org.novabird.mail.widget.provider.MessageListWidgetProvider
@@ -36,6 +37,7 @@ val appModule = module {
     includes(novaBirdAiModule)
     includes(novaBirdAiAppModule)
     includes(novaBirdDrawerModule)
+    includes(novaBirdLogoModule)
 
     single(named("ClientInfoAppName")) { BuildConfig.CLIENT_INFO_APP_NAME }
     single(named("ClientInfoAppVersion")) { BuildConfig.VERSION_NAME }

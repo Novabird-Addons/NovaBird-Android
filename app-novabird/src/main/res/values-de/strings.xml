@@ -12,4 +12,16 @@
     <string name="novabird_filter_unread">Ungelesen</string>
     <string name="novabird_filter_starred">Markiert</string>
     <string name="novabird_filter_attachment">Mit Anhang</string>
+    <!-- NovaBird-Design: Posteingänge der Konten über den Filtern -->
+    <string name="novabird_accounts_all">Alle Konten</string>
+    <!-- NovaBird-Block oben in den Einstellungen -->
+    <string name="novabird_settings_search_connected">Helper verbunden: %1$s</string>
+    <string name="novabird_settings_search_unreachable">Helper nicht erreichbar</string>
+    <string name="novabird_settings_search_local_now">Aktuell wird lokal gerechnet</string>
+    <string name="novabird_settings_search_words_only">Helper nicht erreichbar: Suche nur nach Wörtern</string>
+    <string name="novabird_settings_search_checking">Prüfe Helper …</string>
+    <string name="novabird_settings_search_phone">Rechnet auf dem Handy (kein Helper)</string>
+    <string name="novabird_settings_search_off">Aus</string>
+    <string name="novabird_settings_logos">Absender-Logos anzeigen</string>
+    <string name="novabird_settings_logos_note">Logos von Firmen, die eines veröffentlichen (BIMI), geladen von der Domain des Absenders</string>
 </resources>

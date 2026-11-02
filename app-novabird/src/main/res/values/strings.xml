@@ -15,4 +15,16 @@
     <string name="novabird_filter_unread">Unread</string>
     <string name="novabird_filter_starred">Starred</string>
     <string name="novabird_filter_attachment">With attachment</string>
+    <!-- NovaBird design: inboxes of the accounts above the quick filters -->
+    <string name="novabird_accounts_all">All accounts</string>
+    <!-- NovaBird block at the top of the settings -->
+    <string name="novabird_settings_search_connected">Helper connected: %1$s</string>
+    <string name="novabird_settings_search_unreachable">Helper not reachable</string>
+    <string name="novabird_settings_search_local_now">Currently computed on the phone</string>
+    <string name="novabird_settings_search_words_only">Helper not reachable: search by words only</string>
+    <string name="novabird_settings_search_checking">Checking Helper …</string>
+    <string name="novabird_settings_search_phone">Computed on the phone (no Helper)</string>
+    <string name="novabird_settings_search_off">Off</string>
+    <string name="novabird_settings_logos">Show sender logos</string>
+    <string name="novabird_settings_logos_note">Logos of companies that publish one (BIMI), loaded from the sender domain</string>
 </resources>

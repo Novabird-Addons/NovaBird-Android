@@ -148,6 +148,10 @@ dependencies {
     implementation(projects.legacy.ui.legacy)
     implementation(projects.feature.search.implLegacy)
     implementation(libs.android.material)
+    implementation(libs.glide)
+    implementation(libs.okhttp)
+    implementation(libs.minidns.hla)
+    implementation(novabirdLibs.androidsvg)
 
     implementation(projects.core.featureflag)
 

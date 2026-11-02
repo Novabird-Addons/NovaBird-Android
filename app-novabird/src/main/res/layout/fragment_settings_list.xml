@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NovaBird: Thunderbird's fragment_settings_list with the NovaBird block (semantic search status, sender logos) above
+     the list. Keep the RecyclerView (id settings_list) in sync with
+     legacy/ui/legacy/src/main/res/layout/fragment_settings_list.xml. -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+
+    <org.novabird.mail.ui.SettingsHeaderView
+        android:id="@+id/novabird_settings_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/settings_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:scrollbars="vertical"
+        tools:ignore="MissingClass"
+        tools:listitem="@layout/text_icon_list_item"
+        />
+</LinearLayout>

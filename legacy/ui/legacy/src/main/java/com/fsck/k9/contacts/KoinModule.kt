@@ -8,5 +8,5 @@ val contactsModule = module {
     factory { ContactLetterBitmapCreator(letterExtractor = get(), config = get()) }
     factory { ContactPhotoLoader(contentResolver = get(), contactRepository = get()) }
     factory { ContactPictureLoader(context = get(), contactLetterBitmapCreator = get()) }
-    factory { ContactImageBitmapDecoderFactory(contactPhotoLoader = get()) }
+    factory { ContactImageBitmapDecoderFactory(contactPhotoLoader = get(), senderLogoLoader = getOrNull()) }
 }

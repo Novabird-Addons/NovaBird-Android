@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NovaBird: status colors of the Helper connection (settings header) -->
+<resources>
+    <color name="nb_status_ok">#1E8E3E</color>
+    <color name="nb_status_warn">#C26401</color>
+</resources>

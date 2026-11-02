@@ -10,10 +10,13 @@ quickjsKt = "1.0.15"
 onnxruntime = "1.23.2"
 # LiteRT-LM (Apache 2.0): Sprachmodell auf dem Handy, vorerst nur im Debug-Messprogramm (LlmBenchActivity)
 litertlm = "0.19.0"
+# AndroidSVG (Apache 2.0): BIMI-Logos der Absender (SVG) als Bild
+androidsvg = "1.4"
 
 [libraries]
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "androidxSqlite" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidxSqlite" }
 quickjs-kt = { module = "io.github.dokar3:quickjs-kt", version.ref = "quickjsKt" }
 litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
+androidsvg = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvg" }
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }

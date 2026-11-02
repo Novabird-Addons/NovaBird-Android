@@ -15,12 +15,15 @@ import kotlin.math.max
 internal class ContactImageBitmapDecoder(
     private val contactPhotoLoader: ContactPhotoLoader,
     private val bitmapPool: BitmapPool,
+    private val senderLogoLoader: SenderLogoLoader? = null,
 ) : ResourceDecoder<ContactImage, Bitmap> {
 
     override fun decode(contactImage: ContactImage, width: Int, height: Int, options: Options): Resource<Bitmap>? {
         val size = max(width, height)
 
-        val bitmap = loadContactPhoto(contactImage) ?: createContactLetterBitmap(contactImage, size)
+        val bitmap = loadContactPhoto(contactImage)
+            ?: loadSenderLogo(contactImage, size)
+            ?: createContactLetterBitmap(contactImage, size)
 
         return BitmapResource.obtain(bitmap, bitmapPool)
     }
@@ -31,6 +34,12 @@ internal class ContactImageBitmapDecoder(
         return contactPhotoLoader.loadContactPhoto(contactImage.address.address)
     }
 
+    private fun loadSenderLogo(contactImage: ContactImage, size: Int): Bitmap? {
+        if (contactImage.contactLetterOnly) return null
+
+        return senderLogoLoader?.loadLogo(contactImage.address.address, size)
+    }
+
     private fun createContactLetterBitmap(contactImage: ContactImage, size: Int): Bitmap {
         val bitmap = bitmapPool.getDirty(size, size, Bitmap.Config.ARGB_8888)
         return contactImage.contactLetterBitmapCreator.drawBitmap(bitmap, size, contactImage.address)
@@ -39,8 +48,19 @@ internal class ContactImageBitmapDecoder(
     override fun handles(source: ContactImage, options: Options) = true
 }
 
-internal class ContactImageBitmapDecoderFactory(private val contactPhotoLoader: ContactPhotoLoader) {
+internal class ContactImageBitmapDecoderFactory(
+    private val contactPhotoLoader: ContactPhotoLoader,
+    private val senderLogoLoader: SenderLogoLoader? = null,
+) {
     fun create(bitmapPool: BitmapPool): ContactImageBitmapDecoder {
-        return ContactImageBitmapDecoder(contactPhotoLoader, bitmapPool)
+        return ContactImageBitmapDecoder(contactPhotoLoader, bitmapPool, senderLogoLoader)
     }
+}
+
+/**
+ * Optional source of sender pictures (e.g. brand logos), used for addresses without a contact photo. Provided by the
+ * app via Koin; called on a Glide worker thread.
+ */
+fun interface SenderLogoLoader {
+    fun loadLogo(emailAddress: String, sizePx: Int): Bitmap?
 }
