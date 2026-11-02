@@ -146,6 +146,8 @@ dependencies {
 
     implementation(projects.legacy.core)
     implementation(projects.legacy.ui.legacy)
+    implementation(projects.feature.search.implLegacy)
+    implementation(libs.android.material)
 
     implementation(projects.core.featureflag)
 

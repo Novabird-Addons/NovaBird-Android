@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NovaBird: Thunderbird's message_list_fragment with a bar of quick filters and "What's new?" above the list.
+     Keep the views and ids in sync with legacy/ui/legacy/src/main/res/layout/message_list_fragment.xml. -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/message_list_coordinator"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".messagelist.LegacyMessageListFragment"
+    >
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floating_action_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/floatingActionButtonMargin"
+        android:contentDescription="@string/compose_action"
+        app:layout_behavior="com.fsck.k9.ui.fab.HideFabOnScrollBehavior"
+        app:srcCompat="@drawable/ic_edit"
+        android:focusable="true"
+        />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        >
+
+        <org.novabird.mail.ui.InboxHeaderView
+            android:id="@+id/novabird_inbox_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
+
+        <!-- the class comes with the legacy UI module (implementation dependency there), lint can't see it here -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swiperefresh"
+            tools:ignore="MissingClass"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            >
+
+            <androidx.core.view.insets.ProtectionLayout
+                android:id="@+id/protection_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                >
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/message_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:fadingEdge="none"
+                    android:paddingBottom="@dimen/floatingActionButtonSpacing"
+                    android:scrollbarStyle="outsideOverlay"
+                    android:scrollbars="vertical"
+                    tools:listitem="@layout/message_list_item"
+                    />
+
+                <androidx.compose.ui.platform.ComposeView
+                    android:id="@+id/banner_global_compose_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top"
+                    />
+
+            </androidx.core.view.insets.ProtectionLayout>
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    </LinearLayout>
+
+
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

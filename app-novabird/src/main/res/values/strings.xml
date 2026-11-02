@@ -10,4 +10,9 @@
     <string name="novabird_shortcut_ai_short">Semantic search</string>
     <!-- NovaBird design: shorter title of the unified inbox (overrides Thunderbird's) -->
     <string name="integrated_inbox_title">Inbox</string>
+    <!-- NovaBird design: quick filters above the message list -->
+    <string name="novabird_filter_all">All</string>
+    <string name="novabird_filter_unread">Unread</string>
+    <string name="novabird_filter_starred">Starred</string>
+    <string name="novabird_filter_attachment">With attachment</string>
 </resources>

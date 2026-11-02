@@ -7,4 +7,9 @@
     <string name="novabird_shortcut_ai_short">Vektorsuche und KI</string>
     <!-- NovaBird design: shorter title of the unified inbox (overrides Thunderbird's) -->
     <string name="integrated_inbox_title">Posteingang</string>
+    <!-- NovaBird design: quick filters above the message list -->
+    <string name="novabird_filter_all">Alle</string>
+    <string name="novabird_filter_unread">Ungelesen</string>
+    <string name="novabird_filter_starred">Markiert</string>
+    <string name="novabird_filter_attachment">Mit Anhang</string>
 </resources>
