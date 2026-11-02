@@ -38,6 +38,13 @@
             android:windowSoftInputMode="adjustResize"
             />
 
+        <activity
+            android:name="org.novabird.mail.protection.ProtectionSettingsActivity"
+            android:exported="false"
+            android:label="@string/novabird_settings_protect"
+            android:windowSoftInputMode="adjustResize"
+            />
+
         <activity-alias
             android:name="com.fsck.k9.activity.MessageSearchActivity"
             android:exported="false"

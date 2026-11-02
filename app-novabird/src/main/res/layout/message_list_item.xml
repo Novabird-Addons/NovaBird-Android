@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- NovaBird: Thunderbird's message_list_item with a round account dot and a faint star on
-     messages that aren't starred.
+<!-- NovaBird: Thunderbird's message_list_item with a round account dot, a faint star on
+     messages that aren't starred and the phishing badge (nb_protection_badge).
      Keep the views and ids in sync with legacy/ui/legacy/src/main/res/layout/message_list_item.xml. -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -124,11 +124,27 @@
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintBaseline_toBaselineOf="@+id/subject"
-        app:layout_constraintEnd_toStartOf="@+id/attachment"
+        app:layout_constraintEnd_toStartOf="@+id/nb_protection_badge"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/subject"
         app:layout_goneMarginEnd="8dp"
         tools:text="3"
+        />
+
+    <!-- NovaBird: phishing protection, "Vorsicht" or "gefährlich" (ProtectionListDecorator) -->
+    <ImageView
+        android:id="@+id/nb_protection_badge"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_marginEnd="4dp"
+        android:contentDescription="@string/novabird_settings_protect"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/subject"
+        app:layout_constraintEnd_toStartOf="@+id/attachment"
+        app:layout_constraintTop_toTopOf="@+id/subject"
+        app:srcCompat="@drawable/nb_ic_shield_alert"
+        app:tint="@color/nb_status_warn"
+        tools:visibility="visible"
         />
 
     <ImageView
@@ -197,7 +213,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:barrierDirection="bottom"
-        app:constraint_referenced_ids="subject,date,thread_count,status,attachment,account_color_chip"
+        app:constraint_referenced_ids="subject,date,thread_count,status,attachment,account_color_chip,nb_protection_badge"
         />
 
     <androidx.constraintlayout.widget.Barrier

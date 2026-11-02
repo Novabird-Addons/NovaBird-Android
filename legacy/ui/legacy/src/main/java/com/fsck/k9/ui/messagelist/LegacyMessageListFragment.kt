@@ -120,6 +120,7 @@ import net.thunderbird.feature.notification.api.ui.style.SnackbarDuration
 import net.thunderbird.feature.search.legacy.LocalMessageSearch
 import net.thunderbird.feature.search.legacy.SearchAccount
 import net.thunderbird.feature.search.legacy.serialization.LocalMessageSearchSerializer
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
@@ -415,6 +416,7 @@ class LegacyMessageListFragment :
             formatDate = { timestamp ->
                 relativeDateTimeFormatter.formatDate(timestamp, messageListSettings.dateTimeFormat)
             },
+            itemDecorator = getKoin().getOrNull(),
         ).apply {
             activeMessage = this@LegacyMessageListFragment.activeMessage
         }

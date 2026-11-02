@@ -58,6 +58,7 @@ import com.fsck.k9.mailstore.AttachmentViewInfo
 import com.fsck.k9.mailstore.LocalMessage
 import com.fsck.k9.mailstore.MessageViewInfo
 import com.fsck.k9.provider.RawMessageProvider
+import com.fsck.k9.ui.MessageViewHook
 import com.fsck.k9.ui.R
 import com.fsck.k9.ui.base.extensions.withArguments
 import com.fsck.k9.ui.choosefolder.ChooseFolderActivity
@@ -119,6 +120,7 @@ class MessageViewFragment :
     private val themeProvider: FeatureThemeProvider by inject()
     private val messageLoaderHelperFactory: MessageLoaderHelperFactory by inject()
     private val accountManager: LegacyAccountDtoManager by inject()
+    private val messageViewHook: MessageViewHook? by lazy { getKoin().getOrNull() }
     private val messagingController: MessagingController by inject()
     private val attachmentLoadingController: AttachmentLoadingController by inject()
     private val shareIntentBuilder: ShareIntentBuilder by inject()
@@ -567,6 +569,9 @@ class MessageViewFragment :
         if (messageViewInfo.subject != null) {
             displaySubject(messageViewInfo.subject)
         }
+
+        // NovaBird: phishing banner
+        messageViewHook?.onMessageShown(messageTopView, account, messageViewInfo)
     }
 
     private fun hideKeyboard() {

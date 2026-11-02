@@ -25,6 +25,29 @@
     <string name="novabird_settings_search_checking">Checking Helper …</string>
     <string name="novabird_settings_search_phone">Computed on the phone (no Helper)</string>
     <string name="novabird_settings_search_off">Off</string>
+    <string name="novabird_settings_protect">Phishing protection</string>
+    <string name="novabird_settings_protect_on">On: new and opened mails are checked</string>
+    <string name="novabird_settings_protect_off">Off</string>
+    <!-- NovaBird: phishing banner in the message view and link dialog -->
+    <string name="novabird_protect_banner_suspicious">Caution: this mail has signs of phishing.</string>
+    <string name="novabird_protect_banner_dangerous">Warning: this mail is very likely phishing.</string>
+    <string name="novabird_protect_banner_score">Score: %1$d of 100</string>
+    <string name="novabird_protect_banner_why">Why?</string>
+    <string name="novabird_protect_banner_why_less">Less</string>
+    <string name="novabird_protect_banner_reason">• %1$s</string>
+    <string name="novabird_protect_banner_links">Links in this mail ask before they open.</string>
+    <string name="novabird_protect_banner_trust">Trust sender</string>
+    <string name="novabird_protect_trust_title">Trust this sender?</string>
+    <string name="novabird_protect_trust_text">Warnings for this address will stop (forgery hints stay). You can undo this in the settings under “Trusted senders”.</string>
+    <string name="novabird_protect_trust_yes">Trust</string>
+    <string name="novabird_protect_trust_done">Sender trusted. Undo: Settings › Phishing protection.</string>
+    <string name="novabird_protect_trust_blocked">Trusting not possible here</string>
+    <string name="novabird_protect_trust_blocked_hint">A sender rated “dangerous” cannot be cleared with a tap. If you are sure, add the address in the settings.</string>
+    <string name="novabird_protect_banner_error_title">Check not possible.</string>
+    <string name="novabird_protect_banner_error_text">This mail could not be checked. Please treat it as unchecked.</string>
+    <string name="novabird_protect_link_title">Open link?</string>
+    <string name="novabird_protect_link_text">This mail is rated dangerous. The link leads to:\n%1$s</string>
+    <string name="novabird_protect_link_open">Open anyway</string>
     <string name="novabird_settings_logos">Show sender logos</string>
     <string name="novabird_settings_logos_note">Company logos (BIMI), loaded from the sender domain</string>
     <!-- NovaBird: formatting in the compose screen -->

@@ -159,6 +159,45 @@ class ProtectionServiceTest {
         assertThat(store.get(account.uuid, 1)).isNotNull()
     }
 
+    @Test
+    fun `trusting is refused for a dangerous mail and allowed for a suspicious one, undo brings the warning back`() =
+        runBlocking<Unit> {
+            service.enable(consentVersion = 1)
+            phishing(1)
+            // the add-on's own test case for "bank name from a foreign domain": suspicious, not dangerous
+            mail(2, "Kreissparkasse Waiblingen <info@kundenservice-check.de>", "Info", "<p>Hallo</p>")
+
+            assertThat(service.verdictOnOpen(account.uuid, 1)?.level).isEqualTo(ProtectionLevel.DANGEROUS)
+            assertThat(service.trustSenderOf(account.uuid, 1, "de")).isEqualTo(TrustOutcome.REFUSED_DANGEROUS)
+            assertThat(settings.trustedSenders).isEqualTo(emptyList())
+
+            val before = service.verdictOnOpen(account.uuid, 2)!!
+            assertThat(before.level).isEqualTo(ProtectionLevel.SUSPICIOUS)
+            assertThat(service.trustSenderOf(account.uuid, 2, "de")).isEqualTo(TrustOutcome.TRUSTED)
+            val trusted = settings.trustedSenders.single()
+            assertThat(trusted.address).isEqualTo("info@kundenservice-check.de")
+            assertThat(trusted.via).isEqualTo(TrustedVia.BANNER)
+            assertThat(trusted.reasons.isNotEmpty()).isEqualTo(true)
+            // the stored result is gone and the next open rates the mail again, now as normal
+            assertThat(store.get(account.uuid, 2)).isNull()
+            assertThat(service.verdictOnOpen(account.uuid, 2)?.level).isEqualTo(ProtectionLevel.NORMAL)
+
+            service.untrust(trusted.address)
+            assertThat(settings.trustedSenders).isEqualTo(emptyList())
+            assertThat(service.verdictOnOpen(account.uuid, 2)?.level).isEqualTo(ProtectionLevel.SUSPICIOUS)
+        }
+
+    @Test
+    fun `trusted senders survive a round trip through JSON`() {
+        val list = listOf(
+            TrustedSender("a@x.example", 1000L, TrustedVia.BANNER, 45, ProtectionLevel.SUSPICIOUS, listOf("Grund 1")),
+            TrustedSender("b@y.example", 2000L, TrustedVia.SETTINGS),
+        )
+
+        assertThat(TrustedSender.listFromJson(TrustedSender.listToJson(list))).isEqualTo(list)
+        assertThat(TrustedSender.listFromJson("kaputt")).isEqualTo(emptyList())
+    }
+
     /** K-9 database for tests: folders and messages with the columns the protection reads, in memory. */
     private class FakeK9(private val account: K9Account) : K9MailStore {
         private val connection: SQLiteConnection = BundledSQLiteDriver().open(":memory:")

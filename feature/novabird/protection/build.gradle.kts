@@ -10,6 +10,8 @@ kotlin {
         commonMain.dependencies {
             api(projects.feature.novabird.search.api)
             implementation(novabirdLibs.quickjs.kt)
+            implementation(libs.koin.compose.viewmodel)
+            implementation(libs.koin.core.viewmodel)
             implementation(novabirdLibs.androidx.sqlite)
             implementation(novabirdLibs.androidx.sqlite.bundled)
         }

@@ -3,4 +3,8 @@
 <resources>
     <color name="nb_status_ok">#1E8E3E</color>
     <color name="nb_status_warn">#C26401</color>
+    <!-- phishing protection: "gefährlich" badge, "Vorsicht" banner -->
+    <color name="nb_status_danger">#B3261E</color>
+    <color name="nb_protect_caution_bg">#FFF1D6</color>
+    <color name="nb_protect_caution_fg">#5C3A00</color>
 </resources>

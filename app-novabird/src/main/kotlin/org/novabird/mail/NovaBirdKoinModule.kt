@@ -9,7 +9,6 @@ import net.thunderbird.core.common.oauth.OAuthConfigurationFactory
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.novabird.feature.ai.novaBirdAiModule
-import org.novabird.feature.protection.novaBirdProtectionModule
 import org.novabird.feature.sync.novaBirdSyncModule
 import org.novabird.mail.account.novaBirdAccountModule
 import org.novabird.mail.ai.novaBirdAiAppModule
@@ -18,6 +17,7 @@ import org.novabird.mail.dev.developmentModuleAdditions
 import org.novabird.mail.feature.featureModule
 import org.novabird.mail.featureflag.novaBirdFeatureFlagModule
 import org.novabird.mail.logo.novaBirdLogoModule
+import org.novabird.mail.protection.novaBirdProtectionAppModule
 import org.novabird.mail.provider.providerModule
 import org.novabird.mail.search.novaBirdSearchAppModule
 import org.novabird.mail.widget.provider.MessageListWidgetProvider
@@ -35,7 +35,7 @@ val appModule = module {
     includes(novaBirdSyncModule)
     includes(novaBirdAccountModule)
     includes(novaBirdSearchAppModule)
-    includes(novaBirdProtectionModule)
+    includes(novaBirdProtectionAppModule)
     includes(novaBirdAiModule)
     includes(novaBirdAiAppModule)
     includes(novaBirdDrawerModule)

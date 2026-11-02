@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import com.fsck.k9.helper.ClipboardManager
 import com.fsck.k9.mailstore.AttachmentResolver
+import com.fsck.k9.ui.MessageLinkGate
 import com.fsck.k9.ui.R
 import com.fsck.k9.view.MessageWebView.OnPageFinishedListener
 import net.thunderbird.legacy.logging.Log
@@ -27,6 +28,8 @@ class K9WebViewClient(
     private val clipboardManager: ClipboardManager,
     private val attachmentResolver: AttachmentResolver?,
     private val onPageFinishedListener: OnPageFinishedListener?,
+    // NovaBird: links of a mail rated dangerous ask first
+    private val linkGate: MessageLinkGate? = null,
 ) : WebViewClient() {
 
     @Deprecated("Deprecated in parent class")
@@ -49,7 +52,7 @@ class K9WebViewClient(
                 true
             }
             else -> {
-                openUrl(webView.context, uri)
+                if (linkGate?.shouldIntercept(webView, uri) != true) openUrl(webView.context, uri)
                 true
             }
         }

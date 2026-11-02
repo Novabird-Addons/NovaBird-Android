@@ -43,8 +43,8 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
     override val enabled: Boolean get() = preferences.getBoolean(KEY_ENABLED, false)
     override val consentVersion: Int get() = preferences.getInt(KEY_CONSENT_VERSION, 0)
     override val consentAt: Long get() = preferences.getLong(KEY_CONSENT_AT, 0)
-    override val trustedSenders: List<String>
-        get() = preferences.getStringSet(KEY_TRUSTED, emptySet()).orEmpty().sorted()
+    override val trustedSenders: List<TrustedSender>
+        get() = TrustedSender.listFromJson(preferences.getString(KEY_TRUSTED_JSON, null))
     override val historyMonths: Int
         get() = preferences.getInt(KEY_HISTORY_MONTHS, HISTORY_MONTHS_DEFAULT).coerceIn(1, HISTORY_MONTHS_MAX)
 
@@ -56,15 +56,15 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
         }
     }
 
-    override fun updateTrustedSenders(addresses: List<String>) {
-        preferences.edit { putStringSet(KEY_TRUSTED, addresses.map { it.trim().lowercase() }.toSet()) }
+    override fun updateTrustedSenders(senders: List<TrustedSender>) {
+        preferences.edit { putString(KEY_TRUSTED_JSON, TrustedSender.listToJson(senders)) }
     }
 
     private companion object {
         const val KEY_ENABLED = "enabled"
         const val KEY_CONSENT_VERSION = "consent_version"
         const val KEY_CONSENT_AT = "consent_at"
-        const val KEY_TRUSTED = "trusted_senders"
+        const val KEY_TRUSTED_JSON = "trusted_senders_json"
         const val KEY_HISTORY_MONTHS = "history_months"
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NovaBird: view tags -->
+<resources>
+    <!-- ProtectionViewState of the shown message, set on the MessageTopView (phishing banner and link gate) -->
+    <item name="nb_protection_state" type="id" />
+</resources>

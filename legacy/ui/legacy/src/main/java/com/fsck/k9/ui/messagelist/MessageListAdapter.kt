@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import app.k9mail.core.android.common.contact.ContactRepository
 import app.k9mail.legacy.message.controller.MessageReference
 import com.fsck.k9.contacts.ContactPictureLoader
+import com.fsck.k9.ui.MessageListItemDecorator
 import com.fsck.k9.ui.messagelist.item.BannerInlineListInAppNotificationViewHolder
 import com.fsck.k9.ui.messagelist.item.ComposableMessageViewHolder
 import com.fsck.k9.ui.messagelist.item.FooterViewHolder
@@ -48,6 +49,8 @@ class MessageListAdapter internal constructor(
     private val contactRepository: ContactRepository,
     private val avatarMonogramCreator: AvatarMonogramCreator,
     private val formatDate: (Long) -> String,
+    // NovaBird: phishing badge
+    private val itemDecorator: MessageListItemDecorator? = null,
 ) : RecyclerView.Adapter<MessageListViewHolder>() {
 
     val colors: MessageViewHolderColors = MessageViewHolderColors.resolveColors(theme)
@@ -284,6 +287,7 @@ class MessageListAdapter internal constructor(
                         isActive = isActiveMessage(messageListItem),
                         isSelected = isSelected(messageListItem),
                     )
+                    itemDecorator?.decorate(messageViewHolder.itemView, formattedMessageListItem)
                 }
             }
 

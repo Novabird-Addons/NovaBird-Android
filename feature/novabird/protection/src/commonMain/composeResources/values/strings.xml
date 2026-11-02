@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="novabird_protect_title">Phishing protection</string>
+    <string name="novabird_protect_switch_title">Warn about phishing</string>
+    <string name="novabird_protect_on">On</string>
+    <string name="novabird_protect_off">Off</string>
+    <string name="novabird_protect_switch_note">Checks sender, links, attachments and wording against rules; the result shows as a banner in the mail and as a symbol in the list. Everything runs on this phone, nothing is sent anywhere.</string>
+    <string name="novabird_protect_scope_note">Only new mails and mails you open are checked. Older mail is not scanned.</string>
+    <string name="novabird_protect_trusted_title">Trusted senders</string>
+    <string name="novabird_protect_trusted_count">%1$d entries</string>
+    <string name="novabird_protect_trusted_hint">No more warnings for these addresses. Forgery hints stay: failed sender checks (DMARC, SPF, DKIM), look-alike links, disguised attachments, extortion. A sender of a mail rated “dangerous” cannot be added with a tap, only here.</string>
+    <string name="novabird_protect_trusted_empty">No entries yet.</string>
+    <string name="novabird_protect_trusted_since">since %1$s</string>
+    <string name="novabird_protect_trusted_via_banner">from a warning</string>
+    <string name="novabird_protect_trusted_via_settings">added by hand</string>
+    <string name="novabird_protect_trusted_score">score at the time %1$d (%2$s)</string>
+    <string name="novabird_protect_trusted_nometa">no details</string>
+    <string name="novabird_protect_trusted_note">Your contacts and people you have written to are not in this list; they count as known anyway.</string>
+    <string name="novabird_protect_remove">Remove</string>
+    <string name="novabird_protect_undo">Undo</string>
+    <string name="novabird_protect_undo_text">%1$s is no longer trusted</string>
+    <string name="novabird_protect_add_hint">Address to trust</string>
+    <string name="novabird_protect_add">Add</string>
+    <string name="novabird_protect_add_invalid">Please enter a complete email address.</string>
+    <string name="novabird_protect_level_normal">normal</string>
+    <string name="novabird_protect_level_suspicious">caution</string>
+    <string name="novabird_protect_level_dangerous">dangerous</string>
+    <string name="novabird_protect_consent_title">Before switching on</string>
+    <string name="novabird_protect_consent_p1">This filter is meant to protect you from malicious mails. It checks every new and every opened mail against rules, on this phone only.</string>
+    <string name="novabird_protect_consent_p2">The filter is by no means perfect. It can miss a dangerous mail, and it can warn about a harmless one. A missing warning is not a guarantee that a mail is safe.</string>
+    <string name="novabird_protect_consent_p3">Whatever you do with a mail — open a link, reply, download or open an attachment, pay — remains your own decision and your own responsibility.</string>
+    <string name="novabird_protect_consent_check">I have read and understood this.</string>
+    <string name="novabird_protect_consent_accept">Switch on</string>
+    <string name="novabird_protect_cancel">Cancel</string>
+</resources>

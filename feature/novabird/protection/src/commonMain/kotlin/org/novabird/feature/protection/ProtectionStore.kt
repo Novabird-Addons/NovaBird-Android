@@ -123,6 +123,15 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         return result
     }
 
+    /** Removes all results of [sender] (trusted or untrusted: the next open checks again). Returns the number removed. */
+    fun deleteBySender(sender: String): Long {
+        connection.prepare("DELETE FROM nb_protection WHERE sender = ?").use { statement ->
+            statement.bindText(1, sender)
+            statement.step()
+        }
+        return connection.prepare("SELECT changes()").use { if (it.step()) it.getLong(0) else 0L }
+    }
+
     /** Senders with at least one mail rated suspicious or dangerous; they never count as established (lib/history.js). */
     fun flaggedSenders(): Set<String> =
         connection.prepare("SELECT DISTINCT sender FROM nb_protection WHERE level != 'normal' AND sender != ''")

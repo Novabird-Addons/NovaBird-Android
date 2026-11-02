@@ -1,6 +1,8 @@
 package org.novabird.feature.protection
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -27,6 +29,7 @@ import org.novabird.feature.search.unpackK9Addresses
  *
  * @param engine the add-on core in QuickJS; created on first use and kept (boot ≈ 0.2 s).
  * @param dispatcher confines the store and all K-9 reads to one thread at a time.
+ * @param onEnabled called after switching on (the app schedules the first background check there).
  */
 @Suppress("LongParameterList")
 class ProtectionService(
@@ -38,11 +41,18 @@ class ProtectionService(
     private val contacts: ContactsSource,
     private val dispatcher: CoroutineDispatcher,
     private val now: () -> Long,
+    private val onEnabled: () -> Unit = {},
 ) {
     private val mutex = Mutex()
     private var contextLoadedAt = Long.MIN_VALUE
+    private val _revision = MutableStateFlow(0L)
 
     val isEnabled: Boolean get() = settings.enabled
+
+    /** Counts up whenever stored results change (new check, trust, untrust); the message list refreshes its badges. */
+    val revision: StateFlow<Long> = _revision
+
+    val trustedSenders: List<TrustedSender> get() = settings.trustedSenders
 
     /** Switches the protection on after the user accepted notice [consentVersion]. Existing mail stays unchecked. */
     suspend fun enable(consentVersion: Int) = locked {
@@ -50,6 +60,58 @@ class ProtectionService(
         store.clearWatermarks()
         for (account in mailStore.accounts()) store.setWatermark(account.uuid, maxMessageId(account.uuid))
         contextLoadedAt = Long.MIN_VALUE
+        _revision.value++
+        onEnabled()
+    }
+
+    /** Explanations of a stored result in [language] (`de`/`en`), strongest first. */
+    suspend fun reasons(
+        verdict: StoredVerdict,
+        language: String,
+    ): List<Reason> = engine().reasons(verdict.verdict, language)
+
+    /**
+     * "Absender vertrauen" from the warning of a mail. Refused for a mail rated dangerous (add-on 0.9.1: only via the
+     * settings). On success the sender's stored results are dropped, so the badge goes and the next open checks again.
+     */
+    suspend fun trustSenderOf(accountUuid: String, k9Id: Long, language: String): TrustOutcome {
+        if (!settings.enabled) return TrustOutcome.NO_VERDICT
+        return locked {
+            val stored = store.get(accountUuid, k9Id) ?: return@locked TrustOutcome.NO_VERDICT
+            if (stored.level == ProtectionLevel.DANGEROUS) return@locked TrustOutcome.REFUSED_DANGEROUS
+            if (stored.sender.isEmpty()) return@locked TrustOutcome.NO_VERDICT
+            val reasons = engine().reasons(stored.verdict, language).map { it.text.take(MAX_REASON_CHARS) }
+            addTrusted(
+                TrustedSender(
+                    address = stored.sender,
+                    since = now(),
+                    via = TrustedVia.BANNER,
+                    score = stored.verdict.score,
+                    level = stored.level,
+                    reasons = reasons.take(MAX_REASONS),
+                ),
+            )
+            TrustOutcome.TRUSTED
+        }
+    }
+
+    /** Adds [sender] (typed in, or put back after an undo). */
+    suspend fun trust(sender: TrustedSender) = locked { addTrusted(sender) }
+
+    /** Removes [address] from the trusted list; its mails are checked again when opened. */
+    suspend fun untrust(address: String) = locked {
+        val key = address.trim().lowercase()
+        settings.updateTrustedSenders(settings.trustedSenders.filter { it.address != key })
+        store.deleteBySender(key)
+        _revision.value++
+    }
+
+    private fun addTrusted(sender: TrustedSender) {
+        val key = sender.address.trim().lowercase()
+        val others = settings.trustedSenders.filter { it.address != key }
+        settings.updateTrustedSenders(others + sender.copy(address = key))
+        store.deleteBySender(key)
+        _revision.value++
     }
 
     suspend fun disable() = locked {
@@ -104,7 +166,9 @@ class ProtectionService(
         val mail = texts.mailForCheck(accountUuid, k9Id) ?: return null
         val js = engine()
         refreshContext(js)
-        val config = JsonObject(mapOf("trustedSenders" to JsonArray(settings.trustedSenders.map(::JsonPrimitive))))
+        val config = JsonObject(
+            mapOf("trustedSenders" to JsonArray(settings.trustedSenders.map { JsonPrimitive(it.address) })),
+        )
         val features = js.features(input(mail), config)
         val context = mutableMapOf<String, JsonElement>(
             "ownDomains" to JsonArray(ownDomains().map(::JsonPrimitive)),
@@ -132,6 +196,7 @@ class ProtectionService(
             checkedAt = now(),
         )
         store.save(record)
+        _revision.value++
         return record
     }
 
@@ -250,9 +315,11 @@ class ProtectionService(
 
     companion object {
         /** Version of the rules (add-on core + this check); results of other versions are checked again on open. */
-        const val RULES_VERSION = "addon-0.9.0+android-1"
+        const val RULES_VERSION = "addon-0.9.1+android-1"
 
         private const val CONTEXT_MAX_AGE = 10 * 60_000L
+        private const val MAX_REASONS = 8
+        private const val MAX_REASON_CHARS = 160
         private const val THREAD_REFERENCES = 3
         private const val RELATED_DAYS = 180L
         private const val RELATED_CANDIDATES = 20
@@ -260,4 +327,15 @@ class ProtectionService(
         private const val NEW_MAILS_PER_RUN = 200
         private val RELATED_SKIPPED_TYPES = setOf("spam", "trash", "drafts", "outbox")
     }
+}
+
+/** Result of [ProtectionService.trustSenderOf]. */
+enum class TrustOutcome {
+    TRUSTED,
+
+    /** The mail is rated dangerous: trusting only via the settings. */
+    REFUSED_DANGEROUS,
+
+    /** No stored result for the mail (or protection off). */
+    NO_VERDICT,
 }

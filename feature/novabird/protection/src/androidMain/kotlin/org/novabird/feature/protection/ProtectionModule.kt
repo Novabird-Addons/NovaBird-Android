@@ -4,7 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import org.novabird.feature.protection.ui.ProtectionSettingsViewModel
 
 /** Results next to the K-9 databases, but a separate file. */
 private const val PROTECTION_DATABASE = "novabird-protection.db"
@@ -36,7 +38,9 @@ val novaBirdProtectionModule = module {
             contacts = get(),
             dispatcher = dispatcher,
             now = System::currentTimeMillis,
+            onEnabled = { get<ProtectionScheduler>().requestCheck() },
         )
     }
     single { ProtectionScheduler(androidContext(), get()) }
+    viewModel { ProtectionSettingsViewModel(service = get()) }
 }

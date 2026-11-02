@@ -22,6 +22,29 @@
     <string name="novabird_settings_search_checking">Prüfe Helper …</string>
     <string name="novabird_settings_search_phone">Rechnet auf dem Handy (kein Helper)</string>
     <string name="novabird_settings_search_off">Aus</string>
+    <string name="novabird_settings_protect">Phishing-Schutz</string>
+    <string name="novabird_settings_protect_on">Ein: neue und geöffnete Mails werden geprüft</string>
+    <string name="novabird_settings_protect_off">Aus</string>
+    <!-- NovaBird: Phishing-Banner in der Mailansicht und Link-Dialog -->
+    <string name="novabird_protect_banner_suspicious">Vorsicht: Diese Mail hat Merkmale von Phishing.</string>
+    <string name="novabird_protect_banner_dangerous">Achtung: Diese Mail ist sehr wahrscheinlich Phishing.</string>
+    <string name="novabird_protect_banner_score">Bewertung: %1$d von 100</string>
+    <string name="novabird_protect_banner_why">Warum?</string>
+    <string name="novabird_protect_banner_why_less">Weniger</string>
+    <string name="novabird_protect_banner_reason">• %1$s</string>
+    <string name="novabird_protect_banner_links">Links in dieser Mail fragen, bevor sie sich öffnen.</string>
+    <string name="novabird_protect_banner_trust">Absender vertrauen</string>
+    <string name="novabird_protect_trust_title">Diesem Absender vertrauen?</string>
+    <string name="novabird_protect_trust_text">Warnungen zu dieser Adresse entfallen künftig (Hinweise auf Fälschung bleiben). Du kannst das in den Einstellungen unter „Vertraute Absender“ rückgängig machen.</string>
+    <string name="novabird_protect_trust_yes">Vertrauen</string>
+    <string name="novabird_protect_trust_done">Absender wird vertraut. Rückgängig: Einstellungen › Phishing-Schutz.</string>
+    <string name="novabird_protect_trust_blocked">Vertrauen hier nicht möglich</string>
+    <string name="novabird_protect_trust_blocked_hint">Bei „gefährlich“ lässt sich der Absender nicht per Tipp freigeben. Wenn du sicher bist, trage die Adresse in den Einstellungen ein.</string>
+    <string name="novabird_protect_banner_error_title">Prüfung nicht möglich.</string>
+    <string name="novabird_protect_banner_error_text">Diese Mail konnte nicht geprüft werden. Bitte behandle sie wie eine ungeprüfte Mail.</string>
+    <string name="novabird_protect_link_title">Link öffnen?</string>
+    <string name="novabird_protect_link_text">Diese Mail ist als gefährlich eingestuft. Der Link führt zu:\n%1$s</string>
+    <string name="novabird_protect_link_open">Trotzdem öffnen</string>
     <string name="novabird_settings_logos">Absender-Logos anzeigen</string>
     <string name="novabird_settings_logos_note">Firmenlogos (BIMI), geladen von der Domain des Absenders</string>
     <!-- NovaBird: formatting in the compose screen -->
