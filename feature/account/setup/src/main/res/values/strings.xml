@@ -59,7 +59,15 @@
         <item quantity="one">1 message</item>
         <item quantity="other">%d messages</item>
     </plurals>
+    <string name="account_setup_options_email_display_count_all">All messages</string>
     <string name="account_setup_options_email_display_count_label">Number of messages to display</string>
+    <string name="account_setup_options_sync_period_label">Sync messages from</string>
+    <string name="account_setup_options_sync_period_1_month">the last month</string>
+    <string name="account_setup_options_sync_period_3_months">the last 3 months</string>
+    <string name="account_setup_options_sync_period_6_months">the last 6 months</string>
+    <string name="account_setup_options_sync_period_1_year">the last year</string>
+    <string name="account_setup_options_sync_period_2_years">the last two years</string>
+    <string name="account_setup_options_sync_period_all">any time (unlimited)</string>
     <string name="account_setup_options_show_notifications_label">Show notifications</string>
 
     <string name="account_setup_create_account_creating">Creating account…</string>

@@ -386,6 +386,7 @@
     <string name="account_settings_message_age_3_months">den letzten 3 Monaten</string>
     <string name="account_settings_message_age_6_months">den letzten 6 Monaten</string>
     <string name="account_settings_message_age_1_year">dem letzten Jahr</string>
+    <string name="account_settings_message_age_2_years">den letzten zwei Jahren</string>
     <string name="account_settings_sync_remote_deletetions_label">Löschungen vom Server übernehmen</string>
     <string name="account_settings_sync_remote_deletetions_summary">Nachrichten löschen, wenn sie vom Server gelöscht wurden</string>
     <string name="account_settings_openpgp_missing">Fehlende OpenPGP-App – wurde sie deinstalliert?</string>

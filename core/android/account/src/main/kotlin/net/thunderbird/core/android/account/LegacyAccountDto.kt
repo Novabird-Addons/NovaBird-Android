@@ -587,6 +587,7 @@ open class LegacyAccountDto(
                     84 -> now.add(Calendar.MONTH, -3)
                     168 -> now.add(Calendar.MONTH, -6)
                     365 -> now.add(Calendar.YEAR, -1)
+                    730 -> now.add(Calendar.YEAR, -2)
                 }
             }
 

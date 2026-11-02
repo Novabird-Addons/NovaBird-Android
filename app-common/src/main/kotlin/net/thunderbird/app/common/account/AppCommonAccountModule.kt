@@ -2,6 +2,7 @@ package net.thunderbird.app.common.account
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import app.k9mail.feature.account.setup.AccountSetupExternalContract
+import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import net.thunderbird.app.common.account.data.DefaultAccountProfileLocalDataSource
@@ -43,11 +44,33 @@ internal val appCommonAccountModule = module {
         )
     }
 
-    single<AccountDefaultsProvider> {
+    single<AccountDefaultsProvider>(named("default")) {
         DefaultAccountDefaultsProvider(
             resourceProvider = get(),
             featureFlagProvider = get(),
         )
+    }
+
+    // Apps may bind their own provider under the qualifier "app" (e.g. to change defaults for new accounts).
+    single<AccountDefaultsProvider> {
+        getOrNull(named("app")) ?: get(named("default"))
+    }
+
+    single<AccountSetupExternalContract.MessageDisplayCountProvider>(named("default")) {
+        AccountSetupExternalContract.MessageDisplayCountProvider { EmailDisplayCount.DEFAULT }
+    }
+
+    single<AccountSetupExternalContract.MessageDisplayCountProvider> {
+        getOrNull(named("app")) ?: get(named("default"))
+    }
+
+    // no sync period question by default; apps may bind a provider under "app"
+    single<AccountSetupExternalContract.SyncPeriodProvider>(named("default")) {
+        AccountSetupExternalContract.SyncPeriodProvider { null }
+    }
+
+    single<AccountSetupExternalContract.SyncPeriodProvider> {
+        getOrNull(named("app")) ?: get(named("default"))
     }
 
     factory<ImmutableList<Int>>(named("AccountColors")) {

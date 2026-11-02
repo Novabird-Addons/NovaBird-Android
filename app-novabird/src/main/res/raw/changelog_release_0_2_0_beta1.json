@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0-beta1",
+  "versioncode": 20001,
+  "date": "2026-11-02",
+  "notes": [
+    { "type": "new", "text": "Semantic search via NovaBird Helper or on the phone" },
+    { "type": "new", "text": "AI summary, reading aloud and \"What's new?\" via NovaBird Helper" },
+    { "type": "new", "text": "Sync period in the setup wizard, option \"two years\"" }
+  ]
+}

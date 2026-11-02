@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity
+            android:name="org.novabird.feature.sync.ui.SyncLimitSettingsActivity"
+            android:exported="true"
+            android:label="@string/novabird_sync_settings_title"
+            >
+            <!-- Reachable from the system's app info screen ("Additional settings in the app") -->
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>

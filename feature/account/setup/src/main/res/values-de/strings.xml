@@ -6,6 +6,13 @@
     <string name="account_setup_auto_discovery_result_header_subtitle_configuration_untrusted">Diese Konfiguration ist nicht vertrauenswürdig</string>
     <string name="account_setup_options_email_signature_label">E-Mail-Signatur</string>
     <string name="account_setup_options_email_display_count_label">Anzahl der anzuzeigenden Nachrichten</string>
+    <string name="account_setup_options_sync_period_label">Nachrichten synchronisieren von</string>
+    <string name="account_setup_options_sync_period_1_month">dem letzten Monat</string>
+    <string name="account_setup_options_sync_period_3_months">den letzten 3 Monaten</string>
+    <string name="account_setup_options_sync_period_6_months">den letzten 6 Monaten</string>
+    <string name="account_setup_options_sync_period_1_year">dem letzten Jahr</string>
+    <string name="account_setup_options_sync_period_2_years">den letzten zwei Jahren</string>
+    <string name="account_setup_options_sync_period_all">jederzeit (unbegrenzt)</string>
     <string name="account_setup_auto_discovery_result_header_subtitle_configuration_not_found">Manuell konfigurieren</string>
     <string name="account_setup_options_email_signature_error_blank">Name der E-Mail-Signatur darf nicht leer sein.</string>
     <string name="account_setup_auto_discovery_result_approval_error_approval_required">Es ist erforderlich, die Konfiguration zu bestätigen.</string>
@@ -57,6 +64,7 @@
         <item quantity="one">1 Nachricht</item>
         <item quantity="other">%d Nachrichten</item>
     </plurals>
+    <string name="account_setup_options_email_display_count_all">Alle Nachrichten</string>
     <string name="account_setup_options_your_name_label">Dein Name</string>
     <string name="account_setup_options_your_name_error_required">Dein Name ist erforderlich.</string>
 </resources>

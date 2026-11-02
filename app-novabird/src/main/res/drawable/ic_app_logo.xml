@@ -1,0 +1,35 @@
+<!-- NovaBird Mail logo: swallow with envelope on NovaBird blue. Source: feature/novabird/branding/artwork -->
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96"
+    >
+    <path
+        android:fillColor="#2F6BD8"
+        android:pathData="M22,0 L74,0 A22,22 0 0 1 96,22 L96,74 A22,22 0 0 1 74,96 L22,96 A22,22 0 0 1 0,74 L0,22 A22,22 0 0 1 22,0 Z"
+        />
+    <group
+        android:scaleX="0.82"
+        android:scaleY="0.82"
+        android:translateX="4"
+        android:translateY="4"
+        >
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M81,35 L74,37 C70,33 64,33 60,37 C52,30 40,24 24,20 C36,30 44,38 50,46 C40,52 28,58 14,62 C26,62 34,61 40,59 C34,66 26,72 18,78 C32,74 46,66 56,56 C66,54 72,46 74,40 Z"
+            />
+    </group>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M61,62 L79,62 A3,3 0 0 1 82,65 L82,75 A3,3 0 0 1 79,78 L61,78 A3,3 0 0 1 58,75 L58,65 A3,3 0 0 1 61,62 Z"
+        />
+    <path
+        android:pathData="M60,64 L70,70 L80,64"
+        android:strokeWidth="3"
+        android:strokeColor="#2F6BD8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        />
+</vector>

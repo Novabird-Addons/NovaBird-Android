@@ -1,0 +1,19 @@
+# NovaBird: Bibliotheken der NovaBird-Module (getrennt von libs.versions.toml, damit Upstream-Updates nicht kollidieren)
+
+[versions]
+# SQLite mit FTS5 (trigram, contentless_delete, fts5vocab); Public Domain, AndroidX-Hülle Apache 2.0
+androidxSqlite = "2.7.1"
+# QuickJS (MIT) über quickjs-kt (Apache 2.0), Android und JVM (Windows/Linux/macOS)
+quickjsKt = "1.0.15"
+# ONNX Runtime (MIT) für Vektoren auf dem Handy. 1.23.2 festgehalten: 1.30 liefert mit dem fp16-Modell auf ARM NaN,
+# 1.31 stürzt ab (Oppo/Dimensity 9400, 2026-11-01); vor einem Update mit VectorBenchActivity prüfen
+onnxruntime = "1.23.2"
+# LiteRT-LM (Apache 2.0): Sprachmodell auf dem Handy, vorerst nur im Debug-Messprogramm (LlmBenchActivity)
+litertlm = "0.19.0"
+
+[libraries]
+androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "androidxSqlite" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidxSqlite" }
+quickjs-kt = { module = "io.github.dokar3:quickjs-kt", version.ref = "quickjsKt" }
+litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }

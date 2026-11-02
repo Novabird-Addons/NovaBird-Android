@@ -324,3 +324,22 @@ check(JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
 }
 include(":feature:changelog:internal")
 include(":feature:funding:common")
+
+// NovaBird: eigene Module und Bibliotheken (gebündelt, damit das Nachziehen der Release-Tags einfach bleibt)
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("novabirdLibs") {
+            from(files("gradle/novabird.versions.toml"))
+        }
+    }
+}
+
+include(
+    ":app-novabird",
+    ":feature:novabird:ai",
+    ":feature:novabird:branding",
+    ":feature:novabird:search:api",
+    ":feature:novabird:search:internal",
+    ":feature:novabird:sync",
+    ":feature:novabird:vectors",
+)

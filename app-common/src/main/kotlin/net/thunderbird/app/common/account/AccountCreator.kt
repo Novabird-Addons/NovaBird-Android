@@ -83,6 +83,7 @@ internal class AccountCreator(
         newAccount.isNotifyNewMail = account.options.showNotification
         newAccount.automaticCheckIntervalMinutes = account.options.checkFrequencyInMinutes
         newAccount.displayCount = account.options.messageDisplayCount
+        account.options.syncPeriodDays?.let { newAccount.maximumPolledMessageAge = it }
 
         newAccount.deletePolicy = deletePolicyProvider.getDeletePolicy(newAccount.incomingServerSettings.type)
         newAccount.chipColor = accountColorPicker.pickColor()

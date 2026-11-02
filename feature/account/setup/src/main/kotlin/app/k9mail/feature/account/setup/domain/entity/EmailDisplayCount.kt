@@ -13,6 +13,7 @@ enum class EmailDisplayCount(
     MESSAGES_250(250),
     MESSAGES_500(500),
     MESSAGES_1000(1000),
+    ALL(0),
     ;
 
     companion object {

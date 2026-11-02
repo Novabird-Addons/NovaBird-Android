@@ -84,6 +84,9 @@ internal class FetchingMailSettingsOptionsMapper(
         SelectOption("365") {
             resources.stringResource(R.string.account_settings_message_age_1_year)
         },
+        SelectOption("730") {
+            resources.stringResource(R.string.account_settings_message_age_2_years)
+        },
     )
 
     private val fetchMessageUpToOptions = persistentListOf(

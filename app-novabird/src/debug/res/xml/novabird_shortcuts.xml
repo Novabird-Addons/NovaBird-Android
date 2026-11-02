@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- targetPackage must be the application ID of this build type -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_app_logo"
+        android:shortcutId="novabird_sync_limits"
+        android:shortcutShortLabel="@string/novabird_shortcut_sync_limits_short"
+        >
+        <intent
+            android:action="android.intent.action.APPLICATION_PREFERENCES"
+            android:targetClass="org.novabird.feature.sync.ui.SyncLimitSettingsActivity"
+            android:targetPackage="org.novabird.mail.debug"
+            />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_app_logo"
+        android:shortcutId="novabird_ai"
+        android:shortcutShortLabel="@string/novabird_shortcut_ai_short"
+        >
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="org.novabird.feature.ai.ui.AiSettingsActivity"
+            android:targetPackage="org.novabird.mail.debug"
+            />
+    </shortcut>
+</shortcuts>
