@@ -11,6 +11,7 @@ import org.novabird.feature.ai.local.ModelFiles
 import org.novabird.feature.ai.settings.AiSettingsRepository
 import org.novabird.feature.search.internal.work.NovaBirdIndexScheduler
 import org.novabird.feature.sync.backfill.PartialMessageBackfillScheduler
+import org.novabird.mail.feature.DesignDefaults
 
 class NovaBirdApp : FeatureFlagApplication() {
     private val messagingController: MessagingController by inject()
@@ -19,6 +20,7 @@ class NovaBirdApp : FeatureFlagApplication() {
     private val aiSettings: AiSettingsRepository by inject()
     private val modelFiles: ModelFiles by inject()
     private val modelDownloads: ModelDownloads by inject()
+    private val designDefaults: DesignDefaults by inject()
 
     override fun provideAppModule(): Module = appModule
 
@@ -28,6 +30,8 @@ class NovaBirdApp : FeatureFlagApplication() {
 
     override fun onCreate() {
         super.onCreate()
+
+        designDefaults.apply()
 
         // After each folder sync: complete partial messages on Wi-Fi and update the search index.
         messagingController.addListener(backfillScheduler.syncListener)

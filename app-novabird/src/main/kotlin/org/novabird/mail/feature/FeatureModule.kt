@@ -30,6 +30,8 @@ internal val featureModule = module {
         )
     }
 
+    single { DesignDefaults(context = get(), inboxSettings = get()) }
+
     single<CssClassNameProvider> {
         DefaultCssClassNameProvider(
             featureFlagProvider = get(),

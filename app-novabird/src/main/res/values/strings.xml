@@ -8,4 +8,6 @@
 
     <string name="novabird_shortcut_sync_limits_short">Sync limits</string>
     <string name="novabird_shortcut_ai_short">Semantic search</string>
+    <!-- NovaBird design: shorter title of the unified inbox (overrides Thunderbird's) -->
+    <string name="integrated_inbox_title">Inbox</string>
 </resources>

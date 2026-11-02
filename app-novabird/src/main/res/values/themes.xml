@@ -5,7 +5,8 @@
     <style name="Theme.NovaBird.Light" parent="Theme2.Thunderbird.Light">
         <item name="actionModeCloseDrawable">@drawable/ic_close</item>
         <item name="actionBarPopupTheme">@style/Widget.App.ActionMode.PopupMenu</item>
-        <item name="toolbarStyle">@style/Widget.App.Toolbar</item>
+        <item name="toolbarStyle">@style/Widget.NovaBird.Toolbar</item>
+        <item name="floatingActionButtonStyle">@style/Widget.NovaBird.FloatingActionButton</item>
 
         <!-- Legacy styles -->
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
@@ -42,7 +43,8 @@
     <style name="Theme.NovaBird.Dark" parent="Theme2.Thunderbird.Dark">
         <item name="actionModeCloseDrawable">@drawable/ic_close</item>
         <item name="actionBarPopupTheme">@style/Widget.App.ActionMode.PopupMenu</item>
-        <item name="toolbarStyle">@style/Widget.App.Toolbar</item>
+        <item name="toolbarStyle">@style/Widget.NovaBird.Toolbar</item>
+        <item name="floatingActionButtonStyle">@style/Widget.NovaBird.FloatingActionButton</item>
 
         <!-- Legacy styles -->
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
