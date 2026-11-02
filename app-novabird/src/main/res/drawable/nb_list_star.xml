@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Star in the message list: only starred messages show one; the space stays so the text doesn't jump -->
+<!-- Star in the message list: filled on starred messages, a faint outline on the others (still tappable) -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_selected="true" android:drawable="@drawable/ic_star_filled" />
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="@android:color/transparent" />
-            <size android:width="24dp" android:height="24dp" />
-        </shape>
-    </item>
+    <item android:drawable="@drawable/nb_ic_star_faint" />
 </selector>
