@@ -16,6 +16,8 @@ import org.minidns.record.TXT
 internal object BimiDns {
     private const val TYPE_TXT = 16
     private const val DNS_TIMEOUT_MS = 2_000L
+    private const val RCODE_NO_ERROR = 0
+    private const val RCODE_NX_DOMAIN = 3
 
     /** The TXT records of [name]; empty if there are none; throws [IOException] if the lookup failed. */
     fun txtRecords(name: String): List<String> =
@@ -39,7 +41,8 @@ internal object BimiDns {
             signal,
             object : DnsResolver.Callback<ByteArray> {
                 override fun onAnswer(result: ByteArray, rcode: Int) {
-                    answer = result
+                    // only "found" and "no such name" are answers; resolver trouble (SERVFAIL, REFUSED) is an error
+                    if (rcode == RCODE_NO_ERROR || rcode == RCODE_NX_DOMAIN) answer = result
                     latch.countDown()
                 }
 
