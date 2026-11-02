@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import net.thunderbird.core.android.account.LegacyAccountDto
 import org.novabird.feature.protection.ProtectionLevel
 import org.novabird.feature.protection.ProtectionService
+import org.novabird.feature.protection.SpamReason
 import org.novabird.feature.protection.StoredVerdict
 import org.novabird.feature.protection.TrustOutcome
 import org.novabird.mail.R
@@ -67,12 +68,7 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
             // another message is shown meanwhile
             if (messageTopView.getTag(R.id.nb_protection_state) !== state) return@launch
             result.fold(
-                onSuccess = { verdict ->
-                    if (verdict != null && verdict.level != ProtectionLevel.NORMAL) {
-                        state.level = verdict.level
-                        showBanner(container, messageTopView, state, verdict)
-                    }
-                },
+                onSuccess = { verdict -> verdict?.let { showFor(container, messageTopView, state, it) } },
                 // a failed check must not look like "no warning"
                 onFailure = { showErrorBanner(container) },
             )
@@ -85,10 +81,8 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
                 shown = latest?.verdict?.key
                 container.removeAllViews()
                 container.isVisible = false
-                state.level = latest?.level ?: ProtectionLevel.NORMAL
-                if (latest != null && latest.level != ProtectionLevel.NORMAL) {
-                    showBanner(container, messageTopView, state, latest)
-                }
+                state.level = ProtectionLevel.NORMAL
+                latest?.let { showFor(container, messageTopView, state, it) }
             }
         }
     }
@@ -189,6 +183,78 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
                 }
             }
             .show()
+    }
+
+    /** Phishing banner for "Vorsicht"/"gefährlich", else the spam banner if the spam rules caught the mail. */
+    private fun showFor(
+        container: ViewGroup,
+        messageTopView: MessageTopView,
+        state: ProtectionViewState,
+        verdict: StoredVerdict,
+    ) {
+        if (verdict.level != ProtectionLevel.NORMAL) {
+            state.level = verdict.level
+            showBanner(container, messageTopView, state, verdict)
+        } else if (isSpam(verdict)) {
+            showSpamBanner(container, messageTopView, state, verdict)
+        }
+    }
+
+    private fun isSpam(verdict: StoredVerdict) = verdict.spam != null && service.spamSettings.enabled
+
+    /** Grey banner for a mail the spam rules caught: the reason and "Kein Spam". */
+    private fun showSpamBanner(
+        container: ViewGroup,
+        messageTopView: MessageTopView,
+        state: ProtectionViewState,
+        verdict: StoredVerdict,
+    ) {
+        val context = container.context
+        val spam = verdict.spam ?: return
+        val view = LayoutInflater.from(context).inflate(R.layout.nb_protection_banner, container, false)
+        val foreground = attrColor(context, MaterialR.attr.colorOnSurfaceVariant)
+        view.findViewById<View>(R.id.nb_protect_box).backgroundTintList =
+            ColorStateList.valueOf(attrColor(context, MaterialR.attr.colorSurfaceContainerHigh))
+        view.findViewById<ImageView>(R.id.nb_protect_icon).imageTintList = ColorStateList.valueOf(foreground)
+        view.findViewById<TextView>(R.id.nb_protect_title).apply {
+            setText(R.string.novabird_protect_banner_spam)
+            setTextColor(foreground)
+        }
+        view.findViewById<TextView>(R.id.nb_protect_score).apply {
+            text = when (spam.reason) {
+                SpamReason.BLOCKED -> context.getString(R.string.novabird_protect_spam_reason_blocked, spam.detail)
+
+                SpamReason.SERVER -> context.getString(R.string.novabird_protect_spam_reason_server)
+
+                SpamReason.AUTH -> context.getString(
+                    R.string.novabird_protect_spam_reason_auth,
+                    spam.detail.uppercase(),
+                )
+
+                SpamReason.PHISHING -> context.getString(R.string.novabird_protect_spam_reason_phishing)
+
+                SpamReason.MONEY -> context.getString(R.string.novabird_protect_spam_reason_money)
+            }
+            setTextColor(foreground)
+        }
+        view.findViewById<TextView>(R.id.nb_protect_why).isVisible = false
+        view.findViewById<TextView>(R.id.nb_protect_trust).apply {
+            setText(R.string.novabird_protect_banner_not_spam)
+            setTextColor(foreground)
+            setOnClickListener {
+                val owner = messageTopView.findViewTreeLifecycleOwner() ?: return@setOnClickListener
+                owner.lifecycleScope.launch {
+                    val done = runCatching { service.notSpam(state.accountUuid, state.k9Id) }.getOrDefault(false)
+                    if (done) {
+                        container.removeAllViews()
+                        container.isVisible = false
+                        Toast.makeText(context, R.string.novabird_protect_not_spam_done, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+        container.addView(view)
+        container.isVisible = true
     }
 
     private fun showErrorBanner(container: ViewGroup) {

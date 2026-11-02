@@ -44,6 +44,10 @@ import org.novabird.feature.protection.resources.novabird_protect_add_invalid
 import org.novabird.feature.protection.resources.novabird_protect_ai_note
 import org.novabird.feature.protection.resources.novabird_protect_ai_note_none
 import org.novabird.feature.protection.resources.novabird_protect_ai_title
+import org.novabird.feature.protection.resources.novabird_protect_allowed_hint
+import org.novabird.feature.protection.resources.novabird_protect_allowed_title
+import org.novabird.feature.protection.resources.novabird_protect_blocked_hint
+import org.novabird.feature.protection.resources.novabird_protect_blocked_title
 import org.novabird.feature.protection.resources.novabird_protect_cancel
 import org.novabird.feature.protection.resources.novabird_protect_consent_accept
 import org.novabird.feature.protection.resources.novabird_protect_consent_check
@@ -55,6 +59,10 @@ import org.novabird.feature.protection.resources.novabird_protect_contacts_allow
 import org.novabird.feature.protection.resources.novabird_protect_contacts_denied
 import org.novabird.feature.protection.resources.novabird_protect_contacts_granted
 import org.novabird.feature.protection.resources.novabird_protect_contacts_title
+import org.novabird.feature.protection.resources.novabird_protect_entries_count
+import org.novabird.feature.protection.resources.novabird_protect_entries_empty
+import org.novabird.feature.protection.resources.novabird_protect_entry_hint
+import org.novabird.feature.protection.resources.novabird_protect_entry_invalid
 import org.novabird.feature.protection.resources.novabird_protect_images_note
 import org.novabird.feature.protection.resources.novabird_protect_images_title
 import org.novabird.feature.protection.resources.novabird_protect_level_dangerous
@@ -64,6 +72,15 @@ import org.novabird.feature.protection.resources.novabird_protect_off
 import org.novabird.feature.protection.resources.novabird_protect_on
 import org.novabird.feature.protection.resources.novabird_protect_remove
 import org.novabird.feature.protection.resources.novabird_protect_scope_note
+import org.novabird.feature.protection.resources.novabird_protect_spam_auth_note
+import org.novabird.feature.protection.resources.novabird_protect_spam_auth_title
+import org.novabird.feature.protection.resources.novabird_protect_spam_note
+import org.novabird.feature.protection.resources.novabird_protect_spam_off_hint
+import org.novabird.feature.protection.resources.novabird_protect_spam_phishing_note
+import org.novabird.feature.protection.resources.novabird_protect_spam_phishing_title
+import org.novabird.feature.protection.resources.novabird_protect_spam_section
+import org.novabird.feature.protection.resources.novabird_protect_spam_server_title
+import org.novabird.feature.protection.resources.novabird_protect_spam_title
 import org.novabird.feature.protection.resources.novabird_protect_switch_note
 import org.novabird.feature.protection.resources.novabird_protect_switch_title
 import org.novabird.feature.protection.resources.novabird_protect_title
@@ -94,6 +111,8 @@ fun ProtectionSettingsScreen(
         Page.MAIN -> stringResource(Res.string.novabird_protect_title)
         Page.CONSENT -> stringResource(Res.string.novabird_protect_consent_title)
         Page.TRUSTED -> stringResource(Res.string.novabird_protect_trusted_title)
+        Page.BLOCKED -> stringResource(Res.string.novabird_protect_blocked_title)
+        Page.ALLOWED -> stringResource(Res.string.novabird_protect_allowed_title)
     }
     Scaffold(topBar = { TopAppBarWithBackButton(title = title, onBackClick = back) }) { innerPadding ->
         Column(
@@ -106,8 +125,24 @@ fun ProtectionSettingsScreen(
         ) {
             when (state.page) {
                 Page.MAIN -> MainPage(state, viewModel, onRequestContacts)
+
                 Page.CONSENT -> ConsentPage(state, viewModel)
+
                 Page.TRUSTED -> TrustedPage(state, viewModel)
+
+                Page.BLOCKED -> EntriesPage(
+                    state,
+                    viewModel,
+                    state.spam.blocked,
+                    Res.string.novabird_protect_blocked_hint,
+                )
+
+                Page.ALLOWED -> EntriesPage(
+                    state,
+                    viewModel,
+                    state.spam.allowed,
+                    Res.string.novabird_protect_allowed_hint,
+                )
             }
         }
     }
@@ -193,6 +228,118 @@ private fun MainPage(
             )
         }
     }
+    SpamSection(state, actions)
+}
+
+@Composable
+private fun SpamSection(state: ProtectionSettingsViewModel.State, actions: ProtectionSettingsViewModel) {
+    DividerHorizontal()
+    TextTitleMedium(text = stringResource(Res.string.novabird_protect_spam_section))
+    SwitchRow(
+        title = stringResource(Res.string.novabird_protect_spam_title),
+        note = stringResource(
+            if (state.enabled) Res.string.novabird_protect_spam_note else Res.string.novabird_protect_spam_off_hint,
+        ),
+        checked = state.spam.enabled,
+        enabled = state.enabled,
+        onChange = actions::onSpamEnabled,
+    )
+    if (!state.spam.enabled || !state.enabled) return
+    SwitchRow(
+        title = stringResource(Res.string.novabird_protect_spam_server_title),
+        note = null,
+        checked = state.spam.serverFlag,
+        enabled = true,
+        onChange = actions::onSpamServerFlag,
+    )
+    SwitchRow(
+        title = stringResource(Res.string.novabird_protect_spam_auth_title),
+        note = stringResource(Res.string.novabird_protect_spam_auth_note),
+        checked = state.spam.authFail,
+        enabled = true,
+        onChange = actions::onSpamAuthFail,
+    )
+    SwitchRow(
+        title = stringResource(Res.string.novabird_protect_spam_phishing_title),
+        note = stringResource(Res.string.novabird_protect_spam_phishing_note),
+        checked = state.spam.phishing,
+        enabled = true,
+        onChange = actions::onSpamPhishing,
+    )
+    ListRow(
+        title = stringResource(Res.string.novabird_protect_blocked_title),
+        count = state.spam.blocked.size,
+        onClick = actions::openBlocked,
+    )
+    ListRow(
+        title = stringResource(Res.string.novabird_protect_allowed_title),
+        count = state.spam.allowed.size,
+        onClick = actions::openAllowed,
+    )
+}
+
+@Composable
+private fun SwitchRow(title: String, note: String?, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            TextBodyLarge(text = title)
+            note?.let { TextBodySmall(text = it, color = BoltTheme.colors.onSurfaceVariant) }
+        }
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+    }
+}
+
+@Composable
+private fun ListRow(title: String, count: Int, onClick: () -> Unit) {
+    ClickableSurface(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(vertical = BoltTheme.spacings.default)) {
+            TextBodyLarge(text = title)
+            TextBodySmall(
+                text = stringResource(Res.string.novabird_protect_entries_count, count),
+                color = BoltTheme.colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EntriesPage(
+    state: ProtectionSettingsViewModel.State,
+    actions: ProtectionSettingsViewModel,
+    entries: List<String>,
+    hint: org.jetbrains.compose.resources.StringResource,
+) {
+    TextBodySmall(text = stringResource(hint), color = BoltTheme.colors.onSurfaceVariant)
+    if (entries.isEmpty()) {
+        TextBodyMedium(text = stringResource(Res.string.novabird_protect_entries_empty))
+    }
+    for (entry in entries.sorted()) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TextBodyLarge(text = entry, modifier = Modifier.weight(1f))
+            ButtonText(text = stringResource(Res.string.novabird_protect_remove), onClick = {
+                actions.removeEntry(entry)
+            })
+        }
+        DividerHorizontal()
+    }
+    state.undoEntry?.let { removed ->
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TextBodyMedium(
+                text = stringResource(Res.string.novabird_protect_undo_text, removed),
+                modifier = Modifier.weight(1f),
+            )
+            ButtonText(text = stringResource(Res.string.novabird_protect_undo), onClick = actions::undoRemoveEntry)
+        }
+        DividerHorizontal()
+    }
+    TextInput(
+        text = state.newEntry,
+        onTextChange = actions::onNewEntryChange,
+        label = stringResource(Res.string.novabird_protect_entry_hint),
+        errorMessage = if (state.newEntryInvalid) stringResource(Res.string.novabird_protect_entry_invalid) else null,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    ButtonOutlined(text = stringResource(Res.string.novabird_protect_add), onClick = actions::addEntry)
 }
 
 @Composable

@@ -119,11 +119,16 @@ interface ProtectionSettings {
     /** Read QR codes and text in the images of a mail (on the device only). */
     val scanImages: Boolean
 
+    /** Spam detection (runs only while the protection is on). */
+    val spam: SpamSettings
+
     fun setEnabled(enabled: Boolean, consentVersion: Int, consentAt: Long)
 
     fun updateUseAi(useAi: Boolean)
 
     fun updateScanImages(scanImages: Boolean)
+
+    fun updateSpam(spam: SpamSettings)
 
     fun updateTrustedSenders(senders: List<TrustedSender>)
 }
@@ -137,6 +142,7 @@ class InMemoryProtectionSettings(
     override var historyMonths: Int = HISTORY_MONTHS_DEFAULT,
     override var useAi: Boolean = true,
     override var scanImages: Boolean = true,
+    override var spam: SpamSettings = SpamSettings(),
 ) : ProtectionSettings {
     override fun setEnabled(enabled: Boolean, consentVersion: Int, consentAt: Long) {
         this.enabled = enabled
@@ -150,6 +156,10 @@ class InMemoryProtectionSettings(
 
     override fun updateScanImages(scanImages: Boolean) {
         this.scanImages = scanImages
+    }
+
+    override fun updateSpam(spam: SpamSettings) {
+        this.spam = spam
     }
 
     override fun updateTrustedSenders(senders: List<TrustedSender>) {

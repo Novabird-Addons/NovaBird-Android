@@ -66,6 +66,9 @@ class DependencyInjectionTest {
                 Resources::class,
                 Storage::class,
                 ConfigId::class,
+                // ProtectionService gets its dispatcher and scope in the definition itself
+                kotlinx.coroutines.CoroutineDispatcher::class,
+                kotlinx.coroutines.CoroutineScope::class,
             ),
             injections = injectedParameters(
                 definition<AccountRemoverWorker>(WorkerParameters::class),

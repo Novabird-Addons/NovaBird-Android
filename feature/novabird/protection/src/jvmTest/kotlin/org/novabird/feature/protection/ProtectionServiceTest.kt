@@ -64,6 +64,18 @@ class ProtectionServiceTest {
             return aiAnswer
         }
     }
+    private val moves = mutableListOf<String>()
+    private val fakeMover = object : SpamMover {
+        override suspend fun moveToSpam(accountUuid: String, folderId: Long, uid: String): Boolean {
+            moves += "spam:$folderId:$uid"
+            return true
+        }
+
+        override suspend fun moveToInbox(accountUuid: String, folderId: Long, uid: String): Boolean {
+            moves += "inbox:$folderId:$uid"
+            return true
+        }
+    }
     private val store = ProtectionStore(":memory:")
     private val engine = lazy {
         runBlocking { ProtectionEngine.create(ProtectionScripts.load(), Dispatchers.Default.limitedParallelism(1)) }
@@ -79,6 +91,7 @@ class ProtectionServiceTest {
         now = { NOW },
         ai = fakeAi,
         media = fakeMedia,
+        spamMover = fakeMover,
     )
 
     @AfterTest
@@ -105,7 +118,7 @@ class ProtectionServiceTest {
             location = MessageLocation(account.uuid, folder, "u$id"),
             headerMessageId = "m$id@example.com",
             date = NOW - id,
-            folderType = "inbox",
+            folderType = if (folder == SPAM) "spam" else "inbox",
             headers = (mapOf("from" to from, "to" to "ich@meine-firma.example", "subject" to subject) + extraHeaders)
                 .mapValues { listOf(it.value) },
             parts = listOf(MailPart("text/html", null, html)) + extraParts,
@@ -396,6 +409,63 @@ class ProtectionServiceTest {
     }
 
     @Test
+    fun `spam from a blocked domain is moved after a sync, not when a mail is opened`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        settings.spam = SpamSettings(enabled = true, blocked = listOf("werbung.example"))
+        mail(1, "Angebote <news@werbung.example>", "Nur heute")
+        mail(2, "Kollegin <anna@partner.example>", "Termin")
+
+        service.checkNewMails()
+
+        assertThat(store.get(account.uuid, 1)?.spam).isEqualTo(SpamDecision(SpamReason.BLOCKED, "werbung.example"))
+        assertThat(store.get(account.uuid, 2)?.spam).isNull()
+        assertThat(moves).isEqualTo(listOf("spam:$INBOX:u1"))
+        assertThat(service.marks(account.uuid, listOf(1, 2)).mapValues { it.value.spam })
+            .isEqualTo(mapOf(1L to true, 2L to false))
+
+        mail(3, "Angebote <news@werbung.example>", "Alt")
+        store.clearWatermarks()
+        assertThat(service.verdictOnOpen(account.uuid, 3)?.spam?.reason).isEqualTo(SpamReason.BLOCKED)
+        assertThat(moves.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `a contact is never spam, and nothing happens while spam detection is off`() = runBlocking<Unit> {
+        deviceContacts = listOf(DeviceContact(listOf("Anna"), listOf("anna@partner.example")))
+        service.enable(consentVersion = 1)
+        val flagged = mapOf("x-spam-flag" to "YES")
+        mail(1, "Anna <anna@partner.example>", "Hallo", extraHeaders = flagged)
+        mail(2, "Fremd <x@fremd.example>", "Hallo", extraHeaders = flagged)
+
+        service.checkNewMails()
+        assertThat(store.get(account.uuid, 2)?.spam).isNull()
+        assertThat(moves).isEqualTo(emptyList())
+
+        settings.spam = SpamSettings(enabled = true)
+        mail(3, "Anna <anna@partner.example>", "Hallo", extraHeaders = flagged)
+        mail(4, "Fremd <x@fremd.example>", "Hallo", extraHeaders = flagged)
+        service.checkNewMails()
+        assertThat(store.get(account.uuid, 3)?.spam).isNull()
+        assertThat(store.get(account.uuid, 4)?.spam?.reason).isEqualTo(SpamReason.SERVER)
+        assertThat(moves).isEqualTo(listOf("spam:$INBOX:u4"))
+    }
+
+    @Test
+    fun `not spam allows the sender and moves a mail from the spam folder back`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        settings.spam = SpamSettings(enabled = true, blocked = listOf("news@werbung.example"))
+        mail(1, "Angebote <news@werbung.example>", "Nur heute", folder = SPAM)
+
+        assertThat(service.verdictOnOpen(account.uuid, 1)?.spam?.reason).isEqualTo(SpamReason.BLOCKED)
+        assertThat(service.notSpam(account.uuid, 1)).isEqualTo(true)
+
+        assertThat(settings.spam.allowed).isEqualTo(listOf("news@werbung.example"))
+        assertThat(settings.spam.blocked).isEqualTo(emptyList())
+        assertThat(moves).isEqualTo(listOf("inbox:$SPAM:u1"))
+        assertThat(service.verdictOnOpen(account.uuid, 1)?.spam).isNull()
+    }
+
+    @Test
     fun `extras survive a round trip through JSON`() {
         val extras = MailExtras(listOf("https://a.example/"), mapOf("logo" to "Text"), ocrDone = false)
 
@@ -426,7 +496,7 @@ class ProtectionServiceTest {
                     "subject TEXT, date INTEGER, sender_list TEXT, to_list TEXT, cc_list TEXT, message_id TEXT, " +
                     "empty INTEGER default 0)",
             )
-            listOf(INBOX to "inbox", SENT to "sent", TRASH to "trash").forEach { (id, type) ->
+            listOf(INBOX to "inbox", SENT to "sent", TRASH to "trash", SPAM to "spam").forEach { (id, type) ->
                 exec("INSERT INTO folders (id, name, type) VALUES (?, ?, ?)", id, type, type)
             }
         }
@@ -491,5 +561,6 @@ class ProtectionServiceTest {
         const val INBOX = 1L
         const val SENT = 2L
         const val TRASH = 3L
+        const val SPAM = 4L
     }
 }

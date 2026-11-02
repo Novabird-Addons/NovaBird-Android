@@ -44,6 +44,7 @@ val novaBirdProtectionModule = module {
             onEnabled = { get<ProtectionScheduler>().requestCheck() },
             ai = getOrNull(),
             media = get(),
+            spamMover = getOrNull(),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         )
     }

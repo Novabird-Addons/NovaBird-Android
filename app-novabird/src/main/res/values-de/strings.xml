@@ -40,6 +40,14 @@
     <string name="novabird_protect_trust_done">Absender wird vertraut. Rückgängig: Einstellungen › Phishing-Schutz.</string>
     <string name="novabird_protect_trust_blocked">Vertrauen hier nicht möglich</string>
     <string name="novabird_protect_trust_blocked_hint">Bei „gefährlich“ lässt sich der Absender nicht per Tipp freigeben. Wenn du sicher bist, trage die Adresse in den Einstellungen ein.</string>
+    <string name="novabird_protect_banner_spam">Als Spam erkannt.</string>
+    <string name="novabird_protect_spam_reason_blocked">Der Absender steht auf der Liste „gesperrt“ (%1$s).</string>
+    <string name="novabird_protect_spam_reason_server">Dein Mailserver hat sie als Spam markiert.</string>
+    <string name="novabird_protect_spam_reason_auth">Unbekannter Absender, und die Absenderprüfung deines Mailservers ist durchgefallen (%1$s).</string>
+    <string name="novabird_protect_spam_reason_phishing">Von der Phishing-Prüfung als gefährlich bewertet.</string>
+    <string name="novabird_protect_spam_reason_money">Typische Zeichen von Geld-Spam.</string>
+    <string name="novabird_protect_banner_not_spam">Kein Spam</string>
+    <string name="novabird_protect_not_spam_done">Absender erlaubt. Rückgängig: Einstellungen › Phishing-Schutz › Erlaubte Absender.</string>
     <string name="novabird_protect_banner_error_title">Prüfung nicht möglich.</string>
     <string name="novabird_protect_banner_error_text">Diese Mail konnte nicht geprüft werden. Bitte behandle sie wie eine ungeprüfte Mail.</string>
     <string name="novabird_protect_link_title">Link öffnen?</string>

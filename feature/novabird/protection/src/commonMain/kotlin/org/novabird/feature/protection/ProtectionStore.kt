@@ -22,6 +22,8 @@ data class StoredVerdict(
     val checkedAt: Long,
     /** QR codes, text in images and attachment types the check used (`null`: none read). */
     val extras: MailExtras? = null,
+    /** Spam decision (`null`: no spam, or spam detection off when it was checked). */
+    val spam: SpamDecision? = null,
 ) {
     val level: ProtectionLevel get() = verdict.level
 }
@@ -53,6 +55,10 @@ class ProtectionStore(fileName: String) : AutoCloseable {
             buildSet { while (statement.step()) add(statement.getText(1)) }
         }
         if ("extras_json" !in columns) connection.execSQL("ALTER TABLE nb_protection ADD COLUMN extras_json TEXT")
+        if ("spam_reason" !in columns) {
+            connection.execSQL("ALTER TABLE nb_protection ADD COLUMN spam_reason TEXT")
+            connection.execSQL("ALTER TABLE nb_protection ADD COLUMN spam_detail TEXT")
+        }
         connection.execSQL("CREATE INDEX IF NOT EXISTS nb_protection_sender ON nb_protection (sender, level)")
         connection.execSQL(
             "CREATE TABLE IF NOT EXISTS nb_protection_account (account_uuid TEXT PRIMARY KEY, watermark INTEGER NOT NULL)",
@@ -63,8 +69,8 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         connection.prepare(
             """
             INSERT OR REPLACE INTO nb_protection (account_uuid, k9_id, folder_id, uid, header_message_id, sender, level,
-              score, verdict_json, rules_version, checked_at, extras_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              score, verdict_json, rules_version, checked_at, extras_json, spam_reason, spam_detail)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
         ).use { statement ->
             statement.bindText(1, record.accountUuid)
@@ -80,6 +86,14 @@ class ProtectionStore(fileName: String) : AutoCloseable {
             statement.bindLong(11, record.checkedAt)
             val extras = record.extras
             if (extras == null) statement.bindNull(12) else statement.bindText(12, extras.toJson().toString())
+            val spam = record.spam
+            if (spam == null) {
+                statement.bindNull(13)
+                statement.bindNull(14)
+            } else {
+                statement.bindText(13, spam.reason.id)
+                statement.bindText(14, spam.detail)
+            }
             statement.step()
         }
     }
@@ -87,7 +101,7 @@ class ProtectionStore(fileName: String) : AutoCloseable {
     fun get(accountUuid: String, k9Id: Long): StoredVerdict? = connection.prepare(
         """
         SELECT account_uuid, k9_id, folder_id, uid, header_message_id, sender, verdict_json, rules_version, checked_at,
-          extras_json
+          extras_json, spam_reason, spam_detail
         FROM nb_protection WHERE account_uuid = ? AND k9_id = ?
         """.trimIndent(),
     ).use { statement ->
@@ -114,6 +128,33 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         }
         return result
     }
+
+    /** Level and spam mark of the given messages that have a result (for the message list). */
+    fun marks(accountUuid: String, k9Ids: Collection<Long>): Map<Long, ListMark> {
+        if (k9Ids.isEmpty()) return emptyMap()
+        val result = HashMap<Long, ListMark>()
+        for (chunk in k9Ids.distinct().chunked(MAX_PARAMS)) {
+            val placeholders = chunk.joinToString(",") { "?" }
+            connection.prepare(
+                "SELECT k9_id, level, spam_reason FROM nb_protection WHERE account_uuid = ? AND k9_id IN ($placeholders)",
+            ).use { statement ->
+                statement.bindText(1, accountUuid)
+                chunk.forEachIndexed { i, id -> statement.bindLong(i + 2, id) }
+                while (statement.step()) {
+                    result[statement.getLong(0)] =
+                        ListMark(ProtectionLevel.fromId(statement.getText(1)), spam = !statement.isNull(2))
+                }
+            }
+        }
+        return result
+    }
+
+    /** Senders with at least one stored spam decision. */
+    fun spamSenders(): Set<String> =
+        connection.prepare("SELECT DISTINCT sender FROM nb_protection WHERE spam_reason IS NOT NULL AND sender != ''")
+            .use { statement ->
+                buildSet { while (statement.step()) add(statement.getText(0)) }
+            }
 
     /** Ids among [k9Ids] already checked with [rulesVersion]. */
     fun checkedIds(accountUuid: String, k9Ids: Collection<Long>, rulesVersion: String): Set<Long> {
@@ -183,6 +224,11 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         rulesVersion = getText(7),
         checkedAt = getLong(8),
         extras = if (isNull(9)) null else MailExtras.fromJson(getText(9)),
+        spam = if (isNull(10)) {
+            null
+        } else {
+            SpamReason.fromId(getText(10))?.let { SpamDecision(it, if (isNull(11)) "" else getText(11)) }
+        },
     )
 
     private companion object {

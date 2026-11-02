@@ -219,6 +219,12 @@ globalThis.NovaBirdProtection = {
     if (!address) return "false";
     return String(contacts.addresses.has(address) || !!trustLevel(senderIndex[address]));
   },
+  /** Spam-Regel 1: Kontakt oder schon angeschrieben (nicht nur "regelmäßig": hartnäckiger Spam wäre sonst bekannt). */
+  knownSender(author) {
+    const address = String(author ?? "").toLowerCase();
+    if (!address) return "false";
+    return String(contacts.addresses.has(address) || trustLevel(senderIndex[address]) === "sent");
+  },
   /** Ist der Absendername schon allein auffällig (Marke, Bank, Adresse im Namen …)? */
   headerSuspicion(author) {
     return JSON.stringify(headerSuspicion(author ?? ""));

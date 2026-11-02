@@ -138,6 +138,9 @@ class ProtectionEngine private constructor(
     suspend fun trustedEarlier(author: String, fromSentFolder: Boolean): Boolean =
         call("trustedEarlier", author, fromSentFolder.toString()) == "true"
 
+    /** Is [author] a device contact or someone the user wrote to (spam rule 1)? */
+    suspend fun knownSender(author: String): Boolean = call("knownSender", author) == "true"
+
     /** Rates features from [check] again, e.g. with more context (thread found, related mail, AI facts). */
     suspend fun analyze(features: JsonObject, context: JsonObject = EMPTY, config: JsonObject = EMPTY): Verdict {
         val json = call("analyze", features.toString(), context.toString(), config.toString())

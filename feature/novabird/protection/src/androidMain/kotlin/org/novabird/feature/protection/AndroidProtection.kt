@@ -54,6 +54,12 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
         preferences.edit { putBoolean(KEY_SCAN_IMAGES, scanImages) }
     }
 
+    override val spam: SpamSettings get() = SpamSettings.fromJson(preferences.getString(KEY_SPAM_JSON, null))
+
+    override fun updateSpam(spam: SpamSettings) {
+        preferences.edit { putString(KEY_SPAM_JSON, spam.toJson()) }
+    }
+
     override fun updateUseAi(useAi: Boolean) {
         preferences.edit { putBoolean(KEY_USE_AI, useAi) }
     }
@@ -78,5 +84,6 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
         const val KEY_HISTORY_MONTHS = "history_months"
         const val KEY_USE_AI = "use_ai"
         const val KEY_SCAN_IMAGES = "scan_images"
+        const val KEY_SPAM_JSON = "spam_json"
     }
 }

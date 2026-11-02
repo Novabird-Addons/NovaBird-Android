@@ -7,4 +7,5 @@
     <color name="nb_status_danger">#B3261E</color>
     <color name="nb_protect_caution_bg">#FFF1D6</color>
     <color name="nb_protect_caution_fg">#5C3A00</color>
+    <color name="nb_status_spam">#6B7280</color>
 </resources>

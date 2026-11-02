@@ -13,13 +13,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.novabird.feature.protection.ListMark
 import org.novabird.feature.protection.ProtectionLevel
 import org.novabird.feature.protection.ProtectionService
 import org.novabird.mail.R
 
 /**
  * Warning symbol in the message list (`nb_protection_badge` in the layout overlay `message_list_item.xml`) for mails
- * rated "Vorsicht" or "gefährlich"; nothing for unchecked or normal mails (no green check).
+ * rated "Vorsicht" or "gefährlich", grey for spam; nothing for unchecked or normal mails (no green check).
  *
  * Binding is synchronous, so levels come from a cache; misses are loaded in small batches and set on the row if it
  * still shows the same message. Whenever the stored results change (a background check finished, a sender was
@@ -34,7 +35,7 @@ class ProtectionListDecorator(
 
     private data class Key(val accountUuid: String, val k9Id: Long)
 
-    private val cache = HashMap<Key, ProtectionLevel?>()
+    private val cache = HashMap<Key, ListMark?>()
     private val pending = LinkedHashMap<Key, MutableList<WeakReference<ImageView>>>()
     private var loader: Job? = null
 
@@ -80,22 +81,23 @@ class ProtectionListDecorator(
         pending.clear()
         loader = null
         for ((accountUuid, keys) in batch.keys.groupBy { it.accountUuid }) {
-            val levels = runCatching { service.levels(accountUuid, keys.map { it.k9Id }) }.getOrDefault(emptyMap())
+            val marks = runCatching { service.marks(accountUuid, keys.map { it.k9Id }) }.getOrDefault(emptyMap())
             for (key in keys) {
-                val level = levels[key.k9Id]
-                cache[key] = level
+                val mark = marks[key.k9Id]
+                cache[key] = mark
                 for (ref in batch.getValue(key)) {
                     val badge = ref.get() ?: continue
-                    if (badge.tag == key) apply(badge, level)
+                    if (badge.tag == key) apply(badge, mark)
                 }
             }
         }
     }
 
-    private fun apply(badge: ImageView, level: ProtectionLevel?) {
-        when (level) {
-            ProtectionLevel.SUSPICIOUS -> show(badge, R.color.nb_status_warn)
-            ProtectionLevel.DANGEROUS -> show(badge, R.color.nb_status_danger)
+    private fun apply(badge: ImageView, mark: ListMark?) {
+        when {
+            mark?.level == ProtectionLevel.DANGEROUS -> show(badge, R.color.nb_status_danger)
+            mark?.level == ProtectionLevel.SUSPICIOUS -> show(badge, R.color.nb_status_warn)
+            mark?.spam == true -> show(badge, R.color.nb_status_spam)
             else -> badge.isVisible = false
         }
     }

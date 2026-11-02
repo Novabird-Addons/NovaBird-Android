@@ -39,6 +39,7 @@ import org.novabird.feature.search.unpackK9Addresses
  * @param media reads QR codes and text in images, or `null` (images add nothing). After a sync everything is read
  *   before the result is stored; for an opened mail QR codes and attachments at once, the slower text reading (OCR)
  *   follows in [scope] like the model.
+ * @param spamMover moves spam to the account's spam folder (only after a sync, never when a mail is opened), or `null`.
  */
 @Suppress("LongParameterList")
 class ProtectionService(
@@ -54,6 +55,7 @@ class ProtectionService(
     private val ai: ProtectionAi? = null,
     private val scope: CoroutineScope? = null,
     private val media: MediaScanner? = null,
+    private val spamMover: SpamMover? = null,
 ) {
     private val mutex = Mutex()
     private var contextLoadedAt = Long.MIN_VALUE
@@ -81,6 +83,45 @@ class ProtectionService(
     fun updateUseAi(on: Boolean) = settings.updateUseAi(on)
 
     val scanImages: Boolean get() = settings.scanImages
+
+    val spamSettings: SpamSettings get() = settings.spam
+
+    /**
+     * Changes the spam settings. Senders that became allowed lose their stored spam decisions, so the badge goes and the
+     * next open checks again.
+     */
+    suspend fun updateSpam(transform: (SpamSettings) -> SpamSettings) = locked {
+        val old = settings.spam
+        val new = transform(old)
+        settings.updateSpam(new)
+        val added = new.allowed - old.allowed.toSet()
+        if (added.isNotEmpty()) {
+            for (sender in store.spamSenders()) {
+                if (added.any { SpamRules.matches(it, sender) }) store.deleteBySender(sender)
+            }
+        }
+        _revision.value++
+    }
+
+    /**
+     * "Kein Spam" in the banner: the sender goes onto the allowed list (and off the blocked one); a mail in the spam
+     * folder moves back to the inbox. Returns `false` if the mail has no result.
+     */
+    suspend fun notSpam(accountUuid: String, k9Id: Long): Boolean {
+        val stored = locked { store.get(accountUuid, k9Id) } ?: return false
+        val sender = stored.sender
+        if (sender.isNotEmpty()) {
+            updateSpam { spam ->
+                spam.copy(allowed = (spam.allowed + sender).distinct(), blocked = spam.blocked - sender)
+            }
+        }
+        val mail = locked { texts.mailForCheck(accountUuid, k9Id) }
+        if (mail?.folderType == "spam") spamMover?.moveToInbox(accountUuid, mail.location.folderId, mail.location.uid)
+        locked {
+            store.get(accountUuid, k9Id)?.let { save(it.copy(spam = null)) }
+        }
+        return true
+    }
 
     fun updateScanImages(on: Boolean) = settings.updateScanImages(on)
 
@@ -239,6 +280,15 @@ class ProtectionService(
         return locked { store.get(accountUuid, k9Id) }
     }
 
+    /** Level and spam mark of messages that have a result, for the message list (spam only while it is on). */
+    suspend fun marks(accountUuid: String, k9Ids: Collection<Long>): Map<Long, ListMark> {
+        if (!settings.enabled) return emptyMap()
+        val spamOn = settings.spam.enabled
+        return locked { store.marks(accountUuid, k9Ids) }.mapValues { (_, mark) ->
+            if (spamOn) mark else mark.copy(spam = false)
+        }
+    }
+
     /** Levels of messages that have a result, for the message list. */
     suspend fun levels(accountUuid: String, k9Ids: Collection<Long>): Map<Long, ProtectionLevel> {
         if (!settings.enabled) return emptyMap()
@@ -275,12 +325,22 @@ class ProtectionService(
                     val record = locked { checkMail(mail, extras) }
                     count++
                     if (wantsAi(record)) refineWithAi(account.uuid, id)
+                    moveIfSpam(account.uuid, id)
                 }
                 if (ids.size < NEW_MAILS_PER_RUN) break
                 after = ids.last()
             }
         }
         return count
+    }
+
+    /** After a sync: a new inbox mail that counts as spam goes to the account's spam folder (if it has one). */
+    private suspend fun moveIfSpam(accountUuid: String, k9Id: Long) {
+        val mover = spamMover ?: return
+        if (!settings.spam.enabled) return
+        val stored = locked { store.get(accountUuid, k9Id) } ?: return
+        if (stored.spam == null) return
+        runCatching { mover.moveToSpam(accountUuid, stored.folderId, stored.uid) }
     }
 
     // ------------------------------------------------------------ check
@@ -293,6 +353,8 @@ class ProtectionService(
         val context: Map<String, JsonElement>,
         val config: JsonObject,
         val verdict: Verdict,
+        /** Device contact or written to (spam rule 1). */
+        val known: Boolean,
     ) {
         val sender: String = features["from"]?.let { from ->
             (from as? JsonObject)?.get("address")?.jsonPrimitive?.content
@@ -314,6 +376,14 @@ class ProtectionService(
             rulesVersion = RULES_VERSION,
             checkedAt = now(),
             extras = extras,
+            spam = SpamRules.decide(
+                sender = sender,
+                headers = mail.headers,
+                verdict = verdict,
+                known = known,
+                trusted = settings.trustedSenders.any { it.address == sender },
+                settings = settings.spam,
+            ),
         )
 
         /** The verdict with the model's facts added (`null` or unusable answer: unchanged), marked as asked. */
@@ -351,7 +421,9 @@ class ProtectionService(
                 verdict = js.analyze(features, JsonObject(context), config)
             }
         }
-        return Evaluation(mail, extras, features, context, config, verdict)
+        val from = features["from"]?.let { (it as? JsonObject)?.get("address")?.jsonPrimitive?.content }.orEmpty()
+        val known = settings.spam.enabled && from.isNotEmpty() && js.knownSender(from)
+        return Evaluation(mail, extras, features, context, config, verdict, known)
     }
 
     private suspend fun checkMail(mail: MailForCheck, extras: MailExtras?): StoredVerdict {

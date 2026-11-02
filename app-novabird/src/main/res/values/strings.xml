@@ -43,6 +43,14 @@
     <string name="novabird_protect_trust_done">Sender trusted. Undo: Settings › Phishing protection.</string>
     <string name="novabird_protect_trust_blocked">Trusting not possible here</string>
     <string name="novabird_protect_trust_blocked_hint">A sender rated “dangerous” cannot be cleared with a tap. If you are sure, add the address in the settings.</string>
+    <string name="novabird_protect_banner_spam">Recognized as spam.</string>
+    <string name="novabird_protect_spam_reason_blocked">The sender is on the blocked list (%1$s).</string>
+    <string name="novabird_protect_spam_reason_server">Your mail server marked it as spam.</string>
+    <string name="novabird_protect_spam_reason_auth">Unknown sender, and your mail server’s sender check failed (%1$s).</string>
+    <string name="novabird_protect_spam_reason_phishing">Rated dangerous by the phishing check.</string>
+    <string name="novabird_protect_spam_reason_money">Typical signs of money spam.</string>
+    <string name="novabird_protect_banner_not_spam">Not spam</string>
+    <string name="novabird_protect_not_spam_done">Sender allowed. Undo: Settings › Phishing protection › Allowed senders.</string>
     <string name="novabird_protect_banner_error_title">Check not possible.</string>
     <string name="novabird_protect_banner_error_text">This mail could not be checked. Please treat it as unchecked.</string>
     <string name="novabird_protect_link_title">Open link?</string>
