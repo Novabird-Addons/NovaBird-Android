@@ -5,6 +5,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import org.novabird.feature.ai.assist.AiAssistant
 import org.novabird.feature.ai.assist.DigestCache
+import org.novabird.feature.ai.helper.HelperAbsence
 import org.novabird.feature.ai.helper.HelperKeyVault
 import org.novabird.feature.ai.local.LocalEmbedder
 import org.novabird.feature.ai.local.ModelDownloads
@@ -27,7 +28,10 @@ val novaBirdAiModule = module {
     single { ModelFiles(androidContext()) }
     single { ModelDownloads(androidContext()) }
     single { LocalEmbedder(files = get(), settings = get(), logger = get()) }
-    single { AiVectorBackend(settings = get(), keyVault = get(), local = get(), logger = get()) }
+    single { HelperAbsence(androidContext()) }
+    single {
+        AiVectorBackend(settings = get(), keyVault = get(), local = get(), absence = get(), logger = get())
+    }
     single<NovaBirdVectorBackend> { get<AiVectorBackend>() }
     single { DigestCache(androidContext()) }
     single { AiAssistant(backend = get(), settings = get(), mailTexts = get(), cache = get()) }

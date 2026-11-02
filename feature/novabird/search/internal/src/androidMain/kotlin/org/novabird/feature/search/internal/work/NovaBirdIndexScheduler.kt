@@ -47,7 +47,10 @@ class NovaBirdIndexScheduler(
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_VECTORS, ExistingWorkPolicy.REPLACE, request)
     }
 
-    /** Periodic fallback (e.g. after sync from other code paths). */
+    /**
+     * Periodic fallback (e.g. after sync from other code paths), and a daily vector run while charging (the phone catches
+     * up there if the Helper has been away for a day).
+     */
     fun schedulePeriodic() {
         val request = PeriodicWorkRequestBuilder<NovaBirdIndexWorker>(PERIOD_HOURS, TimeUnit.HOURS)
             .setConstraints(
@@ -57,13 +60,27 @@ class NovaBirdIndexScheduler(
         WorkManager.getInstance(
             context,
         ).enqueueUniquePeriodicWork(WORK_PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)
+
+        val vectors = PeriodicWorkRequestBuilder<NovaBirdVectorWorker>(VECTORS_PERIOD_HOURS, TimeUnit.HOURS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresCharging(true)
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiresStorageNotLow(true)
+                    .build(),
+            )
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork(WORK_VECTORS_DAILY, ExistingPeriodicWorkPolicy.KEEP, vectors)
     }
 
     private companion object {
         const val WORK_NOW = "novabird-search-index"
         const val WORK_PERIODIC = "novabird-search-index-periodic"
         const val WORK_VECTORS = "novabird-search-vectors"
+        const val WORK_VECTORS_DAILY = "novabird-search-vectors-daily"
         const val DELAY_SECONDS = 10L
         const val PERIOD_HOURS = 6L
+        const val VECTORS_PERIOD_HOURS = 24L
     }
 }

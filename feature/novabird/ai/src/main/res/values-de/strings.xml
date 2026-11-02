@@ -25,7 +25,7 @@
     <string name="novabird_ai_local_title">Auf dem Handy rechnen</string>
     <string name="novabird_ai_local_enable">Bedeutungssuche auf dem Handy</string>
     <string name="novabird_ai_local_enable_note">Auch ohne Helper, z. B. unterwegs. Lädt einmal 320 MB im WLAN.</string>
-    <string name="novabird_ai_local_with_helper">Solange ein Helper gekoppelt ist, berechnet er die Vektoren. Das Handy rechnet dann nur Suchanfragen, wenn der Helper nicht erreichbar ist (z. B. unterwegs).</string>
+    <string name="novabird_ai_local_with_helper">Solange ein Helper gekoppelt ist, berechnet er die Vektoren. Ist er nicht erreichbar (z. B. unterwegs), rechnet das Handy die Suchanfragen; war er einen Tag lang weg, holt das Handy auch neue Mails beim Laden nach.</string>
     <string name="novabird_ai_local_hint_title">Auf dem Handy rechnen?</string>
     <string name="novabird_ai_local_hint_text">Ohne Helper berechnet das Handy die Vektoren selbst. Das dauert rund eine halbe Sekunde je Mail und läuft deshalb nur am Ladegerät. Das Modell braucht 320 MB Speicher und rund 500 MB Arbeitsspeicher, solange es geladen ist.</string>
     <string name="novabird_ai_local_hint_confirm">Einschalten</string>
