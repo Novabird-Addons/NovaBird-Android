@@ -20,9 +20,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import java.util.Locale
 import net.thunderbird.components.ui.bolt.atom.DividerHorizontal
 import net.thunderbird.components.ui.bolt.atom.Switch
 import net.thunderbird.components.ui.bolt.atom.button.ButtonFilled
@@ -119,15 +119,14 @@ private fun HelperSection(state: AiSettingsUiState, actions: AiSettingsActions) 
 @Composable
 private fun SpeechRateRow(rate: Float, onChange: (Float) -> Unit) {
     TextBodyLarge(text = stringResource(R.string.novabird_ai_speech_rate))
+    val locale = LocalConfiguration.current.locales[0]
     Row(
         horizontalArrangement = Arrangement.spacedBy(BoltTheme.spacings.half),
         modifier = Modifier.horizontalScroll(rememberScrollState()),
     ) {
         for (r in AiSettings.SPEECH_RATES) {
-            val label = String.format(Locale.getDefault(), "%.2f", r).trimEnd('0').trimEnd(',', '.') + "×"
-            if (r ==
-                rate
-            ) {
+            val label = String.format(locale, "%.2f", r).trimEnd('0').trimEnd(',', '.') + "×"
+            if (r == rate) {
                 ButtonFilled(text = label, onClick = {})
             } else {
                 ButtonOutlined(text = label, onClick = { onChange(r) })
