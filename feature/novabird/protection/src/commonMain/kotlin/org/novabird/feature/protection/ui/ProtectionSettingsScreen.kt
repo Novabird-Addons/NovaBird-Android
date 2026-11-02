@@ -44,8 +44,6 @@ import org.novabird.feature.protection.resources.novabird_protect_add_invalid
 import org.novabird.feature.protection.resources.novabird_protect_ai_note
 import org.novabird.feature.protection.resources.novabird_protect_ai_note_none
 import org.novabird.feature.protection.resources.novabird_protect_ai_title
-import org.novabird.feature.protection.resources.novabird_protect_images_note
-import org.novabird.feature.protection.resources.novabird_protect_images_title
 import org.novabird.feature.protection.resources.novabird_protect_cancel
 import org.novabird.feature.protection.resources.novabird_protect_consent_accept
 import org.novabird.feature.protection.resources.novabird_protect_consent_check
@@ -57,6 +55,8 @@ import org.novabird.feature.protection.resources.novabird_protect_contacts_allow
 import org.novabird.feature.protection.resources.novabird_protect_contacts_denied
 import org.novabird.feature.protection.resources.novabird_protect_contacts_granted
 import org.novabird.feature.protection.resources.novabird_protect_contacts_title
+import org.novabird.feature.protection.resources.novabird_protect_images_note
+import org.novabird.feature.protection.resources.novabird_protect_images_title
 import org.novabird.feature.protection.resources.novabird_protect_level_dangerous
 import org.novabird.feature.protection.resources.novabird_protect_level_normal
 import org.novabird.feature.protection.resources.novabird_protect_level_suspicious

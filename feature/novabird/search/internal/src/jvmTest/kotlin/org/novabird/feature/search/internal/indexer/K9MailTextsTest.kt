@@ -92,6 +92,37 @@ class K9MailTextsTest {
             assertThat(listOf(mail.folderType, mail.headerMessageId)).isEqualTo(listOf("inbox", "m9@example.com"))
         }
 
+    @Test
+    fun `stored parts can be read decoded, missing ones are not fetched`() = runBlocking {
+        val root = TestPart(
+            "multipart/related",
+            "Content-Type: multipart/related; boundary=x\r\n",
+            children = listOf(
+                TestPart("text/html", "Content-Type: text/html\r\n", "<img src=\"cid:logo@x\">".encodeToByteArray()),
+                TestPart(
+                    "image/png",
+                    "Content-Type: image/png; name=\"logo.png\"\r\nContent-ID: <logo@x>\r\n",
+                    "iVBORw0K".encodeToByteArray(),
+                    encoding = "base64",
+                    onDisk = true,
+                ),
+                TestPart("application/zip", "Content-Type: application/zip; name=\"a.zip\"\r\n"),
+            ),
+        )
+        store.insertMessage(
+            id = 10, folderId = 1, uid = "u10", messageId = "<m10@example.com>", subject = "Bild", date = now,
+            sender = "j@example.com", to = "me@example.com", root = root,
+        )
+
+        val (_, image, zip) = texts.mailForCheck("acc-1", 10)!!.parts
+
+        assertThat(listOf(image.contentId, image.downloaded, zip.downloaded)).isEqualTo(listOf("logo@x", true, false))
+        assertThat(texts.partBytes("acc-1", image.partId, 100)?.toList())
+            .isEqualTo(listOf(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a).map { it.toByte() })
+        assertThat(texts.partBytes("acc-1", image.partId, 3)).isEqualTo(null)
+        assertThat(texts.partBytes("acc-1", zip.partId, 100)).isEqualTo(null)
+    }
+
     private companion object {
         const val HOUR = 3_600_000L
     }

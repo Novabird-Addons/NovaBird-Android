@@ -12,6 +12,9 @@ import assertk.assertions.doesNotContain
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import java.io.ByteArrayOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +37,19 @@ class ProtectionServiceTest {
         override suspend fun mail(location: MessageLocation): MailForAi? = null
         override suspend fun recentMails(hours: Int, unreadOnly: Boolean, max: Int) = RecentMails(emptyList(), 0)
         override suspend fun mailForCheck(accountUuid: String, k9Id: Long) = mails[k9Id]
+        override suspend fun partBytes(accountUuid: String, partId: Long, maxBytes: Int) =
+            partData[partId]?.takeIf { it.size <= maxBytes }
+    }
+    private val partData = mutableMapOf<Long, ByteArray>()
+    private var qrAnswer = emptyList<String>()
+    private var ocrAnswer: String? = null
+    private val ocrCalls = mutableListOf<Int>()
+    private val fakeMedia = object : MediaScanner {
+        override suspend fun qrUrls(image: ByteArray) = qrAnswer
+        override suspend fun text(image: ByteArray): String? {
+            ocrCalls += image.size
+            return ocrAnswer
+        }
     }
     private val settings = InMemoryProtectionSettings()
     private var deviceContacts = emptyList<DeviceContact>()
@@ -62,6 +78,7 @@ class ProtectionServiceTest {
         dispatcher = Dispatchers.Default.limitedParallelism(1),
         now = { NOW },
         ai = fakeAi,
+        media = fakeMedia,
     )
 
     @AfterTest
@@ -77,6 +94,7 @@ class ProtectionServiceTest {
         html: String = "<p>Hallo</p>",
         folder: Long = INBOX,
         extraHeaders: Map<String, String> = emptyMap(),
+        extraParts: List<MailPart> = emptyList(),
     ) {
         val address = from.substringAfter('<').substringBefore('>')
         val packedSender = "$address;\u0001${from.substringBefore(" <")}"
@@ -90,9 +108,29 @@ class ProtectionServiceTest {
             folderType = "inbox",
             headers = (mapOf("from" to from, "to" to "ich@meine-firma.example", "subject" to subject) + extraHeaders)
                 .mapValues { listOf(it.value) },
-            parts = listOf(MailPart("text/html", null, html)),
+            parts = listOf(MailPart("text/html", null, html)) + extraParts,
         )
     }
+
+    /** A locally stored part with [bytes] (image or attachment). */
+    private fun part(id: Long, type: String, name: String?, bytes: ByteArray, contentId: String? = null): MailPart {
+        partData[id] = bytes
+        return MailPart(type, name, null, id, contentId, bytes.size.toLong(), downloaded = true)
+    }
+
+    private fun zip(vararg names: String): ByteArray {
+        val out = ByteArrayOutputStream()
+        ZipOutputStream(out).use { zip ->
+            for (name in names) {
+                zip.putNextEntry(ZipEntry(name))
+                zip.write("inhalt".encodeToByteArray())
+                zip.closeEntry()
+            }
+        }
+        return out.toByteArray()
+    }
+
+    private val image = ByteArray(5_000) { 7 }
 
     private fun phishing(id: Long) = mail(
         id,
@@ -257,6 +295,112 @@ class ProtectionServiceTest {
         aiFails = false
         service.refineWithAi(account.uuid, 1)
         assertThat(aiAnswers.size).isEqualTo(1) // still paused
+    }
+
+    @Test
+    fun `a QR code in an image that leads somewhere else is a signal`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        qrAnswer = listOf("https://paket-zustellung.example.invalid/track")
+        mail(
+            1,
+            "Versand <info@versand.example>",
+            "Ihre Sendung",
+            "<p>Bitte scannen</p><img src=\"cid:qr1@x\">",
+            extraParts = listOf(part(101, "image/png", "qr.png", image, "qr1@x")),
+        )
+
+        val verdict = service.verdictOnOpen(account.uuid, 1)!!
+
+        assertThat(verdict.verdict.signals.map { it.id }).contains("qrForeignLink")
+        assertThat(verdict.extras?.qrUrls).isEqualTo(qrAnswer)
+    }
+
+    @Test
+    fun `text in a linked image is read after the first answer on open, and right away after a sync`() =
+        runBlocking<Unit> {
+            service.enable(consentVersion = 1)
+            ocrAnswer = "PayPal Konto bestätigen"
+            val html = """<p>Hallo</p><a href="https://konto-check.example.invalid/x"><img src="cid:logo7@x"></a>"""
+            mail(
+                1,
+                "Service <info@service.example>",
+                "Konto",
+                html,
+                extraParts = listOf(part(201, "image/png", "logo.png", image, "logo7@x")),
+            )
+
+            val first = service.verdictOnOpen(account.uuid, 1)!!
+            assertThat(first.verdict.signals.map { it.id }).doesNotContain("imageBrandMismatch")
+            assertThat(first.extras?.ocrDone).isEqualTo(false)
+            assertThat(ocrCalls.size).isEqualTo(0)
+
+            service.refineWithImages(account.uuid, 1)
+            val second = store.get(account.uuid, 1)!!
+            assertThat(second.verdict.signals.map { it.id }).contains("imageBrandMismatch")
+            assertThat(second.extras?.imageTexts).isEqualTo(mapOf("logo7" to "PayPal Konto bestätigen"))
+            assertThat(ocrCalls.size).isEqualTo(1)
+
+            // after a sync the text is read before the result is stored
+            mail(
+                2,
+                "Service <info@service.example>",
+                "Konto",
+                html,
+                extraParts = listOf(part(202, "image/png", "logo.png", image, "logo7@x")),
+            )
+            service.checkNewMails()
+            assertThat(store.get(account.uuid, 2)!!.verdict.signals.map { it.id }).contains("imageBrandMismatch")
+        }
+
+    @Test
+    fun `images are not read when switched off`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        settings.scanImages = false
+        qrAnswer = listOf("https://paket-zustellung.example.invalid/track")
+        mail(
+            1,
+            "Versand <info@versand.example>",
+            "Sendung",
+            extraParts = listOf(part(301, "image/png", "qr.png", image)),
+        )
+
+        val verdict = service.verdictOnOpen(account.uuid, 1)!!
+
+        assertThat(verdict.verdict.signals.map { it.id }).doesNotContain("qrForeignLink")
+        assertThat(verdict.extras?.ocrDone).isEqualTo(true)
+    }
+
+    @Test
+    fun `an archive with a program inside and a program named as PDF are found`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        mail(
+            1,
+            "Buchhaltung <rechnung@lieferant.example>",
+            "Rechnung",
+            extraParts = listOf(part(401, "application/zip", "rechnung.zip", zip("docs/", "docs/rechnung.exe"))),
+        )
+        val program = byteArrayOf(0x4d, 0x5a) + ByteArray(2_000)
+        mail(
+            2,
+            "Buchhaltung <rechnung@lieferant.example>",
+            "Rechnung",
+            extraParts = listOf(part(402, "application/pdf", "rechnung.pdf", program)),
+        )
+
+        val archive = service.verdictOnOpen(account.uuid, 1)!!
+        val disguised = service.verdictOnOpen(account.uuid, 2)!!
+
+        assertThat(archive.verdict.signals.map { it.id }).contains("archiveRisky")
+        assertThat(disguised.verdict.signals.map { it.id }).contains("disguisedFile")
+        assertThat(disguised.level).isEqualTo(ProtectionLevel.DANGEROUS)
+    }
+
+    @Test
+    fun `extras survive a round trip through JSON`() {
+        val extras = MailExtras(listOf("https://a.example/"), mapOf("logo" to "Text"), ocrDone = false)
+
+        assertThat(MailExtras.fromJson(extras.toJson().toString())).isEqualTo(extras)
+        assertThat(MailExtras.fromJson("kaputt")).isNull()
     }
 
     @Test

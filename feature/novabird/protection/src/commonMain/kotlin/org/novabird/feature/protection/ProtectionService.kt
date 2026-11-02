@@ -373,7 +373,9 @@ class ProtectionService(
             val qrUrls = if (scanner == null) {
                 emptyList()
             } else {
-                images.flatMap { part -> partBytes(mail, part, MailMedia.MAX_IMAGE_BYTES)?.let { scanner.qrUrls(it) }.orEmpty() }
+                images.flatMap { part ->
+                    partBytes(mail, part, MailMedia.MAX_IMAGE_BYTES)?.let { scanner.qrUrls(it) }.orEmpty()
+                }
                     .distinct()
             }
             MailExtras(

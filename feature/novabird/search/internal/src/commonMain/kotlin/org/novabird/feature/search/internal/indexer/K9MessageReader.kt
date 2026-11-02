@@ -306,7 +306,9 @@ internal class K9MessageReader(
                 "SELECT data FROM message_parts WHERE id = ?",
                 listOf(partId.toString()),
             ).firstOrNull()?.get(0) as ByteArray?
+
             DATA_ON_DISK -> database.readPartFile(partId)
+
             else -> null
         } ?: return null
         return MimeText.decodeTransfer(raw, row[0] as String?).takeIf { it.size <= maxBytes }
