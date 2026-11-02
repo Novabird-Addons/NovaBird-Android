@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id(ThunderbirdPlugins.App.androidCompose)
 }
@@ -84,9 +86,24 @@ android {
         )
     }
 
+    // NovaBird: release key stays outside the repo. The properties file (keys nb.release.storeFile, .storePassword,
+    // .keyAlias, .keyPassword) is named by the Gradle property novabird.signingFile, e.g. in the Gradle user home.
+    val releaseSigning = (findProperty("novabird.signingFile") as String?)?.let(::file)?.takeIf { it.exists() }
+    signingConfigs {
+        if (releaseSigning != null) {
+            val signing = Properties().apply { releaseSigning.inputStream().use { load(it) } }
+            create("novabirdRelease") {
+                storeFile = file(signing.getProperty("nb.release.storeFile"))
+                storePassword = signing.getProperty("nb.release.storePassword")
+                keyAlias = signing.getProperty("nb.release.keyAlias")
+                keyPassword = signing.getProperty("nb.release.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // No release signing configured yet.
+            signingConfig = signingConfigs.findByName("novabirdRelease")
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
