@@ -40,6 +40,7 @@ class CreateAccount(
             messageDisplayCount = syncOptions.messageDisplayCount,
             showNotification = syncOptions.showNotification,
             syncPeriodDays = syncOptions.syncPeriodDays,
+            inboxPush = syncOptions.inboxPush,
         )
     }
 }

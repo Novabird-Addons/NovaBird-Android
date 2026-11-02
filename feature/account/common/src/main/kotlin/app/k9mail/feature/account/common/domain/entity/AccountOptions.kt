@@ -9,4 +9,6 @@ data class AccountOptions(
     val showNotification: Boolean,
     /** Sync messages from the last N days (-1 = no limit); null = keep the account default. */
     val syncPeriodDays: Int? = null,
+    /** Enable push for the inbox; null = keep the default (off). */
+    val inboxPush: Boolean? = null,
 )

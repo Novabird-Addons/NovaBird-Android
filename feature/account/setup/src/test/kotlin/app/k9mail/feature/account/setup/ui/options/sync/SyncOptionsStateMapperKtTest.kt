@@ -6,6 +6,9 @@ import app.k9mail.feature.account.setup.domain.entity.EmailCheckFrequency
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import com.fsck.k9.mail.AuthType
+import com.fsck.k9.mail.ConnectionSecurity
+import com.fsck.k9.mail.ServerSettings
 import org.junit.Test
 
 class SyncOptionsStateMapperKtTest {
@@ -28,6 +31,45 @@ class SyncOptionsStateMapperKtTest {
             ),
         )
     }
+
+    @Test
+    fun `should preselect inbox push only for IMAP accounts`() {
+        val imap = AccountState(incomingServerSettings = serverSettings("imap"))
+        val pop3 = AccountState(incomingServerSettings = serverSettings("pop3"))
+
+        assertThat(imap.toSyncOptionsState(defaultInboxPush = true).inboxPush).isEqualTo(true)
+        assertThat(pop3.toSyncOptionsState(defaultInboxPush = true).inboxPush).isEqualTo(null)
+        assertThat(imap.toSyncOptionsState(defaultInboxPush = null).inboxPush).isEqualTo(null)
+    }
+
+    @Test
+    fun `should keep the chosen inbox push and pass it on`() {
+        val accountState = AccountState(
+            incomingServerSettings = serverSettings("imap"),
+            syncOptions = AccountSyncOptions(
+                checkFrequencyInMinutes = 60,
+                messageDisplayCount = 250,
+                showNotification = false,
+                inboxPush = false,
+            ),
+        )
+
+        val state = accountState.toSyncOptionsState(defaultInboxPush = true)
+
+        assertThat(state.inboxPush).isEqualTo(false)
+        assertThat(state.copy(inboxPush = true).toAccountSyncOptions().inboxPush).isEqualTo(true)
+    }
+
+    private fun serverSettings(type: String) = ServerSettings(
+        type = type,
+        host = "mail.example.org",
+        port = 993,
+        connectionSecurity = ConnectionSecurity.SSL_TLS_REQUIRED,
+        authenticationType = AuthType.PLAIN,
+        username = "user@example.org",
+        password = null,
+        clientCertificateAlias = null,
+    )
 
     @Test
     fun `should map ALL to message display count 0`() {

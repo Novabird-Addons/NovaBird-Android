@@ -1,5 +1,6 @@
 package org.novabird.mail.account
 
+import app.k9mail.feature.account.setup.AccountSetupExternalContract.InboxPushProvider
 import app.k9mail.feature.account.setup.AccountSetupExternalContract.MessageDisplayCountProvider
 import app.k9mail.feature.account.setup.AccountSetupExternalContract.SyncPeriodProvider
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
@@ -23,5 +24,10 @@ internal val novaBirdAccountModule = module {
     // The setup wizard also asks how far back to sync (user decision: limit by time, one year preselected).
     single<SyncPeriodProvider>(named("app")) {
         SyncPeriodProvider { EmailSyncPeriod.fromDays(NovaBirdAccountDefaultsProvider.SYNC_PERIOD_ONE_YEAR) }
+    }
+
+    // ... and whether new mail in the inbox should come right away via push (user decision: ask, preselected on)
+    single<InboxPushProvider>(named("app")) {
+        InboxPushProvider { true }
     }
 }

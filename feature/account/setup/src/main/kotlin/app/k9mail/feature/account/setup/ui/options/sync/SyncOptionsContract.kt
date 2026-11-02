@@ -15,6 +15,8 @@ interface SyncOptionsContract {
         val showNotification: Boolean = true,
         /** null: the app doesn't ask for the sync period. */
         val syncPeriod: EmailSyncPeriod? = null,
+        /** null: the app doesn't ask for push (or the account is not IMAP). */
+        val inboxPush: Boolean? = null,
     )
 
     sealed interface Event {
@@ -22,6 +24,7 @@ interface SyncOptionsContract {
         data class OnMessageDisplayCountChanged(val messageDisplayCount: EmailDisplayCount) : Event
         data class OnShowNotificationChanged(val showNotification: Boolean) : Event
         data class OnSyncPeriodChanged(val syncPeriod: EmailSyncPeriod) : Event
+        data class OnInboxPushChanged(val inboxPush: Boolean) : Event
 
         data object LoadAccountState : Event
 

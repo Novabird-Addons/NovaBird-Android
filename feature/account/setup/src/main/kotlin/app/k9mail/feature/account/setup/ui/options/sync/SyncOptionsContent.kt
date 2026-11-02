@@ -25,6 +25,7 @@ import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
 import app.k9mail.feature.account.setup.domain.entity.EmailSyncPeriod
 import app.k9mail.feature.account.setup.ui.options.sync.SyncOptionsContract.Event
 import app.k9mail.feature.account.setup.ui.options.sync.SyncOptionsContract.State
+import net.thunderbird.components.ui.bolt.atom.text.TextBodySmall
 import net.thunderbird.components.ui.bolt.atom.text.TextLabelSmall
 import net.thunderbird.components.ui.bolt.molecule.input.SelectInput
 import net.thunderbird.components.ui.bolt.molecule.input.SwitchInput
@@ -114,6 +115,24 @@ internal fun SyncOptionsContent(
                     onCheckedChange = { onEvent(Event.OnShowNotificationChanged(it)) },
                     contentPadding = defaultItemPadding(),
                 )
+            }
+
+            state.inboxPush?.let { inboxPush ->
+                item {
+                    SwitchInput(
+                        text = stringResource(id = R.string.account_setup_options_inbox_push_label),
+                        checked = inboxPush,
+                        onCheckedChange = { onEvent(Event.OnInboxPushChanged(it)) },
+                        contentPadding = defaultItemPadding(),
+                    )
+                }
+                item {
+                    TextBodySmall(
+                        text = stringResource(id = R.string.account_setup_options_inbox_push_description),
+                        color = BoltTheme.colors.onSurfaceVariant,
+                        modifier = Modifier.padding(defaultItemPadding()),
+                    )
+                }
             }
 
             item {

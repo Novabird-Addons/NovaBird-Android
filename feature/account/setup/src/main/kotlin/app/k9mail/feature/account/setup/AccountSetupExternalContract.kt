@@ -33,4 +33,12 @@ interface AccountSetupExternalContract {
     fun interface SyncPeriodProvider {
         fun getDefaultSyncPeriod(): EmailSyncPeriod?
     }
+
+    /**
+     * Provides whether push (IMAP IDLE) for the inbox is preselected for a new IMAP account. If it returns null, the
+     * setup doesn't ask and the inbox keeps the default (no push).
+     */
+    fun interface InboxPushProvider {
+        fun getDefaultInboxPush(): Boolean?
+    }
 }

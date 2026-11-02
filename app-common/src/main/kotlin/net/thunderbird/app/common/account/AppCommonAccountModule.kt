@@ -73,6 +73,15 @@ internal val appCommonAccountModule = module {
         getOrNull(named("app")) ?: get(named("default"))
     }
 
+    // no push question by default; apps may bind a provider under "app"
+    single<AccountSetupExternalContract.InboxPushProvider>(named("default")) {
+        AccountSetupExternalContract.InboxPushProvider { null }
+    }
+
+    single<AccountSetupExternalContract.InboxPushProvider> {
+        getOrNull(named("app")) ?: get(named("default"))
+    }
+
     factory<ImmutableList<Int>>(named("AccountColors")) {
         androidContext().resources.getIntArray(
             ThemeCommonR.array.account_colors,
@@ -110,6 +119,7 @@ internal val appCommonAccountModule = module {
             messagingController = get(),
             avatarMonogramCreator = get(),
             unifiedInboxConfigurator = get(),
+            messageStoreManager = get(),
         )
     }
 }

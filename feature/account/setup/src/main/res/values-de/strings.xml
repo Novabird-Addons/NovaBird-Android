@@ -13,6 +13,8 @@
     <string name="account_setup_options_sync_period_1_year">dem letzten Jahr</string>
     <string name="account_setup_options_sync_period_2_years">den letzten zwei Jahren</string>
     <string name="account_setup_options_sync_period_all">jederzeit (unbegrenzt)</string>
+    <string name="account_setup_options_inbox_push_label">Neue Mails sofort (Push)</string>
+    <string name="account_setup_options_inbox_push_description">Hält für den Posteingang eine Verbindung zum Server offen, damit neue Mails nach Sekunden da sind. Android zeigt dafür eine dauerhafte Benachrichtigung, und es braucht etwas mehr Akku. Später änderbar in den Ordner-Einstellungen.</string>
     <string name="account_setup_auto_discovery_result_header_subtitle_configuration_not_found">Manuell konfigurieren</string>
     <string name="account_setup_options_email_signature_error_blank">Name der E-Mail-Signatur darf nicht leer sein.</string>
     <string name="account_setup_auto_discovery_result_approval_error_approval_required">Es ist erforderlich, die Konfiguration zu bestätigen.</string>

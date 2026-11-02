@@ -1,6 +1,7 @@
 package app.k9mail.feature.account.setup.ui.options.sync
 
 import app.k9mail.feature.account.common.domain.AccountDomainContract
+import app.k9mail.feature.account.setup.AccountSetupExternalContract.InboxPushProvider
 import app.k9mail.feature.account.setup.AccountSetupExternalContract.MessageDisplayCountProvider
 import app.k9mail.feature.account.setup.AccountSetupExternalContract.SyncPeriodProvider
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
@@ -16,10 +17,12 @@ internal class SyncOptionsViewModel(
         MessageDisplayCountProvider { EmailDisplayCount.DEFAULT },
     initialState: State? = null,
     private val syncPeriodProvider: SyncPeriodProvider = SyncPeriodProvider { null },
+    private val inboxPushProvider: InboxPushProvider = InboxPushProvider { null },
 ) : BaseViewModel<State, Event, Effect>(
     initialState = initialState ?: accountStateRepository.getState().toSyncOptionsState(
         defaultMessageDisplayCount = messageDisplayCountProvider.getDefaultMessageDisplayCount(),
         defaultSyncPeriod = syncPeriodProvider.getDefaultSyncPeriod(),
+        defaultInboxPush = inboxPushProvider.getDefaultInboxPush(),
     ),
 ),
     ViewModel {
@@ -52,6 +55,12 @@ internal class SyncOptionsViewModel(
                 )
             }
 
+            is Event.OnInboxPushChanged -> updateState { state ->
+                state.copy(
+                    inboxPush = event.inboxPush,
+                )
+            }
+
             Event.OnNextClicked -> submit()
 
             Event.OnBackClicked -> navigateBack()
@@ -63,6 +72,7 @@ internal class SyncOptionsViewModel(
             accountStateRepository.getState().toSyncOptionsState(
                 defaultMessageDisplayCount = messageDisplayCountProvider.getDefaultMessageDisplayCount(),
                 defaultSyncPeriod = syncPeriodProvider.getDefaultSyncPeriod(),
+                defaultInboxPush = inboxPushProvider.getDefaultInboxPush(),
             )
         }
     }

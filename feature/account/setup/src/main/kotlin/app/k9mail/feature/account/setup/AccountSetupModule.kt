@@ -136,6 +136,7 @@ val featureAccountSetupModule: Module = module {
             accountStateRepository = get(),
             messageDisplayCountProvider = get(),
             syncPeriodProvider = get(),
+            inboxPushProvider = get(),
         )
     }
 

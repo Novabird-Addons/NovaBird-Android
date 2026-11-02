@@ -6,6 +6,7 @@ import app.k9mail.feature.account.common.domain.entity.SpecialFolderOption
 import app.k9mail.feature.account.common.domain.entity.SpecialFolderSettings
 import app.k9mail.feature.account.setup.AccountSetupExternalContract
 import app.k9mail.feature.account.setup.AccountSetupExternalContract.AccountCreator.AccountCreatorResult
+import app.k9mail.legacy.mailstore.MessageStoreManager
 import com.fsck.k9.Core
 import com.fsck.k9.Preferences
 import com.fsck.k9.account.DeletePolicyProvider
@@ -40,6 +41,7 @@ internal class AccountCreator(
     private val deletePolicyProvider: DeletePolicyProvider,
     private val avatarMonogramCreator: AvatarMonogramCreator,
     private val unifiedInboxConfigurator: UnifiedInboxConfigurator,
+    private val messageStoreManager: MessageStoreManager? = null,
     private val coroutineDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AccountSetupExternalContract.AccountCreator {
 
@@ -104,11 +106,28 @@ internal class AccountCreator(
 
         messagingController.refreshFolderListBlocking(newAccount)
 
+        if (account.options.inboxPush == true) enableInboxPush(newAccount.uuid)
+
         if (account.options.checkFrequencyInMinutes == -1) {
             messagingController.checkMail(newAccount, false, true, false, null)
         }
 
         return newAccount.uuid
+    }
+
+    /**
+     * Push for the inbox (the folder list was just loaded, so the inbox exists). Push for other folders stays off.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private fun enableInboxPush(accountUuid: String) {
+        val store = messageStoreManager ?: return
+        try {
+            val messageStore = store.getMessageStore(accountUuid)
+            val inboxId = preferences.getAccount(accountUuid)?.inboxFolderId ?: messageStore.getFolderId(INBOX)
+            if (inboxId != null) messageStore.setPushEnabled(inboxId, true)
+        } catch (e: Exception) {
+            Log.e(e, "Error while enabling push for the inbox")
+        }
     }
 
     /**
@@ -173,3 +192,5 @@ private fun LegacyAccountDto.setIncomingServerSettings(serverSettings: ServerSet
         incomingServerSettings = serverSettings
     }
 }
+
+private const val INBOX = "INBOX"

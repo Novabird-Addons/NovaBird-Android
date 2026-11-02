@@ -68,6 +68,8 @@
     <string name="account_setup_options_sync_period_1_year">the last year</string>
     <string name="account_setup_options_sync_period_2_years">the last two years</string>
     <string name="account_setup_options_sync_period_all">any time (unlimited)</string>
+    <string name="account_setup_options_inbox_push_label">New mail right away (push)</string>
+    <string name="account_setup_options_inbox_push_description">Keeps a connection to the server open for the inbox, so new mail arrives within seconds. Android shows a permanent notification for it, and it uses a little more battery. You can change it later in the folder settings.</string>
     <string name="account_setup_options_show_notifications_label">Show notifications</string>
 
     <string name="account_setup_create_account_creating">Creating account…</string>
