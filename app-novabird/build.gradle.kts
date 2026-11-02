@@ -192,6 +192,7 @@ dependencies {
 
     implementation(projects.feature.novabird.ai)
     implementation(projects.feature.novabird.branding)
+    implementation(projects.feature.novabird.protection)
     implementation(projects.feature.novabird.search.api)
     implementation(projects.feature.novabird.search.internal)
     implementation(projects.feature.novabird.sync)

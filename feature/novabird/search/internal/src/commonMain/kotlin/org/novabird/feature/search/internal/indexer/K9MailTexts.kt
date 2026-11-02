@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.novabird.feature.search.K9MailStore
 import org.novabird.feature.search.MailForAi
+import org.novabird.feature.search.MailForCheck
 import org.novabird.feature.search.MessageLocation
 import org.novabird.feature.search.NovaBirdMailTexts
 import org.novabird.feature.search.RecentMails
@@ -20,6 +21,11 @@ internal class K9MailTexts(
             reader.findId(location.folderId, location.uid)?.let { reader.readText(it) }
         }
     }
+
+    override suspend fun mailForCheck(accountUuid: String, k9Id: Long): MailForCheck? =
+        withContext(Dispatchers.Default) {
+            mailStore.open(accountUuid)?.use { db -> K9MessageReader(accountUuid, db).readForCheck(k9Id) }
+        }
 
     override suspend fun recentMails(hours: Int, unreadOnly: Boolean, max: Int): RecentMails =
         withContext(Dispatchers.Default) {

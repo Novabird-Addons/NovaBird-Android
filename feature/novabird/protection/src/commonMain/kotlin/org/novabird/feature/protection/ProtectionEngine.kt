@@ -79,6 +79,42 @@ class ProtectionEngine private constructor(
         return CheckResult(features, Verdict.fromJson(json.jsonObject.getValue("verdict").jsonObject))
     }
 
+    /** Features of a message (see [check] for [input]); input of [analyze]. */
+    suspend fun features(input: JsonObject, config: JsonObject = EMPTY): JsonObject =
+        Json.parseToJsonElement(call("features", input.toString(), config.toString())).jsonObject
+
+    /** Sets the device contacts used by every following check. */
+    suspend fun setContacts(contacts: List<DeviceContact>) {
+        val json = JsonArray(
+            contacts.map { contact ->
+                JsonObject(
+                    mapOf(
+                        "names" to JsonArray(contact.names.map(::JsonPrimitive)),
+                        "emails" to JsonArray(contact.emails.map(::JsonPrimitive)),
+                    ),
+                )
+            },
+        )
+        call("setContacts", json.toString())
+    }
+
+    /** Sets the sender history (`{ address: { n, sent, names, first, last, flagged? } }`) for every following check. */
+    suspend fun setSenderIndex(senderIndex: JsonObject) {
+        call("setSenderIndex", senderIndex.toString())
+    }
+
+    /** Order, shipment or invoice numbers in [subject] and [text], at most three. */
+    suspend fun anchors(subject: String, text: String): List<String> =
+        Json.parseToJsonElement(call("anchors", subject, text)).jsonArray.map { it.jsonPrimitive.content }
+
+    /** Could a related earlier mail lower the rating (`relatedCouldHelp` of the add-on)? */
+    suspend fun relatedCouldHelp(verdict: Verdict): Boolean =
+        call("relatedCouldHelp", verdict.json.toString()) == "true"
+
+    /** Does an earlier mail from [author] count as a relation: from a sent folder, a contact or an established sender? */
+    suspend fun trustedEarlier(author: String, fromSentFolder: Boolean): Boolean =
+        call("trustedEarlier", author, fromSentFolder.toString()) == "true"
+
     /** Rates features from [check] again, e.g. with more context (thread found, related mail, AI facts). */
     suspend fun analyze(features: JsonObject, context: JsonObject = EMPTY, config: JsonObject = EMPTY): Verdict {
         val json = call("analyze", features.toString(), context.toString(), config.toString())

@@ -33,3 +33,19 @@ interface K9MailStore {
 fun interface K9AccountProvider {
     fun accounts(): List<K9Account>
 }
+
+/** One address of a K-9 address list column (`sender_list`, `to_list`, …). */
+data class K9Address(val email: String, val name: String?)
+
+/** Unpacks the format of `Address.pack()` in K-9: `email;\u0001name,\u0001email…`, quotes in names escaped. */
+fun unpackK9Addresses(packed: String?): List<K9Address> {
+    if (packed.isNullOrEmpty()) return emptyList()
+    return packed.split(",\u0001").filter { it.isNotEmpty() }.map { pair ->
+        val separator = pair.indexOf(";\u0001")
+        if (separator < 0) {
+            K9Address(pair, null)
+        } else {
+            K9Address(pair.substring(0, separator), pair.substring(separator + 2).replace("\\\"", "\""))
+        }
+    }
+}

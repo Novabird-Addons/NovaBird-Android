@@ -876,7 +876,8 @@ class RealImapFolderTest {
         verify(imapConnection).sendCommand(
             "UID FETCH 1 (UID INTERNALDATE RFC822.SIZE BODY.PEEK[HEADER.FIELDS " +
                 "(date subject from content-type to cc bcc reply-to message-id references in-reply-to " +
-                "list-post list-unsubscribe sender X-K9mail-Identity Chat-Version)])",
+                "list-post list-unsubscribe sender authentication-results list-id precedence x-spam-flag x-spam-status " +
+                "X-K9mail-Identity Chat-Version)])",
             false,
         )
     }

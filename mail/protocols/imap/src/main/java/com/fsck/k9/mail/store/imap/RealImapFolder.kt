@@ -594,6 +594,7 @@ internal class RealImapFolder(
             fetchFields.add(
                 "BODY.PEEK[HEADER.FIELDS (date subject from content-type to cc bcc " +
                     "reply-to message-id references in-reply-to list-post list-unsubscribe sender " +
+                    "authentication-results list-id precedence x-spam-flag x-spam-status " +
                     K9MailLib.IDENTITY_HEADER + " " + K9MailLib.CHAT_HEADER + ")]",
             )
         }

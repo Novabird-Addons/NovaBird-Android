@@ -9,6 +9,7 @@ import org.koin.core.module.Module
 import org.novabird.feature.ai.local.ModelDownloads
 import org.novabird.feature.ai.local.ModelFiles
 import org.novabird.feature.ai.settings.AiSettingsRepository
+import org.novabird.feature.protection.ProtectionScheduler
 import org.novabird.feature.search.internal.work.NovaBirdIndexScheduler
 import org.novabird.feature.sync.backfill.PartialMessageBackfillScheduler
 import org.novabird.mail.feature.DesignDefaults
@@ -17,6 +18,7 @@ class NovaBirdApp : FeatureFlagApplication() {
     private val messagingController: MessagingController by inject()
     private val backfillScheduler: PartialMessageBackfillScheduler by inject()
     private val indexScheduler: NovaBirdIndexScheduler by inject()
+    private val protectionScheduler: ProtectionScheduler by inject()
     private val aiSettings: AiSettingsRepository by inject()
     private val modelFiles: ModelFiles by inject()
     private val modelDownloads: ModelDownloads by inject()
@@ -33,12 +35,14 @@ class NovaBirdApp : FeatureFlagApplication() {
 
         designDefaults.apply()
 
-        // After each folder sync: complete partial messages on Wi-Fi and update the search index.
+        // After each folder sync: complete partial messages on Wi-Fi, update the search index and check new mails
+        // for phishing (only if the user switched the protection on).
         messagingController.addListener(backfillScheduler.syncListener)
         messagingController.addListener(
             object : SimpleMessagingListener() {
                 override fun synchronizeMailboxFinished(account: LegacyAccountDto, folderId: Long) {
                     indexScheduler.requestIndexing()
+                    protectionScheduler.requestCheck()
                 }
             },
         )

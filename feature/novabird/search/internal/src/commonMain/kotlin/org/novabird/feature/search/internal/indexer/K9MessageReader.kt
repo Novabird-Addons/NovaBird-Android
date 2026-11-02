@@ -11,7 +11,10 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import org.novabird.feature.search.K9MailDatabase
 import org.novabird.feature.search.MailForAi
+import org.novabird.feature.search.MailForCheck
+import org.novabird.feature.search.MailPart
 import org.novabird.feature.search.MessageLocation
+import org.novabird.feature.search.unpackK9Addresses
 
 /** A message as listed in the K-9 database, with a fingerprint of everything the index depends on. */
 internal data class K9MessageEntry(
@@ -116,7 +119,7 @@ internal class K9MessageReader(
         return database.query(
             """
             SELECT id, parent, mime_type, header, encoding, charset, data_location,
-              CASE WHEN mime_type LIKE 'text/%' AND data_location = $DATA_IN_DATABASE THEN data END,
+              CASE WHEN (mime_type LIKE 'text/%' OR mime_type LIKE '%svg%') AND data_location = $DATA_IN_DATABASE THEN data END,
               decoded_body_size
             FROM message_parts WHERE root = ? ORDER BY parent, seq
             """.trimIndent(),
@@ -223,12 +226,76 @@ internal class K9MessageReader(
         )
     }
 
+    /** All root headers and the leaf parts of a message for the phishing check, or `null` if it is gone. */
+    fun readForCheck(k9Id: Long): MailForCheck? {
+        val row = database.query(
+            """
+            SELECT m.folder_id, m.uid, m.message_id, m.date, m.internal_date, m.message_part_id, f.type
+            FROM messages m JOIN folders f ON f.id = m.folder_id
+            WHERE m.id = ? AND m.deleted = 0 AND m.empty = 0
+            """.trimIndent(),
+            listOf(k9Id.toString()),
+        ).firstOrNull() ?: return null
+        val folderId = row[0] as Long
+        val uid = row[1] as String
+        val rootPartId = row[5] as Long?
+        val parts = rootPartId?.let { readParts(it) }.orEmpty()
+        val root = parts.firstOrNull { it.id == rootPartId }
+        val headers = MimeText.parseHeaders(root?.header).mapValues { (name, values) ->
+            if (name in DECODED_HEADERS) values.map(MimeText::decodeEncodedWords) else values
+        }
+        val leaves = mutableListOf<MailPart>()
+        fun walk(part: Part) {
+            val children = parts.filter { it.parent == part.id && it.id != part.id }
+            if (children.isEmpty()) leaves += checkPart(part) else children.forEach(::walk)
+        }
+        root?.let(::walk)
+        return MailForCheck(
+            accountUuid = accountUuid,
+            k9Id = k9Id,
+            location = MessageLocation(accountUuid, folderId, uid),
+            headerMessageId = headerMessageIdOf(row[2] as String?, folderId, uid),
+            date = (row[3] as Long?)?.takeIf { it > 0 } ?: (row[4] as Long?) ?: 0L,
+            folderType = (row[6] as String?)?.lowercase(),
+            headers = headers,
+            parts = leaves,
+        )
+    }
+
+    /** Like `flattenParts()` of the add-on: name and, for text and SVG parts (attachments too), the decoded body. */
+    private fun checkPart(part: Part): MailPart {
+        val headers = MimeText.parseHeaders(part.header)
+        val disposition = headers["content-disposition"]?.firstOrNull()
+        val contentType = MimeText.parameters(headers["content-type"]?.firstOrNull())
+        val name = MimeText.parameters(disposition)["filename"] ?: contentType["name"]
+        val isText = part.mimeType.startsWith("text/") || part.mimeType.contains("svg")
+        val body = if (isText) {
+            when (part.dataLocation) {
+                DATA_IN_DATABASE -> part.data
+                DATA_ON_DISK -> database.readPartFile(part.id)
+                else -> null
+            }?.let { raw ->
+                val bytes = if (raw.size > MAX_TEXT_BYTES) raw.copyOf(MAX_TEXT_BYTES) else raw
+                MimeText.decodeBody(bytes, part.encoding, contentType["charset"] ?: part.charset).take(MAX_CHECK_CHARS)
+            }
+        } else {
+            null
+        }
+        return MailPart(contentType = part.mimeType, name = name, body = body)
+    }
+
     internal data class PackedAddress(val email: String, val name: String?)
 
     companion object {
         // message_parts.data_location (see legacy/storage DataLocation.kt)
         private const val DATA_IN_DATABASE = 1L
         private const val DATA_ON_DISK = 2L
+
+        /** Headers whose values the add-on gets decoded (Thunderbird's getHeaders decodes RFC 2047 there). */
+        private val DECODED_HEADERS = setOf("from", "to", "cc", "reply-to", "sender", "subject")
+
+        /** Like `flattenParts()` of the add-on, which keeps at most 400,000 characters per part. */
+        private const val MAX_CHECK_CHARS = 400_000
 
         /** Enough for the index: repository.js keeps at most 100,000 characters of body text. */
         private const val MAX_TEXT_BYTES = 1_000_000
@@ -253,18 +320,9 @@ internal class K9MessageReader(
             else -> null
         }
 
-        /** Format of `Address.pack()` in K-9: `email;\u0001name,\u0001email…`, quotes in names escaped. */
-        fun unpackAddresses(packed: String?): List<PackedAddress> {
-            if (packed.isNullOrEmpty()) return emptyList()
-            return packed.split(",\u0001").filter { it.isNotEmpty() }.map { pair ->
-                val separator = pair.indexOf(";\u0001")
-                if (separator < 0) {
-                    PackedAddress(pair, null)
-                } else {
-                    PackedAddress(pair.substring(0, separator), pair.substring(separator + 2).replace("\\\"", "\""))
-                }
-            }
-        }
+        /** Format of `Address.pack()` in K-9, see [unpackK9Addresses]. */
+        fun unpackAddresses(packed: String?): List<PackedAddress> =
+            unpackK9Addresses(packed).map { PackedAddress(it.email, it.name) }
 
         /** `Name <email>` as record.js parseAddress() expects it (no quotes or angle brackets in the name). */
         fun formatAddress(address: PackedAddress): String {

@@ -54,6 +54,44 @@ class K9MailTextsTest {
             .isEqualTo(listOf("Anna <anna@example.com>", "Text 7", "", "m7@example.com"))
     }
 
+    @Test
+    fun `mail for the phishing check has all root headers decoded where Thunderbird decodes them, and all leaf parts`() =
+        runBlocking {
+            val root = TestPart(
+                "multipart/mixed",
+                "From: =?utf-8?Q?J=C3=BCrgen?= <j@example.com>\r\nSubject: =?utf-8?Q?Gr=C3=BC=C3=9Fe?=\r\n" +
+                    "Authentication-Results: mx.example.com; dkim=pass header.d=example.com\r\n" +
+                    "Content-Type: multipart/mixed; boundary=x\r\n",
+                children = listOf(
+                    TestPart(
+                        "text/html",
+                        "Content-Type: text/html; charset=utf-8\r\n",
+                        "<p>Hallo</p>".encodeToByteArray(),
+                    ),
+                    TestPart(
+                        "application/pdf",
+                        "Content-Type: application/pdf\r\nContent-Disposition: attachment; filename=\"r.pdf\"\r\n",
+                    ),
+                ),
+            )
+            store.insertMessage(
+                id = 9, folderId = 1, uid = "u9", messageId = "<m9@example.com>", subject = "Grüße", date = now,
+                sender = "j@example.com", to = "me@example.com", root = root,
+            )
+
+            val mail = texts.mailForCheck("acc-1", 9)!!
+
+            assertThat(mail.headers["from"]).isEqualTo(listOf("Jürgen <j@example.com>"))
+            assertThat(mail.headers["subject"]).isEqualTo(listOf("Grüße"))
+            assertThat(mail.headers["authentication-results"])
+                .isEqualTo(listOf("mx.example.com; dkim=pass header.d=example.com"))
+            assertThat(mail.parts.map { Triple(it.contentType, it.name, it.body) }).containsExactly(
+                Triple("text/html", null, "<p>Hallo</p>"),
+                Triple("application/pdf", "r.pdf", null),
+            )
+            assertThat(listOf(mail.folderType, mail.headerMessageId)).isEqualTo(listOf("inbox", "m9@example.com"))
+        }
+
     private companion object {
         const val HOUR = 3_600_000L
     }

@@ -10,6 +10,9 @@ interface NovaBirdMailTexts {
      * first, at most [max]; [RecentMails.total] counts all found.
      */
     suspend fun recentMails(hours: Int, unreadOnly: Boolean, max: Int): RecentMails
+
+    /** One mail with all root headers and all parts as the phishing check reads it, or `null` if it is gone. */
+    suspend fun mailForCheck(accountUuid: String, k9Id: Long): MailForCheck? = null
 }
 
 /** A mail with its text parts: [plain] (text/plain parts) and [html] (text/html parts), both may be empty. */
@@ -24,3 +27,25 @@ data class MailForAi(
 )
 
 data class RecentMails(val mails: List<MailForAi>, val total: Int)
+
+/**
+ * A mail for the phishing check, shaped like the input of the add-on's `buildFeatures()`.
+ *
+ * @property headers root headers, lower-case names to values in order; address headers and the subject with RFC 2047
+ *   encoded words decoded, all others raw (e.g. `authentication-results`).
+ * @property parts leaf MIME parts in tree order; [MailPart.body] only for text parts (and SVG), at most 400,000 chars.
+ * @property folderType K-9 folder type of the mail (`inbox`, `sent`, `spam`, …, lower case), or `null`.
+ */
+data class MailForCheck(
+    val accountUuid: String,
+    val k9Id: Long,
+    val location: MessageLocation,
+    val headerMessageId: String,
+    val date: Long,
+    val folderType: String?,
+    val headers: Map<String, List<String>>,
+    val parts: List<MailPart>,
+)
+
+/** One MIME part: content type (lower case), file name if it has one, decoded text body if it is a text part. */
+data class MailPart(val contentType: String, val name: String?, val body: String?)
