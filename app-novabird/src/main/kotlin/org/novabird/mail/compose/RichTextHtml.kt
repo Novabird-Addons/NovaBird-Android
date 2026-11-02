@@ -115,8 +115,10 @@ object RichTextHtml {
 
     fun fromHtml(html: String): Spannable {
         val builder = SpannableStringBuilder()
-        HtmlReader(builder).read(Jsoup.parseBodyFragment(html).body())
+        val reader = HtmlReader(builder)
+        reader.read(Jsoup.parseBodyFragment(html).body())
         while (builder.isNotEmpty() && builder.last() == '\n') builder.delete(builder.length - 1, builder.length)
+        reader.setParagraphSpans()
         return builder
     }
 
@@ -238,6 +240,11 @@ private class HtmlReader(private val text: SpannableStringBuilder) {
     private var listLevel = 0
     private val listKinds = ArrayDeque<NbBlock>()
 
+    // set at the end: a paragraph span ending at the end of the text would grow with everything appended after it
+    private val paragraphs = mutableListOf<Paragraph>()
+
+    private class Paragraph(val block: NbBlock, val level: Int, val start: Int, val end: Int)
+
     fun read(node: Node) {
         when (node) {
             is TextNode -> appendText(node.wholeText)
@@ -324,10 +331,18 @@ private class HtmlReader(private val text: SpannableStringBuilder) {
         var paragraphStart = start
         while (paragraphStart < text.length) {
             val paragraphEnd = text.indexOf('\n', paragraphStart).let { if (it < 0) text.length else it + 1 }
-            if (RichTextHtml.paragraphSpanAt(text, paragraphStart) == null) {
-                text.setSpan(NbParagraphSpan(block, level), paragraphStart, paragraphEnd, Spanned.SPAN_PARAGRAPH)
+            if (paragraphs.none { it.start == paragraphStart }) {
+                paragraphs += Paragraph(block, level, paragraphStart, paragraphEnd)
             }
             paragraphStart = paragraphEnd
+        }
+    }
+
+    fun setParagraphSpans() {
+        for (paragraph in paragraphs) {
+            val end = minOf(paragraph.end, text.length)
+            if (paragraph.start >= end) continue
+            text.setSpan(NbParagraphSpan(paragraph.block, paragraph.level), paragraph.start, end, Spanned.SPAN_PARAGRAPH)
         }
     }
 

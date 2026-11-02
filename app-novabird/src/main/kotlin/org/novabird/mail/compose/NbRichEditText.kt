@@ -9,6 +9,7 @@ import android.text.TextWatcher
 import android.text.style.StyleSpan
 import android.util.AttributeSet
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
 import androidx.appcompat.widget.AppCompatEditText
 import com.fsck.k9.activity.compose.RichTextEditor
@@ -41,6 +42,7 @@ class NbRichEditText @JvmOverloads constructor(
     private var ignoreChanges = false
     private var edit: EditSnapshot? = null
     private var formatBar: NbFormatBar? = null
+    private var keyboardPending = false
 
     init {
         addTextChangedListener(object : TextWatcher {
@@ -93,6 +95,24 @@ class NbRichEditText @JvmOverloads constructor(
     override fun onFocusChanged(focused: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
         super.onFocusChanged(focused, direction, previouslyFocusedRect)
         onStateChanged?.invoke()
+    }
+
+    /** Shows the keyboard again once this window has the focus back (after the [NbFormatPanel] closed). */
+    fun showKeyboardWhenFocused() {
+        requestFocus()
+        if (hasWindowFocus()) showKeyboard() else keyboardPending = true
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        if (hasWindowFocus && keyboardPending) {
+            keyboardPending = false
+            post(::showKeyboard)
+        }
+    }
+
+    private fun showKeyboard() {
+        context.getSystemService(InputMethodManager::class.java)?.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
     }
 
     // RichTextEditor
@@ -209,6 +229,7 @@ class NbRichEditText @JvmOverloads constructor(
                 ignoreChanges = false
             }
             typingFormats = formatsAtCursor()
+            redrawText()
         }
         onStateChanged?.invoke()
     }
@@ -228,8 +249,16 @@ class NbRichEditText @JvmOverloads constructor(
         } finally {
             ignoreChanges = false
         }
+        redrawText()
         onStateChanged?.invoke()
     }
+
+    /**
+     * Span changes without a text change only re-record the text blocks they touch, so lines further down that moved
+     * (taller heading, list numbers) kept their old picture on the phone. Setting the shadow again re-records all
+     * blocks.
+     */
+    private fun redrawText() = setShadowLayer(shadowRadius, shadowDx, shadowDy, shadowColor)
 
     /** Paragraphs touched by the selection, each with its line break. */
     private fun selectedParagraphs(text: Spanned): List<Pair<Int, Int>> {

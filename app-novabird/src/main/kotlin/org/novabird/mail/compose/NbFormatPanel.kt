@@ -44,8 +44,7 @@ class NbFormatPanel(private val context: Context, private val editor: NbRichEdit
         }
         dialog.setOnDismissListener {
             editor.onStateChanged = barUpdate
-            editor.requestFocus()
-            editor.post { inputMethodManager?.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT) }
+            editor.showKeyboardWhenFocused()
         }
         dialog.show()
     }

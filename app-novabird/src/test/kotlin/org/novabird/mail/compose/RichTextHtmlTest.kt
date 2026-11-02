@@ -140,4 +140,13 @@ class RichTextHtmlTest {
         }
         return text
     }
+
+    @Test
+    fun `should read blocks after a list as their own paragraphs`() {
+        val html = "<div dir=\"auto\">Gruss<ol><li>Eins</li></ol><h2>Zwei</h2><ol><li>drei</li></ol>Ende</div>"
+
+        val text = RichTextHtml.fromHtml(html)
+
+        assertThat(RichTextHtml.toHtml(text)).isEqualTo(html)
+    }
 }

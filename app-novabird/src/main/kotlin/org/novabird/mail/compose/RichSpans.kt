@@ -10,12 +10,29 @@ import android.text.TextPaint
 import android.text.style.LeadingMarginSpan
 import android.text.style.MetricAffectingSpan
 import android.text.style.RelativeSizeSpan
-import android.text.style.TypefaceSpan
+import java.io.File
 
-/** Fonts besides the standard one (no span); [css] is what the HTML says, [family] what the phone shows. */
-enum class NbFont(val family: String, val css: String) {
-    SERIF("serif", "Georgia, 'Times New Roman', serif"),
-    MONO("monospace", "'Courier New', Courier, monospace"),
+/** Fonts besides the standard one (no span); [css] is what the HTML says, [typeface] what the phone shows. */
+enum class NbFont(private val fallback: Typeface, private val files: List<String>, val css: String) {
+    SERIF(Typeface.SERIF, listOf("NotoSerif-Regular.ttf"), "Georgia, 'Times New Roman', serif"),
+    MONO(Typeface.MONOSPACE, listOf("DroidSansMono.ttf", "CutiveMono.ttf"), "'Courier New', Courier, monospace"),
+    ;
+
+    /**
+     * Loaded from the font file where possible: phones with their own system font (OnePlus) draw the system
+     * typefaces "serif" and "monospace" in that font.
+     */
+    val typeface: Typeface by lazy {
+        files.asSequence()
+            .map { File(SYSTEM_FONTS, it) }
+            .filter { it.canRead() }
+            .firstNotNullOfOrNull { runCatching { Typeface.Builder(it).build() }.getOrNull() }
+            ?: fallback
+    }
+
+    private companion object {
+        const val SYSTEM_FONTS = "/system/fonts"
+    }
 }
 
 /** Text sizes besides the normal one; [css] is a keyword every mail client knows. */
@@ -25,7 +42,16 @@ enum class NbSize(val factor: Float, val css: String) {
     HUGE(1.6f, "x-large"),
 }
 
-class NbFontSpan(val font: NbFont) : TypefaceSpan(font.family)
+/** Sets the font, keeping bold and italic. */
+class NbFontSpan(val font: NbFont) : MetricAffectingSpan() {
+    override fun updateMeasureState(paint: TextPaint) = apply(paint)
+
+    override fun updateDrawState(paint: TextPaint) = apply(paint)
+
+    private fun apply(paint: TextPaint) {
+        paint.typeface = Typeface.create(font.typeface, paint.typeface?.style ?: Typeface.NORMAL)
+    }
+}
 
 class NbSizeSpan(val size: NbSize) : RelativeSizeSpan(size.factor)
 
