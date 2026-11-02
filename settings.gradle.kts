@@ -338,6 +338,7 @@ include(
     ":app-novabird",
     ":feature:novabird:ai",
     ":feature:novabird:branding",
+    ":feature:novabird:protection",
     ":feature:novabird:search:api",
     ":feature:novabird:search:internal",
     ":feature:novabird:sync",

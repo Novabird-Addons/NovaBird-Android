@@ -1,0 +1,16 @@
+source/src/data/banks-wikidata.js
+source/src/data/brands.js
+source/src/i18n.js
+source/src/lib/ai.js
+source/src/lib/analyzer.js
+source/src/lib/anchors.js
+source/src/lib/config.js
+source/src/lib/contacts.js
+source/src/lib/domains.js
+source/src/lib/features.js
+source/src/lib/files.js
+source/src/lib/headers.js
+source/src/lib/history.js
+source/src/lib/html.js
+source/src/lib/scam.js
+source/src/lib/text.js
