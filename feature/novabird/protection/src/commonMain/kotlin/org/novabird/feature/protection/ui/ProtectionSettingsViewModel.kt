@@ -109,6 +109,6 @@ class ProtectionSettingsViewModel(
 
     private companion object {
         val ADDRESS = Regex("""^[^\s@]+@[^\s@]+\.[^\s@]+$""")
-        const val UNDO_MILLIS = 6_000L
+        const val UNDO_MILLIS = 10_000L
     }
 }

@@ -8,6 +8,7 @@ import androidx.core.view.isVisible
 import com.fsck.k9.ui.MessageListItemDecorator
 import com.fsck.k9.ui.messagelist.MessageListItem
 import java.lang.ref.WeakReference
+import java.util.WeakHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +22,8 @@ import org.novabird.mail.R
  * rated "Vorsicht" or "gefährlich"; nothing for unchecked or normal mails (no green check).
  *
  * Binding is synchronous, so levels come from a cache; misses are loaded in small batches and set on the row if it
- * still shows the same message. The cache is dropped whenever the stored results change.
+ * still shows the same message. Whenever the stored results change (a background check finished, a sender was
+ * trusted), the cache is dropped and the rows on screen are looked up again, so badges appear without a scroll.
  *
  * @param scope main-thread scope of the app.
  */
@@ -36,14 +38,25 @@ class ProtectionListDecorator(
     private val pending = LinkedHashMap<Key, MutableList<WeakReference<ImageView>>>()
     private var loader: Job? = null
 
+    /** Badges bound so far (rows on screen or recycled), with the message they show. */
+    private val bound = WeakHashMap<ImageView, Key>()
+
     init {
-        scope.launch { service.revision.collect { cache.clear() } }
+        scope.launch {
+            service.revision.collect {
+                cache.clear()
+                for ((badge, key) in bound.entries.toList()) {
+                    if (badge.tag == key) enqueue(key, badge)
+                }
+            }
+        }
     }
 
     override fun decorate(itemView: View, item: MessageListItem) {
         val badge = itemView.findViewById<ImageView>(R.id.nb_protection_badge) ?: return
         val key = Key(item.account.uuid, item.databaseId)
         badge.tag = key
+        bound[badge] = key
         when {
             !service.isEnabled -> badge.isVisible = false
 
@@ -51,10 +64,14 @@ class ProtectionListDecorator(
 
             else -> {
                 badge.isVisible = false
-                pending.getOrPut(key) { mutableListOf() } += WeakReference(badge)
-                if (loader == null) loader = scope.launch { loadPending() }
+                enqueue(key, badge)
             }
         }
+    }
+
+    private fun enqueue(key: Key, badge: ImageView) {
+        pending.getOrPut(key) { mutableListOf() } += WeakReference(badge)
+        if (loader == null) loader = scope.launch { loadPending() }
     }
 
     private suspend fun loadPending() {
