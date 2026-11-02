@@ -28,6 +28,8 @@ class ProtectionSettingsViewModel(
         val enabled: Boolean = false,
         val useAi: Boolean = true,
         val aiAvailable: Boolean = false,
+        /** The app may read the device contacts (`null`: unknown, not Android). */
+        val contactsGranted: Boolean? = null,
         val page: Page = Page.MAIN,
         val consentChecked: Boolean = false,
         val trusted: List<TrustedSender> = emptyList(),
@@ -58,6 +60,11 @@ class ProtectionSettingsViewModel(
                 _state.update { it.copy(enabled = false) }
             }
         }
+    }
+
+    fun setContactsGranted(granted: Boolean) {
+        _state.update { it.copy(contactsGranted = granted) }
+        if (granted) service.invalidateContext()
     }
 
     fun onUseAi(on: Boolean) {

@@ -75,6 +75,11 @@ class ProtectionService(
 
     fun updateUseAi(on: Boolean) = settings.updateUseAi(on)
 
+    /** Reads contacts and the sender history again on the next check (e.g. after the contacts permission was granted). */
+    fun invalidateContext() {
+        contextLoadedAt = Long.MIN_VALUE
+    }
+
     /** Switches the protection on after the user accepted notice [consentVersion]. Existing mail stays unchecked. */
     suspend fun enable(consentVersion: Int) = locked {
         settings.setEnabled(true, consentVersion, now())

@@ -51,6 +51,10 @@ import org.novabird.feature.protection.resources.novabird_protect_consent_p1
 import org.novabird.feature.protection.resources.novabird_protect_consent_p2
 import org.novabird.feature.protection.resources.novabird_protect_consent_p3
 import org.novabird.feature.protection.resources.novabird_protect_consent_title
+import org.novabird.feature.protection.resources.novabird_protect_contacts_allow
+import org.novabird.feature.protection.resources.novabird_protect_contacts_denied
+import org.novabird.feature.protection.resources.novabird_protect_contacts_granted
+import org.novabird.feature.protection.resources.novabird_protect_contacts_title
 import org.novabird.feature.protection.resources.novabird_protect_level_dangerous
 import org.novabird.feature.protection.resources.novabird_protect_level_normal
 import org.novabird.feature.protection.resources.novabird_protect_level_suspicious
@@ -77,7 +81,11 @@ import org.novabird.feature.protection.ui.ProtectionSettingsViewModel.Page
 
 /** Settings of the phishing protection: switch with the mandatory notice, trusted senders with undo. */
 @Composable
-fun ProtectionSettingsScreen(viewModel: ProtectionSettingsViewModel, onClose: () -> Unit) {
+fun ProtectionSettingsScreen(
+    viewModel: ProtectionSettingsViewModel,
+    onClose: () -> Unit,
+    onRequestContacts: () -> Unit = {},
+) {
     val state by viewModel.state.collectAsState()
     val back = { if (!viewModel.onBack()) onClose() }
     val title = when (state.page) {
@@ -95,7 +103,7 @@ fun ProtectionSettingsScreen(viewModel: ProtectionSettingsViewModel, onClose: ()
             verticalArrangement = Arrangement.spacedBy(BoltTheme.spacings.default),
         ) {
             when (state.page) {
-                Page.MAIN -> MainPage(state, viewModel)
+                Page.MAIN -> MainPage(state, viewModel, onRequestContacts)
                 Page.CONSENT -> ConsentPage(state, viewModel)
                 Page.TRUSTED -> TrustedPage(state, viewModel)
             }
@@ -104,7 +112,11 @@ fun ProtectionSettingsScreen(viewModel: ProtectionSettingsViewModel, onClose: ()
 }
 
 @Composable
-private fun MainPage(state: ProtectionSettingsViewModel.State, actions: ProtectionSettingsViewModel) {
+private fun MainPage(
+    state: ProtectionSettingsViewModel.State,
+    actions: ProtectionSettingsViewModel,
+    onRequestContacts: () -> Unit,
+) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             TextBodyLarge(text = stringResource(Res.string.novabird_protect_switch_title))
@@ -137,6 +149,26 @@ private fun MainPage(state: ProtectionSettingsViewModel.State, actions: Protecti
             TextBodySmall(text = stringResource(aiNote), color = BoltTheme.colors.onSurfaceVariant)
         }
         Switch(checked = state.useAi, onCheckedChange = actions::onUseAi, enabled = state.enabled)
+    }
+    state.contactsGranted?.let { granted ->
+        DividerHorizontal()
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                TextBodyLarge(text = stringResource(Res.string.novabird_protect_contacts_title))
+                val contactsNote = if (granted) {
+                    Res.string.novabird_protect_contacts_granted
+                } else {
+                    Res.string.novabird_protect_contacts_denied
+                }
+                TextBodySmall(text = stringResource(contactsNote), color = BoltTheme.colors.onSurfaceVariant)
+            }
+            if (!granted) {
+                ButtonOutlined(
+                    text = stringResource(Res.string.novabird_protect_contacts_allow),
+                    onClick = onRequestContacts,
+                )
+            }
+        }
     }
     DividerHorizontal()
     ClickableSurface(onClick = actions::openTrusted, modifier = Modifier.fillMaxWidth()) {

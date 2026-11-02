@@ -9,6 +9,10 @@
     <string name="novabird_protect_ai_title">Lokale KI im Graubereich fragen</string>
     <string name="novabird_protect_ai_note">Helper verbunden. Bei Mails mit einigen Hinweisen sagt das Modell, als wer sich die Mail ausgibt und was sie verlangt; entscheiden tun die Regeln. Es kann eine Warnung nur verschärfen, nie entwarnen.</string>
     <string name="novabird_protect_ai_note_none">Braucht den NovaBird Helper (Einstellungen › Vektorsuche und KI). Keine Cloud.</string>
+    <string name="novabird_protect_contacts_title">Kontakte gelten als bekannt</string>
+    <string name="novabird_protect_contacts_granted">Erlaubt: Adressen aus deinen Kontakten bekommen keinen Hinweis „neuer Absender“, und ein bekannter Name mit neuer Adresse wird gemeldet.</string>
+    <string name="novabird_protect_contacts_denied">Nicht erlaubt: Kontakte zählen nicht. Die Prüfung läuft trotzdem, mit mehr Hinweisen „neuer Absender“.</string>
+    <string name="novabird_protect_contacts_allow">Erlauben</string>
     <string name="novabird_protect_trusted_title">Vertraute Absender</string>
     <string name="novabird_protect_trusted_count">%1$d Einträge</string>
     <string name="novabird_protect_trusted_hint">Für diese Adressen entfallen die Warnungen. Hinweise auf Fälschung bleiben: fehlgeschlagene Absenderprüfung (DMARC, SPF, DKIM), Lookalike-Links, getarnte Anhänge, Erpressung. Aus einer als „gefährlich“ eingestuften Mail heraus lässt sich ein Absender nicht per Tipp eintragen, nur hier.</string>
