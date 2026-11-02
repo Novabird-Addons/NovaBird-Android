@@ -2,6 +2,7 @@ package org.novabird.mail.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.text.TextUtils
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.widget.HorizontalScrollView
@@ -106,6 +107,9 @@ class AccountInboxesView @JvmOverloads constructor(context: Context, attrs: Attr
     private fun inboxChip(label: String, accountColor: Int?, checked: Boolean, onClick: () -> Unit) =
         Chip(context, null, MaterialR.attr.chipStyle).apply {
             text = label
+            // long addresses as names: keep the row short
+            ellipsize = TextUtils.TruncateAt.END
+            maxWidth = dp(MAX_CHIP_WIDTH)
             isCheckable = true
             isChecked = checked
             isCheckedIconVisible = false
@@ -147,5 +151,6 @@ class AccountInboxesView @JvmOverloads constructor(context: Context, attrs: Attr
         const val PADDING_TOP = 2
         const val CHIP_SPACING = 8
         const val DOT_SIZE = 10
+        const val MAX_CHIP_WIDTH = 220
     }
 }

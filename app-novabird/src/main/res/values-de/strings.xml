@@ -23,5 +23,5 @@
     <string name="novabird_settings_search_phone">Rechnet auf dem Handy (kein Helper)</string>
     <string name="novabird_settings_search_off">Aus</string>
     <string name="novabird_settings_logos">Absender-Logos anzeigen</string>
-    <string name="novabird_settings_logos_note">Logos von Firmen, die eines veröffentlichen (BIMI), geladen von der Domain des Absenders</string>
+    <string name="novabird_settings_logos_note">Firmenlogos (BIMI), geladen von der Domain des Absenders</string>
 </resources>

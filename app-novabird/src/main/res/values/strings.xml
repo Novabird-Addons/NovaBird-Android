@@ -26,5 +26,5 @@
     <string name="novabird_settings_search_phone">Computed on the phone (no Helper)</string>
     <string name="novabird_settings_search_off">Off</string>
     <string name="novabird_settings_logos">Show sender logos</string>
-    <string name="novabird_settings_logos_note">Logos of companies that publish one (BIMI), loaded from the sender domain</string>
+    <string name="novabird_settings_logos_note">Company logos (BIMI), loaded from the sender domain</string>
 </resources>
