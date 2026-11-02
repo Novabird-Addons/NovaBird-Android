@@ -5,6 +5,8 @@ import com.dokar.quickjs.QuickJs
 import com.dokar.quickjs.binding.function
 import com.dokar.quickjs.evaluate
 import com.dokar.quickjs.moduleLoader
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -13,6 +15,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -82,6 +85,26 @@ class ProtectionEngine private constructor(
     /** Features of a message (see [check] for [input]); input of [analyze]. */
     suspend fun features(input: JsonObject, config: JsonObject = EMPTY): JsonObject =
         Json.parseToJsonElement(call("features", input.toString(), config.toString())).jsonObject
+
+    /**
+     * Real file type of an attachment and, for a ZIP archive, its list of contents (`attachments.js` of the add-on), as
+     * `attachmentScan` expects it per file name. [tail] is the end of the file from [tailStart] on (only for ZIP
+     * candidates, else `null`).
+     */
+    @OptIn(ExperimentalEncodingApi::class)
+    suspend fun scanFile(name: String, head: ByteArray, tail: ByteArray?, tailStart: Long): JsonObject {
+        val json = call("scanFile", name, Base64.encode(head), tail?.let { Base64.encode(it) }.orEmpty(), "$tailStart")
+        return Json.parseToJsonElement(json).jsonObject
+    }
+
+    /** Which images of a mail are worth reading (add-on: `ocrCandidates`), from its [features]. */
+    suspend fun ocrCandidates(features: JsonObject): OcrCandidates {
+        val json = Json.parseToJsonElement(call("ocrCandidates", features.toString())).jsonObject
+        return OcrCandidates(
+            linked = json["linked"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet().orEmpty(),
+            mostlyImages = json["mostlyImages"]?.jsonPrimitive?.booleanOrNull == true,
+        )
+    }
 
     /** Sets the device contacts used by every following check. */
     suspend fun setContacts(contacts: List<DeviceContact>) {
@@ -208,6 +231,9 @@ class ProtectionEngine private constructor(
         }
     }
 }
+
+/** Images worth reading: keys of images used as links without text, or all when the mail is [mostlyImages]. */
+data class OcrCandidates(val linked: Set<String>, val mostlyImages: Boolean)
 
 /** An error thrown by the JavaScript phishing core. */
 class ProtectionScriptException(message: String) : Exception(message)

@@ -20,6 +20,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.novabird.feature.search.K9MailStore
 import org.novabird.feature.search.MailForCheck
+import org.novabird.feature.search.MailPart
 import org.novabird.feature.search.NovaBirdMailTexts
 import org.novabird.feature.search.unpackK9Addresses
 
@@ -35,6 +36,9 @@ import org.novabird.feature.search.unpackK9Addresses
  * @param onEnabled called after switching on (the app schedules the first background check there).
  * @param ai local language model for the grey zone, or `null`. After a sync it is asked inline; for an opened mail the
  *   rules answer at once and the model's facts follow in [scope] (the banner and the badge refresh via [revision]).
+ * @param media reads QR codes and text in images, or `null` (images add nothing). After a sync everything is read
+ *   before the result is stored; for an opened mail QR codes and attachments at once, the slower text reading (OCR)
+ *   follows in [scope] like the model.
  */
 @Suppress("LongParameterList")
 class ProtectionService(
@@ -49,6 +53,7 @@ class ProtectionService(
     private val onEnabled: () -> Unit = {},
     private val ai: ProtectionAi? = null,
     private val scope: CoroutineScope? = null,
+    private val media: MediaScanner? = null,
 ) {
     private val mutex = Mutex()
     private var contextLoadedAt = Long.MIN_VALUE
@@ -74,6 +79,10 @@ class ProtectionService(
     val isAiAvailable: Boolean get() = ai?.isAvailable() == true
 
     fun updateUseAi(on: Boolean) = settings.updateUseAi(on)
+
+    val scanImages: Boolean get() = settings.scanImages
+
+    fun updateScanImages(on: Boolean) = settings.updateScanImages(on)
 
     /** Reads contacts and the sender history again on the next check (e.g. after the contacts permission was granted). */
     fun invalidateContext() {
@@ -150,15 +159,19 @@ class ProtectionService(
      */
     suspend fun verdictOnOpen(accountUuid: String, k9Id: Long): StoredVerdict? {
         if (!settings.enabled) return null
-        val verdict = locked {
-            store.get(accountUuid, k9Id)?.takeIf { it.rulesVersion == RULES_VERSION } ?: check(accountUuid, k9Id)
-        }
-        if (verdict != null && wantsAi(verdict) && scope != null) {
+        val verdict = locked { store.get(accountUuid, k9Id)?.takeIf { it.rulesVersion == RULES_VERSION } }
+            ?: run {
+                val mail = locked { texts.mailForCheck(accountUuid, k9Id) } ?: return null
+                val extras = readMedia(mail, previous = null, withOcr = false)
+                locked { checkMail(mail, extras) }
+            }
+        if ((wantsOcr(verdict) || wantsAi(verdict)) && scope != null) {
             val key = accountUuid to k9Id
             val started = aiInFlightMutex.withLock { aiInFlight.add(key) }
             if (started) {
                 scope.launch {
                     try {
+                        refineWithImages(accountUuid, k9Id)
                         refineWithAi(accountUuid, k9Id)
                     } finally {
                         withContext(NonCancellable) { aiInFlightMutex.withLock { aiInFlight.remove(key) } }
@@ -169,6 +182,20 @@ class ProtectionService(
         return verdict
     }
 
+    /** Reads the text in the images of a stored result that has not read it yet (OCR) and rates the mail again. */
+    suspend fun refineWithImages(accountUuid: String, k9Id: Long) {
+        val stored = locked { store.get(accountUuid, k9Id) } ?: return
+        if (!wantsOcr(stored)) return
+        val mail = locked { texts.mailForCheck(accountUuid, k9Id) } ?: return
+        val extras = readMedia(mail, stored.extras, withOcr = true)
+        locked {
+            if (store.get(accountUuid, k9Id)?.let(::wantsOcr) == true) checkMail(mail, extras)
+        }
+    }
+
+    private fun wantsOcr(verdict: StoredVerdict): Boolean =
+        media != null && settings.scanImages && verdict.extras?.ocrDone == false
+
     /** Asks the language model about a stored grey-zone result and rates the mail again with its facts. */
     suspend fun refineWithAi(accountUuid: String, k9Id: Long) {
         val model = ai ?: return
@@ -176,7 +203,7 @@ class ProtectionService(
             val stored = store.get(accountUuid, k9Id) ?: return@locked null
             if (!wantsAi(stored)) return@locked null
             val mail = texts.mailForCheck(accountUuid, k9Id) ?: return@locked null
-            evaluate(mail)
+            evaluate(mail, stored.extras)
         } ?: return
         // the model call is slow and may use the network: outside the lock
         val answer = askModel(model, prepared) ?: return
@@ -242,7 +269,10 @@ class ProtectionService(
                 }
                 for (id in ids) {
                     if (id in done) continue
-                    val record = locked { check(account.uuid, id) } ?: continue
+                    val mail = locked { texts.mailForCheck(account.uuid, id) } ?: continue
+                    // images outside the lock: an opened mail need not wait for the text reading
+                    val extras = readMedia(mail, previous = null, withOcr = true)
+                    val record = locked { checkMail(mail, extras) }
                     count++
                     if (wantsAi(record)) refineWithAi(account.uuid, id)
                 }
@@ -258,6 +288,7 @@ class ProtectionService(
     /** Features, context and the rules' verdict of one mail, ready for storing or for the model's second pass. */
     private inner class Evaluation(
         val mail: MailForCheck,
+        val extras: MailExtras?,
         val features: JsonObject,
         val context: Map<String, JsonElement>,
         val config: JsonObject,
@@ -282,6 +313,7 @@ class ProtectionService(
             verdict = verdict,
             rulesVersion = RULES_VERSION,
             checkedAt = now(),
+            extras = extras,
         )
 
         /** The verdict with the model's facts added (`null` or unusable answer: unchanged), marked as asked. */
@@ -299,13 +331,15 @@ class ProtectionService(
         }
     }
 
-    private suspend fun evaluate(mail: MailForCheck): Evaluation {
+    private fun config() = JsonObject(
+        mapOf("trustedSenders" to JsonArray(settings.trustedSenders.map { JsonPrimitive(it.address) })),
+    )
+
+    private suspend fun evaluate(mail: MailForCheck, extras: MailExtras?): Evaluation {
         val js = engine()
         refreshContext(js)
-        val config = JsonObject(
-            mapOf("trustedSenders" to JsonArray(settings.trustedSenders.map { JsonPrimitive(it.address) })),
-        )
-        val features = js.features(input(mail), config)
+        val config = config()
+        val features = js.features(input(mail, extras), config)
         val context = mutableMapOf<String, JsonElement>(
             "ownDomains" to JsonArray(ownDomains().map(::JsonPrimitive)),
         )
@@ -317,15 +351,71 @@ class ProtectionService(
                 verdict = js.analyze(features, JsonObject(context), config)
             }
         }
-        return Evaluation(mail, features, context, config, verdict)
+        return Evaluation(mail, extras, features, context, config, verdict)
     }
 
-    private suspend fun check(accountUuid: String, k9Id: Long): StoredVerdict? {
-        val mail = texts.mailForCheck(accountUuid, k9Id) ?: return null
-        val record = evaluate(mail).record()
+    private suspend fun checkMail(mail: MailForCheck, extras: MailExtras?): StoredVerdict {
+        val record = evaluate(mail, extras).record()
         save(record)
         return record
     }
+
+    /**
+     * QR codes in images and attachment types of [mail], and with [withOcr] the text in images (only the images the
+     * add-on would read: linked images without text, or all when the mail is mostly images). [previous] is kept and
+     * only completed. Runs outside the lock; each K-9 read takes it briefly.
+     */
+    private suspend fun readMedia(mail: MailForCheck, previous: MailExtras?, withOcr: Boolean): MailExtras {
+        val js = engine()
+        val scanner = media?.takeIf { settings.scanImages }
+        var extras = previous ?: run {
+            val images = MailMedia.images(mail)
+            val qrUrls = if (scanner == null) {
+                emptyList()
+            } else {
+                images.flatMap { part -> partBytes(mail, part, MailMedia.MAX_IMAGE_BYTES)?.let { scanner.qrUrls(it) }.orEmpty() }
+                    .distinct()
+            }
+            MailExtras(
+                qrUrls = qrUrls,
+                attachmentScan = scanAttachments(js, mail),
+                ocrDone = scanner == null || images.isEmpty(),
+            )
+        }
+        if (withOcr && scanner != null && !extras.ocrDone) {
+            val candidates = js.ocrCandidates(js.features(input(mail, extras), config()))
+            val imageTexts = LinkedHashMap<String, String>()
+            MailMedia.images(mail)
+                .filter { candidates.mostlyImages || MailMedia.imageKey(it) in candidates.linked }
+                .take(MailMedia.MAX_OCR_IMAGES)
+                .forEach { part ->
+                    val key = MailMedia.imageKey(part)
+                    if (key.isEmpty() || key in imageTexts) return@forEach
+                    val text = partBytes(mail, part, MailMedia.MAX_IMAGE_BYTES)?.let { scanner.text(it) }
+                    if (!text.isNullOrBlank()) imageTexts[key] = text
+                }
+            extras = extras.copy(imageTexts = imageTexts, ocrDone = true)
+        }
+        return extras
+    }
+
+    /** `attachmentScan` of the add-on: real file type and ZIP contents per file name. */
+    private suspend fun scanAttachments(js: ProtectionEngine, mail: MailForCheck): JsonObject {
+        val result = LinkedHashMap<String, JsonElement>()
+        for (part in MailMedia.attachments(mail)) {
+            val name = part.name ?: continue
+            if (name in result) continue
+            val bytes = partBytes(mail, part, MailMedia.MAX_ATTACHMENT_BYTES) ?: continue
+            val head = bytes.copyOf(minOf(bytes.size, MailMedia.HEAD_BYTES))
+            val tailSize = minOf(bytes.size, MailMedia.ZIP_TAIL + MailMedia.ZIP_DIR_MAX)
+            val tail = if (MailMedia.maybeZip(name)) bytes.copyOfRange(bytes.size - tailSize, bytes.size) else null
+            result[name] = js.scanFile(name, head, tail, (bytes.size - tailSize).toLong())
+        }
+        return JsonObject(result)
+    }
+
+    private suspend fun partBytes(mail: MailForCheck, part: MailPart, maxBytes: Int): ByteArray? =
+        if (part.partId == 0L) null else locked { texts.partBytes(mail.accountUuid, part.partId, maxBytes) }
 
     private fun save(record: StoredVerdict) {
         store.save(record)
@@ -341,8 +431,11 @@ class ProtectionService(
         contextLoadedAt = time
     }
 
-    private fun input(mail: MailForCheck) = JsonObject(
+    private fun input(mail: MailForCheck, extras: MailExtras?) = JsonObject(
         mapOf(
+            "qrUrls" to JsonArray(extras?.qrUrls.orEmpty().map(::JsonPrimitive)),
+            "imageTexts" to JsonObject(extras?.imageTexts.orEmpty().mapValues { JsonPrimitive(it.value) }),
+            "attachmentScan" to (extras?.attachmentScan ?: JsonObject(emptyMap())),
             "headers" to JsonObject(mail.headers.mapValues { (_, values) -> JsonArray(values.map(::JsonPrimitive)) }),
             "parts" to JsonArray(
                 mail.parts.map { part ->
@@ -447,7 +540,7 @@ class ProtectionService(
 
     companion object {
         /** Version of the rules (add-on core + this check); results of other versions are checked again on open. */
-        const val RULES_VERSION = "addon-0.9.1+android-1"
+        const val RULES_VERSION = "addon-0.9.1+android-2"
 
         /** Key in the stored verdict JSON: the language model was asked (or was not needed) for this result. */
         private const val AI_CHECKED = "aiChecked"

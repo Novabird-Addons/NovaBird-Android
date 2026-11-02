@@ -41,6 +41,7 @@ dependencyResolutionManagement {
             mavenContent {
                 includeGroup("com.github.ByteHamster")
                 includeGroup("com.github.cketti")
+                includeGroup("cz.adaptech.tesseract4android")
             }
         }
         maven(url = "https://central.sonatype.com/repository/maven-snapshots/") {

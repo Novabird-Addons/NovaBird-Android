@@ -19,6 +19,8 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.work.runtime)
             implementation(libs.koin.android)
+            implementation(libs.zxing)
+            implementation(novabirdLibs.tesseract4android)
         }
     }
 }

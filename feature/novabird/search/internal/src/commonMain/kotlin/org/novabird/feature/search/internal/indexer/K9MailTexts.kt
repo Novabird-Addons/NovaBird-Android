@@ -27,6 +27,11 @@ internal class K9MailTexts(
             mailStore.open(accountUuid)?.use { db -> K9MessageReader(accountUuid, db).readForCheck(k9Id) }
         }
 
+    override suspend fun partBytes(accountUuid: String, partId: Long, maxBytes: Int): ByteArray? =
+        withContext(Dispatchers.Default) {
+            mailStore.open(accountUuid)?.use { db -> K9MessageReader(accountUuid, db).readPartBytes(partId, maxBytes) }
+        }
+
     override suspend fun recentMails(hours: Int, unreadOnly: Boolean, max: Int): RecentMails =
         withContext(Dispatchers.Default) {
             val since = now() - hours * MILLIS_PER_HOUR

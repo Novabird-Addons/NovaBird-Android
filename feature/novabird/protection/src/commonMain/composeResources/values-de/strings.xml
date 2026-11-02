@@ -6,6 +6,8 @@
     <string name="novabird_protect_off">Aus</string>
     <string name="novabird_protect_switch_note">Prüft Absender, Links, Anhänge und Formulierungen nach Regeln; das Ergebnis erscheint als Banner in der Mail und als Symbol in der Liste. Alles läuft auf diesem Handy, nichts wird irgendwohin gesendet.</string>
     <string name="novabird_protect_scope_note">Geprüft werden nur neue Mails und Mails, die du öffnest. Ältere Mails werden nicht durchsucht.</string>
+    <string name="novabird_protect_images_title">Bilder prüfen (Text und QR-Codes)</string>
+    <string name="novabird_protect_images_note">Liest QR-Codes und den Text von Bildern in der Mail, etwa ein falsches Bank-Logo als Link. Nur auf diesem Gerät.</string>
     <string name="novabird_protect_ai_title">Lokale KI im Graubereich fragen</string>
     <string name="novabird_protect_ai_note">Helper verbunden. Bei Mails mit einigen Hinweisen sagt das Modell, als wer sich die Mail ausgibt und was sie verlangt; entscheiden tun die Regeln. Es kann eine Warnung nur verschärfen, nie entwarnen.</string>
     <string name="novabird_protect_ai_note_none">Braucht den NovaBird Helper (Einstellungen › Vektorsuche und KI). Keine Cloud.</string>

@@ -28,6 +28,7 @@ class ProtectionSettingsViewModel(
         val enabled: Boolean = false,
         val useAi: Boolean = true,
         val aiAvailable: Boolean = false,
+        val scanImages: Boolean = true,
         /** The app may read the device contacts (`null`: unknown, not Android). */
         val contactsGranted: Boolean? = null,
         val page: Page = Page.MAIN,
@@ -44,6 +45,7 @@ class ProtectionSettingsViewModel(
             enabled = service.isEnabled,
             useAi = service.useAi,
             aiAvailable = service.isAiAvailable,
+            scanImages = service.scanImages,
             trusted = service.trustedSenders,
         ),
     )
@@ -65,6 +67,11 @@ class ProtectionSettingsViewModel(
     fun setContactsGranted(granted: Boolean) {
         _state.update { it.copy(contactsGranted = granted) }
         if (granted) service.invalidateContext()
+    }
+
+    fun onScanImages(on: Boolean) {
+        service.updateScanImages(on)
+        _state.update { it.copy(scanImages = on) }
     }
 
     fun onUseAi(on: Boolean) {

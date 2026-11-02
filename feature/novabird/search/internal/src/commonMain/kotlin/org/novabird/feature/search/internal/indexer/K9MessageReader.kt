@@ -281,7 +281,35 @@ internal class K9MessageReader(
         } else {
             null
         }
-        return MailPart(contentType = part.mimeType, name = name, body = body)
+        return MailPart(
+            contentType = part.mimeType,
+            name = name,
+            body = body,
+            partId = part.id,
+            contentId = headers["content-id"]?.firstOrNull()?.trim()?.removePrefix("<")?.removeSuffix(">")?.trim()
+                ?.takeIf { it.isNotEmpty() },
+            size = part.size,
+            downloaded = part.dataLocation == DATA_IN_DATABASE || part.dataLocation == DATA_ON_DISK,
+        )
+    }
+
+    /** Decoded content of one part (any type) if stored locally and at most [maxBytes] long; nothing is downloaded. */
+    fun readPartBytes(partId: Long, maxBytes: Int): ByteArray? {
+        val row = database.query(
+            "SELECT encoding, data_location, decoded_body_size FROM message_parts WHERE id = ?",
+            listOf(partId.toString()),
+        ).firstOrNull() ?: return null
+        val size = row[2] as Long? ?: 0L
+        if (size > maxBytes) return null
+        val raw = when (row[1] as Long? ?: 0L) {
+            DATA_IN_DATABASE -> database.query(
+                "SELECT data FROM message_parts WHERE id = ?",
+                listOf(partId.toString()),
+            ).firstOrNull()?.get(0) as ByteArray?
+            DATA_ON_DISK -> database.readPartFile(partId)
+            else -> null
+        } ?: return null
+        return MimeText.decodeTransfer(raw, row[0] as String?).takeIf { it.size <= maxBytes }
     }
 
     internal data class PackedAddress(val email: String, val name: String?)

@@ -22,6 +22,7 @@ val novaBirdProtectionModule = module {
     single<ProtectionSettings> { AndroidProtectionSettings(androidContext()) }
     single<ContactsSource> { AndroidContactsSource(androidContext()) }
     single { ProtectionStore(androidContext().getDatabasePath(PROTECTION_DATABASE).path) }
+    single<MediaScanner> { AndroidMediaScanner(androidContext()) }
     single {
         val dispatcher = Dispatchers.IO.limitedParallelism(1)
         val engineDispatcher = Dispatchers.Default.limitedParallelism(1)
@@ -42,6 +43,7 @@ val novaBirdProtectionModule = module {
             now = System::currentTimeMillis,
             onEnabled = { get<ProtectionScheduler>().requestCheck() },
             ai = getOrNull(),
+            media = get(),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         )
     }

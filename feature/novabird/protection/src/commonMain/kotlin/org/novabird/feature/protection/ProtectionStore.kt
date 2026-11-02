@@ -20,6 +20,8 @@ data class StoredVerdict(
     val verdict: Verdict,
     val rulesVersion: String,
     val checkedAt: Long,
+    /** QR codes, text in images and attachment types the check used (`null`: none read). */
+    val extras: MailExtras? = null,
 ) {
     val level: ProtectionLevel get() = verdict.level
 }
@@ -47,6 +49,10 @@ class ProtectionStore(fileName: String) : AutoCloseable {
               PRIMARY KEY (account_uuid, k9_id))
             """.trimIndent(),
         )
+        val columns = connection.prepare("PRAGMA table_info(nb_protection)").use { statement ->
+            buildSet { while (statement.step()) add(statement.getText(1)) }
+        }
+        if ("extras_json" !in columns) connection.execSQL("ALTER TABLE nb_protection ADD COLUMN extras_json TEXT")
         connection.execSQL("CREATE INDEX IF NOT EXISTS nb_protection_sender ON nb_protection (sender, level)")
         connection.execSQL(
             "CREATE TABLE IF NOT EXISTS nb_protection_account (account_uuid TEXT PRIMARY KEY, watermark INTEGER NOT NULL)",
@@ -57,8 +63,8 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         connection.prepare(
             """
             INSERT OR REPLACE INTO nb_protection (account_uuid, k9_id, folder_id, uid, header_message_id, sender, level,
-              score, verdict_json, rules_version, checked_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              score, verdict_json, rules_version, checked_at, extras_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
         ).use { statement ->
             statement.bindText(1, record.accountUuid)
@@ -72,13 +78,16 @@ class ProtectionStore(fileName: String) : AutoCloseable {
             statement.bindText(9, record.verdict.json.toString())
             statement.bindText(10, record.rulesVersion)
             statement.bindLong(11, record.checkedAt)
+            val extras = record.extras
+            if (extras == null) statement.bindNull(12) else statement.bindText(12, extras.toJson().toString())
             statement.step()
         }
     }
 
     fun get(accountUuid: String, k9Id: Long): StoredVerdict? = connection.prepare(
         """
-        SELECT account_uuid, k9_id, folder_id, uid, header_message_id, sender, verdict_json, rules_version, checked_at
+        SELECT account_uuid, k9_id, folder_id, uid, header_message_id, sender, verdict_json, rules_version, checked_at,
+          extras_json
         FROM nb_protection WHERE account_uuid = ? AND k9_id = ?
         """.trimIndent(),
     ).use { statement ->
@@ -173,6 +182,7 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         verdict = Verdict.fromJson(Json.parseToJsonElement(getText(6)).jsonObject),
         rulesVersion = getText(7),
         checkedAt = getLong(8),
+        extras = if (isNull(9)) null else MailExtras.fromJson(getText(9)),
     )
 
     private companion object {

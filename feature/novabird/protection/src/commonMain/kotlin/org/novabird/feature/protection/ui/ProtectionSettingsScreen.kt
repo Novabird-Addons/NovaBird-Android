@@ -44,6 +44,8 @@ import org.novabird.feature.protection.resources.novabird_protect_add_invalid
 import org.novabird.feature.protection.resources.novabird_protect_ai_note
 import org.novabird.feature.protection.resources.novabird_protect_ai_note_none
 import org.novabird.feature.protection.resources.novabird_protect_ai_title
+import org.novabird.feature.protection.resources.novabird_protect_images_note
+import org.novabird.feature.protection.resources.novabird_protect_images_title
 import org.novabird.feature.protection.resources.novabird_protect_cancel
 import org.novabird.feature.protection.resources.novabird_protect_consent_accept
 import org.novabird.feature.protection.resources.novabird_protect_consent_check
@@ -149,6 +151,17 @@ private fun MainPage(
             TextBodySmall(text = stringResource(aiNote), color = BoltTheme.colors.onSurfaceVariant)
         }
         Switch(checked = state.useAi, onCheckedChange = actions::onUseAi, enabled = state.enabled)
+    }
+    DividerHorizontal()
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            TextBodyLarge(text = stringResource(Res.string.novabird_protect_images_title))
+            TextBodySmall(
+                text = stringResource(Res.string.novabird_protect_images_note),
+                color = BoltTheme.colors.onSurfaceVariant,
+            )
+        }
+        Switch(checked = state.scanImages, onCheckedChange = actions::onScanImages, enabled = state.enabled)
     }
     state.contactsGranted?.let { granted ->
         DividerHorizontal()

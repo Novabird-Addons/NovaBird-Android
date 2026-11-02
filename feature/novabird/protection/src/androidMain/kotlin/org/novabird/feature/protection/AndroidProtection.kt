@@ -48,6 +48,11 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
     override val historyMonths: Int
         get() = preferences.getInt(KEY_HISTORY_MONTHS, HISTORY_MONTHS_DEFAULT).coerceIn(1, HISTORY_MONTHS_MAX)
     override val useAi: Boolean get() = preferences.getBoolean(KEY_USE_AI, true)
+    override val scanImages: Boolean get() = preferences.getBoolean(KEY_SCAN_IMAGES, true)
+
+    override fun updateScanImages(scanImages: Boolean) {
+        preferences.edit { putBoolean(KEY_SCAN_IMAGES, scanImages) }
+    }
 
     override fun updateUseAi(useAi: Boolean) {
         preferences.edit { putBoolean(KEY_USE_AI, useAi) }
@@ -72,5 +77,6 @@ class AndroidProtectionSettings(context: Context) : ProtectionSettings {
         const val KEY_TRUSTED_JSON = "trusted_senders_json"
         const val KEY_HISTORY_MONTHS = "history_months"
         const val KEY_USE_AI = "use_ai"
+        const val KEY_SCAN_IMAGES = "scan_images"
     }
 }

@@ -8,7 +8,10 @@
 //   learnedNames    { schlüssel: [domain, …] }
 
 import "./polyfills.js";
-import { buildFeatures } from "../novabird-phishing/source/src/lib/features.js";
+import { buildFeatures, imageKey } from "../novabird-phishing/source/src/lib/features.js";
+import {
+  fileExt, findZipDirectory, parseZipDirectory, sniffType,
+} from "../novabird-phishing/source/src/lib/files.js";
 import {
   analyze, headerSuspicion, nameMatchesDomain, orgKey, relatedCouldHelp,
 } from "../novabird-phishing/source/src/lib/analyzer.js";
@@ -20,6 +23,32 @@ import { parseAiFacts } from "../novabird-phishing/source/src/lib/ai.js";
 import { t } from "../novabird-phishing/source/src/i18n.js";
 
 const parse = (json) => (json ? JSON.parse(json) : {});
+
+const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const B64_INDEX = new Int16Array(128).fill(-1);
+for (let i = 0; i < 64; i++) B64_INDEX[B64.charCodeAt(i)] = i;
+
+/** Base64 (von Kotlin) in Bytes; QuickJS kennt kein atob. */
+export function fromBase64(text) {
+  const s = String(text || "");
+  const out = new Uint8Array(Math.floor((s.length * 3) / 4));
+  let buf = 0, bits = 0, n = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    const v = c < 128 ? B64_INDEX[c] : -1;
+    if (v < 0) continue;
+    buf = ((buf << 6) | v) & 0xffffff;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out[n++] = (buf >> bits) & 0xff;
+    }
+  }
+  return out.subarray(0, n);
+}
+
+const ZIP_TAIL = 22 + 65535;      // wie attachments.js: das Verzeichnis-Ende liegt immer in diesem Bereich
+const ZIP_DIR_MAX = 2000000;
 const mapOfSets = (o) => new Map(Object.entries(o ?? {}).map(([k, v]) => [k, new Set(v)]));
 const mapOfMaps = (o) => new Map(Object.entries(o ?? {}).map(([k, v]) => [k, new Map(Object.entries(v))]));
 
@@ -136,6 +165,30 @@ globalThis.NovaBirdProtection = {
     const cfg = parse(config);
     const features = buildFeatures(parse(input), cfg);
     return JSON.stringify({ features, verdict: analyze(features, toContext(parse(context)), cfg) });
+  },
+  /**
+   * Anhang prüfen wie scanAttachments() im Add-on: echter Dateityp aus den ersten Bytes, bei echten ZIP-Archiven das
+   * Inhaltsverzeichnis. head/tail als Base64; tail = Dateiende ab Position tailStart (leer: kein ZIP-Kandidat).
+   */
+  scanFile(name, head, tail, tailStart) {
+    const realType = sniffType(fromBase64(head));
+    let entries = null;
+    if (realType === "zip" && ["zip", ""].includes(fileExt(name)) && tail) {
+      const bytes = fromBase64(tail);
+      const start = Number(tailStart) || 0;
+      const zone = Math.max(0, bytes.length - ZIP_TAIL);
+      const dir = findZipDirectory(bytes.subarray(zone), start + zone);
+      if (dir && dir.size <= ZIP_DIR_MAX && dir.offset >= start) {
+        entries = parseZipDirectory(bytes.subarray(dir.offset - start, dir.offset - start + dir.size));
+      }
+    }
+    return JSON.stringify({ realType, ...(entries ? { archive: { entries } } : {}) });
+  },
+  /** Welche Bilder lohnen OCR (ocrCandidates im Add-on): verlinkte Bilder ohne Text, oder fast nur Bilder. */
+  ocrCandidates(features) {
+    const f = parse(features);
+    const linked = (f.links ?? []).filter((l) => l.hasImage && !l.text && l.imgSrc).map((l) => imageKey(l.imgSrc));
+    return JSON.stringify({ linked: [...new Set(linked)], mostlyImages: String(f.text ?? "").length < 400 });
   },
   /** Kontakte des Geräts: [{ names: [..], emails: [..] }]. */
   setContacts(list) {

@@ -116,9 +116,14 @@ interface ProtectionSettings {
     /** Ask the local language model (Helper) in the grey zone; it can only raise a warning, never lower one. */
     val useAi: Boolean
 
+    /** Read QR codes and text in the images of a mail (on the device only). */
+    val scanImages: Boolean
+
     fun setEnabled(enabled: Boolean, consentVersion: Int, consentAt: Long)
 
     fun updateUseAi(useAi: Boolean)
+
+    fun updateScanImages(scanImages: Boolean)
 
     fun updateTrustedSenders(senders: List<TrustedSender>)
 }
@@ -131,6 +136,7 @@ class InMemoryProtectionSettings(
     override var trustedSenders: List<TrustedSender> = emptyList(),
     override var historyMonths: Int = HISTORY_MONTHS_DEFAULT,
     override var useAi: Boolean = true,
+    override var scanImages: Boolean = true,
 ) : ProtectionSettings {
     override fun setEnabled(enabled: Boolean, consentVersion: Int, consentAt: Long) {
         this.enabled = enabled
@@ -140,6 +146,10 @@ class InMemoryProtectionSettings(
 
     override fun updateUseAi(useAi: Boolean) {
         this.useAi = useAi
+    }
+
+    override fun updateScanImages(scanImages: Boolean) {
+        this.scanImages = scanImages
     }
 
     override fun updateTrustedSenders(senders: List<TrustedSender>) {
