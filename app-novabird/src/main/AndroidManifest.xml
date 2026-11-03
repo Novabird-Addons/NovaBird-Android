@@ -8,6 +8,12 @@
     <!-- setup wizard: the system dialog to run without battery optimization (new mail on time, F-Droid build) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- "Jetzt alle Mails abrufen" runs as a dataSync foreground service; legacy/common limits this to API 33 -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+        tools:node="replace"
+        />
+
     <application
         android:name=".NovaBirdApp"
         android:icon="@mipmap/ic_launcher"

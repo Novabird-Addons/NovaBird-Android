@@ -18,7 +18,9 @@ sealed interface FullSyncState {
     data object Waiting : FullSyncState
     data class Running(val progress: FullSyncProgress) : FullSyncState
     data object Finished : FullSyncState
-    data object Failed : FullSyncState
+
+    /** [reason]: [FullSyncScheduler.ERROR_LOGIN], [FullSyncScheduler.ERROR_NO_FOLDERS] or null. */
+    data class Failed(val reason: String?) : FullSyncState
 }
 
 /** Starts, stops and observes the full sync ([FullSyncWorker]) of an account; one at a time per account. */
@@ -57,20 +59,24 @@ class FullSyncScheduler(private val workManager: WorkManager) {
 
         WorkInfo.State.SUCCEEDED -> FullSyncState.Finished
 
-        WorkInfo.State.FAILED -> FullSyncState.Failed
+        WorkInfo.State.FAILED -> FullSyncState.Failed(outputData.getString(KEY_ERROR))
 
         WorkInfo.State.CANCELLED -> FullSyncState.Idle
     }
 
-    internal companion object {
-        const val ARG_ACCOUNT_UUID = "accountUuid"
-        const val KEY_FOLDER_INDEX = "folderIndex"
-        const val KEY_FOLDER_COUNT = "folderCount"
-        const val KEY_FOLDER_NAME = "folderName"
-        const val KEY_DONE = "done"
-        const val KEY_TOTAL = "total"
+    companion object {
+        const val ERROR_LOGIN = "login"
+        const val ERROR_NO_FOLDERS = "noFolders"
+
+        internal const val KEY_ERROR = "error"
+        internal const val ARG_ACCOUNT_UUID = "accountUuid"
+        internal const val KEY_FOLDER_INDEX = "folderIndex"
+        internal const val KEY_FOLDER_COUNT = "folderCount"
+        internal const val KEY_FOLDER_NAME = "folderName"
+        internal const val KEY_DONE = "done"
+        internal const val KEY_TOTAL = "total"
         private const val TAG = "novabird_full_sync"
 
-        fun workName(accountUuid: String) = "novabird_full_sync_$accountUuid"
+        internal fun workName(accountUuid: String) = "novabird_full_sync_$accountUuid"
     }
 }

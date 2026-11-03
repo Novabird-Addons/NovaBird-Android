@@ -39,6 +39,8 @@
     <string name="novabird_sync_full_messages">%1$d von %2$d Mails</string>
     <string name="novabird_sync_full_finished">Fertig: Alle Ordner sind geladen. Große Mails werden im WLAN im Hintergrund vervollständigt.</string>
     <string name="novabird_sync_full_failed">Das Laden ist mit einem Fehler abgebrochen. Bitte noch einmal starten.</string>
+    <string name="novabird_sync_full_failed_login">Für das Konto fehlt noch das Passwort (z. B. nach einem Import). Bitte in den Kontoeinstellungen beim Posteingangsserver eintragen und dann neu starten.</string>
+    <string name="novabird_sync_full_failed_no_folders">Keine Ordner zum Laden: Der Server war nicht erreichbar oder kein Ordner wird synchronisiert.</string>
     <string name="novabird_sync_full_notification_title">Alle Mails abrufen: %s</string>
     <string name="novabird_sync_full_progress_folder">Ordner %1$d von %2$d: %3$s</string>
     <string name="novabird_sync_full_progress_messages">Ordner %1$d von %2$d: %3$s, %4$d von %5$d</string>

@@ -54,10 +54,19 @@ class FullSyncWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val account = preferences.getAccount(accountUuid) ?: return@withContext Result.success()
+        // e.g. imported and the password not typed yet: the sync would skip every folder
+        if (account.incomingServerSettings.isMissingCredentials) {
+            return@withContext Result.failure(workDataOf(FullSyncScheduler.KEY_ERROR to FullSyncScheduler.ERROR_LOGIN))
+        }
 
         // the account may have been set up a moment ago: get the folder list first
         controller.refreshFolderListBlocking(account)
         val folders = syncedFolders(account)
+        if (folders.isEmpty()) {
+            return@withContext Result.failure(
+                workDataOf(FullSyncScheduler.KEY_ERROR to FullSyncScheduler.ERROR_NO_FOLDERS),
+            )
+        }
         progress = FullSyncProgress(folderCount = folders.size)
         showProgress(account)
 

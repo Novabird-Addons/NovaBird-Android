@@ -147,8 +147,14 @@ private fun StateArea(state: FullSyncState) = Column(
 
         FullSyncState.Finished -> TextBodyMedium(text = stringResource(R.string.novabird_sync_full_finished))
 
-        FullSyncState.Failed -> TextBodyMedium(
-            text = stringResource(R.string.novabird_sync_full_failed),
+        is FullSyncState.Failed -> TextBodyMedium(
+            text = stringResource(
+                when (state.reason) {
+                    FullSyncScheduler.ERROR_LOGIN -> R.string.novabird_sync_full_failed_login
+                    FullSyncScheduler.ERROR_NO_FOLDERS -> R.string.novabird_sync_full_failed_no_folders
+                    else -> R.string.novabird_sync_full_failed
+                },
+            ),
             color = BoltTheme.colors.error,
         )
     }

@@ -4,11 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     >
 
-    <!-- full sync of an account as a foreground service (WorkManager); legacy/common limits this to API 33 -->
-    <uses-permission
-        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
-        tools:remove="android:maxSdkVersion"
-        />
 
     <application>
 

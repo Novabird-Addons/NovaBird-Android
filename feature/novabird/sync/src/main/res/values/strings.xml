@@ -39,6 +39,8 @@
     <string name="novabird_sync_full_messages">%1$d of %2$d messages</string>
     <string name="novabird_sync_full_finished">Done: all folders are loaded. Large messages are completed on Wi-Fi in the background.</string>
     <string name="novabird_sync_full_failed">Loading stopped with an error. Please try again.</string>
+    <string name="novabird_sync_full_failed_login">The account has no password yet (e.g. after an import). Enter it in the account settings under the incoming server, then start again.</string>
+    <string name="novabird_sync_full_failed_no_folders">No folders to load: the server could not be reached or no folder is synchronized.</string>
     <string name="novabird_sync_full_notification_title">Loading all messages: %s</string>
     <string name="novabird_sync_full_progress_folder">Folder %1$d of %2$d: %3$s</string>
     <string name="novabird_sync_full_progress_messages">Folder %1$d of %2$d: %3$s, %4$d of %5$d</string>
