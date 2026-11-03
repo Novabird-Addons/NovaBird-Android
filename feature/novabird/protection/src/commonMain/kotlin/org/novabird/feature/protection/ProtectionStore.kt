@@ -63,6 +63,14 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         connection.execSQL(
             "CREATE TABLE IF NOT EXISTS nb_protection_account (account_uuid TEXT PRIMARY KEY, watermark INTEGER NOT NULL)",
         )
+        val accountColumns = connection.prepare("PRAGMA table_info(nb_protection_account)").use { statement ->
+            buildSet { while (statement.step()) add(statement.getText(1)) }
+        }
+        if ("since" !in accountColumns) connection.execSQL("ALTER TABLE nb_protection_account ADD COLUMN since INTEGER")
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS nb_protection_media (account_uuid TEXT NOT NULL, k9_id INTEGER NOT NULL, " +
+                "PRIMARY KEY (account_uuid, k9_id))",
+        )
     }
 
     fun save(record: StoredVerdict) {
@@ -196,13 +204,56 @@ class ProtectionStore(fileName: String) : AutoCloseable {
             if (statement.step()) statement.getLong(0) else null
         }
 
-    fun setWatermark(accountUuid: String, watermark: Long) {
-        connection.prepare("INSERT OR REPLACE INTO nb_protection_account (account_uuid, watermark) VALUES (?, ?)")
-            .use { statement ->
-                statement.bindText(1, accountUuid)
-                statement.bindLong(2, watermark)
-                statement.step()
-            }
+    /**
+     * Time of the last finished background check of the account (`null` for data from before this was stored). Only
+     * mails that reached the server after it count as new; older mails loaded later (e.g. after "all messages") don't.
+     */
+    fun since(accountUuid: String): Long? =
+        connection.prepare("SELECT since FROM nb_protection_account WHERE account_uuid = ?").use { statement ->
+            statement.bindText(1, accountUuid)
+            if (statement.step() && !statement.isNull(0)) statement.getLong(0) else null
+        }
+
+    fun setWatermark(accountUuid: String, watermark: Long, since: Long?) {
+        connection.prepare(
+            "INSERT OR REPLACE INTO nb_protection_account (account_uuid, watermark, since) VALUES (?, ?, ?)",
+        ).use { statement ->
+            statement.bindText(1, accountUuid)
+            statement.bindLong(2, watermark)
+            if (since == null) statement.bindNull(3) else statement.bindLong(3, since)
+            statement.step()
+        }
+    }
+
+    /**
+     * Marks that images and attachments of a mail are being read. The mark stays if the app dies while reading (native
+     * text recognition, memory), so the next check knows and leaves the media of that mail out instead of dying again.
+     */
+    fun markMediaAttempt(accountUuid: String, k9Id: Long) = mediaStatement(
+        "INSERT OR REPLACE INTO nb_protection_media (account_uuid, k9_id) VALUES (?, ?)",
+        accountUuid,
+        k9Id,
+    )
+
+    fun clearMediaAttempt(accountUuid: String, k9Id: Long) = mediaStatement(
+        "DELETE FROM nb_protection_media WHERE account_uuid = ? AND k9_id = ?",
+        accountUuid,
+        k9Id,
+    )
+
+    fun mediaAttempted(accountUuid: String, k9Id: Long): Boolean =
+        connection.prepare("SELECT 1 FROM nb_protection_media WHERE account_uuid = ? AND k9_id = ?").use { statement ->
+            statement.bindText(1, accountUuid)
+            statement.bindLong(2, k9Id)
+            statement.step()
+        }
+
+    private fun mediaStatement(sql: String, accountUuid: String, k9Id: Long) {
+        connection.prepare(sql).use { statement ->
+            statement.bindText(1, accountUuid)
+            statement.bindLong(2, k9Id)
+            statement.step()
+        }
     }
 
     fun clearWatermarks() {

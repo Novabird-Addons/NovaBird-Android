@@ -66,6 +66,9 @@ class ProtectionService(
     /** Mails whose model call is running (open path), so a second open does not ask twice. */
     private val aiInFlight = HashSet<Pair<String, Long>>()
     private val aiInFlightMutex = Mutex()
+
+    /** Mails whose images and attachments are being read right now (guarded by [mutex]). */
+    private val mediaRunning = HashSet<Pair<String, Long>>()
     private val _revision = MutableStateFlow(0L)
 
     val isEnabled: Boolean get() = settings.enabled
@@ -134,7 +137,7 @@ class ProtectionService(
     suspend fun enable(consentVersion: Int) = locked {
         settings.setEnabled(true, consentVersion, now())
         store.clearWatermarks()
-        for (account in mailStore.accounts()) store.setWatermark(account.uuid, maxMessageId(account.uuid))
+        for (account in mailStore.accounts()) store.setWatermark(account.uuid, maxMessageId(account.uuid), now())
         contextLoadedAt = Long.MIN_VALUE
         _revision.value++
         onEnabled()
@@ -203,7 +206,7 @@ class ProtectionService(
         val verdict = locked { store.get(accountUuid, k9Id)?.takeIf { it.rulesVersion == RULES_VERSION } }
             ?: run {
                 val mail = locked { texts.mailForCheck(accountUuid, k9Id) } ?: return null
-                val extras = readMedia(mail, previous = null, withOcr = false)
+                val extras = guardedMedia(mail, previous = null, withOcr = false)
                 locked { checkMail(mail, extras) }
             }
         if ((wantsOcr(verdict) || wantsAi(verdict)) && scope != null) {
@@ -228,7 +231,7 @@ class ProtectionService(
         val stored = locked { store.get(accountUuid, k9Id) } ?: return
         if (!wantsOcr(stored)) return
         val mail = locked { texts.mailForCheck(accountUuid, k9Id) } ?: return
-        val extras = readMedia(mail, stored.extras, withOcr = true)
+        val extras = guardedMedia(mail, stored.extras, withOcr = true)
         locked {
             if (store.get(accountUuid, k9Id)?.let(::wantsOcr) == true) checkMail(mail, extras)
         }
@@ -305,34 +308,91 @@ class ProtectionService(
         // boot the engine and build the sender history now, not on the first open
         locked { refreshContext(engine()) }
         for (account in mailStore.accounts()) {
-            var after: Long = locked {
-                store.watermark(account.uuid) ?: run {
-                    // account added after switching on: start from now
-                    store.setWatermark(account.uuid, maxMessageId(account.uuid))
-                    null
-                }
-            } ?: continue
+            val runStarted = now()
+            val (watermark, since) = locked { accountProgress(account.uuid, runStarted) } ?: continue
+            // a mail counts as new if it reached the server after the last run (a day of slack for clocks)
+            val arrivedAfter = since - ARRIVAL_SLACK_MILLIS
+            var after = watermark
             while (true) {
-                val (ids, done) = locked {
-                    val ids = newInboxIds(account.uuid, after)
-                    ids to store.checkedIds(account.uuid, ids, RULES_VERSION)
+                val (rows, done) = locked {
+                    val rows = newInboxMails(account.uuid, after)
+                    rows to store.checkedIds(account.uuid, rows.map { it.first }, RULES_VERSION)
                 }
-                for (id in ids) {
-                    if (id in done) continue
+                for ((id, arrived) in rows) {
+                    // older mails loaded later ("all messages", sync range) are checked when opened, not here
+                    if (id in done || arrived < arrivedAfter) continue
                     val mail = locked { texts.mailForCheck(account.uuid, id) } ?: continue
                     // images outside the lock: an opened mail need not wait for the text reading
-                    val extras = readMedia(mail, previous = null, withOcr = true)
+                    val extras = guardedMedia(mail, previous = null, withOcr = true)
                     val record = locked { checkMail(mail, extras) }
                     count++
                     if (wantsAi(record)) refineWithAi(account.uuid, id)
                     moveIfSpam(account.uuid, id)
                 }
-                if (ids.size < NEW_MAILS_PER_RUN) break
-                after = ids.last()
+                if (rows.isNotEmpty()) {
+                    after = rows.last().first
+                    locked { store.setWatermark(account.uuid, after, since) }
+                }
+                if (rows.size < NEW_MAILS_PER_RUN) break
             }
+            locked { store.setWatermark(account.uuid, after, runStarted) }
         }
         return count
     }
+
+    /**
+     * Watermark and time of the last run of an account; `null` (nothing to do yet) for an account added after switching
+     * on, which starts from now. Data from before the time was stored also starts from now, so a backlog of older mails
+     * is never worked through in the background.
+     */
+    private fun accountProgress(accountUuid: String, now: Long): Pair<Long, Long>? {
+        val watermark = store.watermark(accountUuid)
+        if (watermark == null) {
+            store.setWatermark(accountUuid, maxMessageId(accountUuid), now)
+            return null
+        }
+        return watermark to (store.since(accountUuid) ?: now)
+    }
+
+    /**
+     * [readMedia] with a mark that survives the app dying while reading: the next try of that mail leaves images and
+     * attachments out (one bad image must not stop the app again and again). A mail being read in parallel (open and
+     * sync at once) is left without media this time, without the mark.
+     */
+    private suspend fun guardedMedia(mail: MailForCheck, previous: MailExtras?, withOcr: Boolean): MailExtras {
+        val key = mail.accountUuid to mail.k9Id
+        val start = locked {
+            when {
+                key in mediaRunning -> MediaStart.BUSY
+
+                store.mediaAttempted(mail.accountUuid, mail.k9Id) -> MediaStart.FAILED_BEFORE
+
+                else -> {
+                    store.markMediaAttempt(mail.accountUuid, mail.k9Id)
+                    mediaRunning += key
+                    MediaStart.READ
+                }
+            }
+        }
+        return when (start) {
+            MediaStart.BUSY -> previous ?: MailExtras(ocrDone = false)
+
+            MediaStart.FAILED_BEFORE -> (previous ?: MailExtras()).copy(ocrDone = true)
+
+            MediaStart.READ -> try {
+                readMedia(mail, previous, withOcr)
+            } finally {
+                withContext(NonCancellable) {
+                    locked {
+                        store.clearMediaAttempt(mail.accountUuid, mail.k9Id)
+                        mediaRunning -= key
+                    }
+                }
+            }
+        }
+    }
+
+    private enum class MediaStart { READ, BUSY, FAILED_BEFORE }
 
     /** After a sync: a new inbox mail that counts as spam goes to the account's spam folder (if it has one). */
     private suspend fun moveIfSpam(accountUuid: String, k9Id: Long) {
@@ -599,16 +659,19 @@ class ProtectionService(
         db.query("SELECT ifnull(max(id), 0) FROM messages").firstOrNull()?.get(0) as Long?
     } ?: 0L
 
-    private fun newInboxIds(accountUuid: String, watermark: Long): List<Long> = mailStore.open(accountUuid)?.use { db ->
-        db.query(
-            """
-            SELECT m.id FROM messages m JOIN folders f ON f.id = m.folder_id
-            WHERE m.id > ? AND m.deleted = 0 AND m.empty = 0 AND m.uid IS NOT NULL AND lower(f.type) = 'inbox'
-            ORDER BY m.id LIMIT $NEW_MAILS_PER_RUN
-            """.trimIndent(),
-            listOf(watermark.toString()),
-        ).map { it[0] as Long }
-    }.orEmpty()
+    /** Inbox mails above the watermark with the time they reached the server (`internal_date`, else `date`). */
+    private fun newInboxMails(accountUuid: String, watermark: Long): List<Pair<Long, Long>> =
+        mailStore.open(accountUuid)?.use { db ->
+            db.query(
+                """
+                SELECT m.id, coalesce(nullif(m.internal_date, 0), m.date, 0) FROM messages m
+                JOIN folders f ON f.id = m.folder_id
+                WHERE m.id > ? AND m.deleted = 0 AND m.empty = 0 AND m.uid IS NOT NULL AND lower(f.type) = 'inbox'
+                ORDER BY m.id LIMIT $NEW_MAILS_PER_RUN
+                """.trimIndent(),
+                listOf(watermark.toString()),
+            ).map { (it[0] as Long) to ((it[1] as Long?) ?: 0L) }
+        }.orEmpty()
 
     private suspend fun <T> locked(block: suspend () -> T): T = mutex.withLock { withContext(dispatcher) { block() } }
 
@@ -627,6 +690,7 @@ class ProtectionService(
         private const val RELATED_CANDIDATES = 20
         private const val DAY_MILLIS = 86_400_000L
         private const val NEW_MAILS_PER_RUN = 200
+        private const val ARRIVAL_SLACK_MILLIS = 24 * 60 * 60_000L
         private val RELATED_SKIPPED_TYPES = setOf("spam", "trash", "drafts", "outbox")
     }
 }

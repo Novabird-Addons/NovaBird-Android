@@ -108,10 +108,11 @@ class ProtectionServiceTest {
         folder: Long = INBOX,
         extraHeaders: Map<String, String> = emptyMap(),
         extraParts: List<MailPart> = emptyList(),
+        arrived: Long = NOW - id,
     ) {
         val address = from.substringAfter('<').substringBefore('>')
         val packedSender = "$address;\u0001${from.substringBefore(" <")}"
-        k9.insert(id, folder, "u$id", "<m$id@example.com>", subject, NOW - id, packedSender)
+        k9.insert(id, folder, "u$id", "<m$id@example.com>", subject, NOW - id, packedSender, arrived = arrived)
         mails[id] = MailForCheck(
             accountUuid = account.uuid,
             k9Id = id,
@@ -145,11 +146,12 @@ class ProtectionServiceTest {
 
     private val image = ByteArray(5_000) { 7 }
 
-    private fun phishing(id: Long) = mail(
+    private fun phishing(id: Long, arrived: Long = NOW - id) = mail(
         id,
         "PayPal Service <service@paypal-konto.example.invalid>",
         "Ihr Konto",
         """<p>Konto gesperrt</p><a href="https://paypa1-login.example.invalid/x">www.paypal.de</a>""",
+        arrived = arrived,
     )
 
     @Test
@@ -179,6 +181,61 @@ class ProtectionServiceTest {
             assertThat(opened?.level).isEqualTo(ProtectionLevel.DANGEROUS)
             assertThat(service.levels(account.uuid, listOf(1, 2, 3, 4)).keys).isEqualTo(setOf(1L, 2L, 3L))
         }
+
+    @Test
+    fun `older mails loaded later are not checked in the background, only mails that arrived since the last run`() =
+        runBlocking<Unit> {
+            service.enable(consentVersion = 1)
+            // "all messages": a year of old mail arrives on the phone with new local ids
+            phishing(1, arrived = NOW - 200 * DAY)
+            phishing(2, arrived = NOW - 3 * DAY)
+            phishing(3)
+
+            assertThat(service.checkNewMails()).isEqualTo(1)
+            assertThat(store.get(account.uuid, 1)).isNull()
+            assertThat(store.get(account.uuid, 2)).isNull()
+            assertThat(store.get(account.uuid, 3)?.level).isEqualTo(ProtectionLevel.DANGEROUS)
+            assertThat(store.watermark(account.uuid)).isEqualTo(3L)
+            assertThat(service.verdictOnOpen(account.uuid, 1)?.level).isEqualTo(ProtectionLevel.DANGEROUS)
+        }
+
+    @Test
+    fun `data from before the arrival time was stored does not start a backlog`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        // as stored by the version before: watermark only
+        store.setWatermark(account.uuid, 0, since = null)
+        phishing(1, arrived = NOW - 30 * DAY)
+        phishing(2)
+
+        assertThat(service.checkNewMails()).isEqualTo(1)
+        assertThat(store.get(account.uuid, 1)).isNull()
+        assertThat(store.since(account.uuid)).isEqualTo(NOW)
+    }
+
+    @Test
+    fun `a mail whose images could not be read before is checked without them`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        ocrAnswer = "PayPal Konto bestätigen"
+        qrAnswer = listOf("https://qr-ziel.example.invalid/login")
+        val html = """<p>Hallo</p><a href="https://konto-check.example.invalid/x"><img src="cid:logo7@x"></a>"""
+        for (id in 1L..2L) {
+            val logo = part(200 + id, "image/png", "logo.png", image, "logo7@x")
+            mail(id, "Service <info@service.example>", "Konto", html, extraParts = listOf(logo))
+        }
+        // the app died while reading the images of mail 1
+        store.markMediaAttempt(account.uuid, 1)
+
+        assertThat(service.checkNewMails()).isEqualTo(2)
+        val skipped = store.get(account.uuid, 1)!!
+        assertThat(skipped.extras?.ocrDone).isEqualTo(true)
+        assertThat(skipped.extras?.qrUrls).isEqualTo(emptyList())
+        assertThat(skipped.extras?.imageTexts).isEqualTo(emptyMap())
+        assertThat(store.get(account.uuid, 2)!!.extras?.imageTexts)
+            .isEqualTo(mapOf("logo7" to "PayPal Konto bestätigen"))
+        assertThat(ocrCalls.size).isEqualTo(1)
+        assertThat(store.mediaAttempted(account.uuid, 1)).isEqualTo(true)
+        assertThat(store.mediaAttempted(account.uuid, 2)).isEqualTo(false)
+    }
 
     @Test
     fun `a device contact is known, a stranger is a first contact`() = runBlocking<Unit> {
@@ -492,9 +549,8 @@ class ProtectionServiceTest {
             connection.execSQL("CREATE TABLE folders (id INTEGER PRIMARY KEY, name TEXT, type TEXT)")
             connection.execSQL(
                 "CREATE TABLE messages (id INTEGER PRIMARY KEY, deleted INTEGER default 0, folder_id INTEGER, " +
-                    "uid TEXT, " +
-                    "subject TEXT, date INTEGER, sender_list TEXT, to_list TEXT, cc_list TEXT, message_id TEXT, " +
-                    "empty INTEGER default 0)",
+                    "uid TEXT, subject TEXT, date INTEGER, internal_date INTEGER, " +
+                    "sender_list TEXT, to_list TEXT, cc_list TEXT, message_id TEXT, empty INTEGER default 0)",
             )
             listOf(INBOX to "inbox", SENT to "sent", TRASH to "trash", SPAM to "spam").forEach { (id, type) ->
                 exec("INSERT INTO folders (id, name, type) VALUES (?, ?, ?)", id, type, type)
@@ -511,10 +567,11 @@ class ProtectionServiceTest {
             date: Long,
             sender: String,
             to: String = "ich@meine-firma.example",
+            arrived: Long = date,
         ) = exec(
-            "INSERT INTO messages (id, folder_id, uid, message_id, subject, date, sender_list, to_list, cc_list) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, '')",
-            id, folder, uid, messageId, subject, date, sender, to,
+            "INSERT INTO messages (id, folder_id, uid, message_id, subject, date, internal_date, " +
+                "sender_list, to_list, cc_list) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '')",
+            id, folder, uid, messageId, subject, date, arrived, sender, to,
         )
 
         private fun exec(sql: String, vararg args: Any?) {
@@ -558,6 +615,7 @@ class ProtectionServiceTest {
 
     private companion object {
         const val NOW = 1_800_000_000_000L
+        const val DAY = 24 * 60 * 60_000L
         const val INBOX = 1L
         const val SENT = 2L
         const val TRASH = 3L
