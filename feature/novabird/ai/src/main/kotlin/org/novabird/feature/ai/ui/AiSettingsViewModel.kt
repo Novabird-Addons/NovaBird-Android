@@ -1,6 +1,5 @@
 package org.novabird.feature.ai.ui
 
-import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +77,7 @@ internal interface AiSettingsActions {
     fun setHelperChat(enabled: Boolean)
     fun setHelperSpeech(enabled: Boolean)
     fun setSpeechRate(rate: Float)
+    fun setDeviceName(name: String)
     fun setLocalEnabled(enabled: Boolean)
     fun setKeepLoaded(keep: KeepLoaded)
     fun setThreads(threads: Int)
@@ -101,6 +101,7 @@ internal class AiSettingsViewModel(
     private val discovery: HelperDiscovery,
 ) : ViewModel(), AiSettingsActions {
     private var autoPairJob: Job? = null
+    private var renameJob: Job? = null
     private val mutableState = MutableStateFlow(
         AiSettingsUiState(settings = repository.settings.value, modelReady = files.isComplete()),
     )
@@ -167,7 +168,7 @@ internal class AiSettingsViewModel(
         mutableState.update { it.copy(autoPair = AutoPair.Starting, pairingError = null) }
         autoPairJob = viewModelScope.launch {
             val base = HelperClient.baseUrl(url)
-            val pairing = HelperPairing(base, deviceLabel(), PAIR_TIMEOUT_MS)
+            val pairing = HelperPairing(base, repository.settings.value.effectiveDeviceName(), PAIR_TIMEOUT_MS)
             val outcome = runCatching {
                 val started = withContext(Dispatchers.IO) { pairing.start() }
                 mutableState.update { it.copy(autoPair = AutoPair.Compare(started.helperName, started.number)) }
@@ -208,8 +209,6 @@ internal class AiSettingsViewModel(
         return HelperPairing.PollResult.Expired
     }
 
-    private fun deviceLabel() = "NovaBird ${Build.MODEL}".take(MAX_LABEL)
-
     /** Checks the Helper at [address] with [code]; on success only the derived key is kept, never the code. */
     private suspend fun connect(address: String, code: String) {
         mutableState.update { it.copy(pairing = true, pairingError = null) }
@@ -218,7 +217,13 @@ internal class AiSettingsViewModel(
             val result = withContext(Dispatchers.IO) {
                 runCatching {
                     val key = HelperClient.deriveKey(code)
-                    val info = HelperClient(HelperClient.baseUrl(address), key, s.clientId, "NovaBird", PAIR_TIMEOUT_MS)
+                    val info = HelperClient(
+                        HelperClient.baseUrl(address),
+                        key,
+                        s.clientId,
+                        s.effectiveDeviceName(),
+                        PAIR_TIMEOUT_MS,
+                    )
                         .hello()
                     check(info.modelMatch) { "model" }
                     key to info
@@ -248,6 +253,17 @@ internal class AiSettingsViewModel(
     override fun setHelperSpeech(enabled: Boolean) = repository.update { it.copy(helperSpeech = enabled) }
 
     override fun setSpeechRate(rate: Float) = repository.update { it.copy(speechRate = rate) }
+
+    /** Saves the name; the Helper takes it with the next request, so say hello shortly after typing stops. */
+    override fun setDeviceName(name: String) {
+        repository.update { it.copy(deviceName = name.take(AiSettings.MAX_DEVICE_NAME)) }
+        renameJob?.cancel()
+        if (!backend.isHelperPaired()) return
+        renameJob = viewModelScope.launch {
+            delay(RENAME_DELAY_MS)
+            backend.helperStatus()
+        }
+    }
 
     override fun setLocalEnabled(enabled: Boolean) {
         repository.update { it.copy(localEnabled = enabled) }
@@ -286,7 +302,7 @@ internal class AiSettingsViewModel(
     }
 
     private companion object {
-        const val MAX_LABEL = 40
+        const val RENAME_DELAY_MS = 1_500L
         const val STATS_INTERVAL_MS = 3_000L
         const val PAIR_TIMEOUT_MS = 10_000
     }

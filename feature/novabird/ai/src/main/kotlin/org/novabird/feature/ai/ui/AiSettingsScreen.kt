@@ -79,6 +79,7 @@ private fun HelperSection(state: AiSettingsUiState, actions: AiSettingsActions) 
             text = stringResource(R.string.novabird_ai_helper_description),
             color = BoltTheme.colors.onSurfaceVariant,
         )
+        DeviceNameInput(state, actions)
         if (state.helper is HelperStatus.NotPaired) {
             PairingForm(state, actions)
         } else {

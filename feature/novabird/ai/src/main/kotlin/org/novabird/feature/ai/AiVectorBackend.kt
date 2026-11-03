@@ -1,6 +1,5 @@
 package org.novabird.feature.ai
 
-import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.thunderbird.core.logging.Logger
@@ -47,7 +46,14 @@ class AiVectorBackend(
         val s = settings.settings.value
         val key = if (s.helperAddress.isBlank()) null else keyVault.load()
         return key?.let {
-            HelperClient(HelperClient.baseUrl(s.helperAddress), it, s.clientId, label(), timeoutMs, model)
+            HelperClient(
+                HelperClient.baseUrl(s.helperAddress),
+                it,
+                s.clientId,
+                s.effectiveDeviceName(),
+                timeoutMs,
+                model,
+            )
         }
     }
 
@@ -99,8 +105,6 @@ class AiVectorBackend(
         logger.info(TAG) { "Helper away for a day: computing ${items.size} vectors on the phone" }
         return local.embed(items.map { it.text })
     }
-
-    private fun label() = "NovaBird ${Build.MODEL}"
 
     private companion object {
         const val REVISION_CHARS = 7

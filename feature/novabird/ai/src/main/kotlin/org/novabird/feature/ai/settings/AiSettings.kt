@@ -1,6 +1,7 @@
 package org.novabird.feature.ai.settings
 
 import android.content.Context
+import android.os.Build
 import androidx.core.content.edit
 import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,13 +42,22 @@ data class AiSettings(
     /** Last choice in "Was gibt's Neues": period in hours and only unread mails. */
     val newsHours: Int = 24,
     val newsUnreadOnly: Boolean = true,
+    /** Name of this phone in the Helper's device list; empty = "NovaBird <model>". */
+    val deviceName: String = "",
 ) {
+    /** The name sent with every Helper request (the Helper shows the last one it got, at most 40 characters). */
+    fun effectiveDeviceName(): String = deviceName.trim().ifEmpty { defaultDeviceName() }.take(MAX_DEVICE_NAME)
+
     fun effectiveThreads(cores: Int = Runtime.getRuntime().availableProcessors()) =
         if (threads > 0) threads.coerceAtMost(cores) else defaultThreads(cores)
 
     companion object {
         /** Half of the cores: 8 threads 0.8 s, 4 threads 1.15 s per 512 tokens on a Dimensity 9400 (8 cores). */
         fun defaultThreads(cores: Int) = (cores / 2).coerceAtLeast(1)
+
+        fun defaultDeviceName() = "NovaBird ${Build.MODEL}".take(MAX_DEVICE_NAME)
+
+        const val MAX_DEVICE_NAME = 40
 
         val SPEECH_RATES = listOf(0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.35f, 1.5f)
         val NEWS_HOURS = listOf(12, 24, 72, 168)
@@ -81,6 +91,7 @@ internal class SharedPreferencesAiSettingsRepository(context: Context) : AiSetti
             putFloat(KEY_SPEECH_RATE, s.speechRate)
             putInt(KEY_NEWS_HOURS, s.newsHours)
             putBoolean(KEY_NEWS_UNREAD, s.newsUnreadOnly)
+            putString(KEY_DEVICE_NAME, s.deviceName)
         }
         mutableSettings.value = s
     }
@@ -105,6 +116,7 @@ internal class SharedPreferencesAiSettingsRepository(context: Context) : AiSetti
             newsHours = preferences.getInt(KEY_NEWS_HOURS, DEFAULT_NEWS_HOURS).takeIf { it in AiSettings.NEWS_HOURS }
                 ?: DEFAULT_NEWS_HOURS,
             newsUnreadOnly = preferences.getBoolean(KEY_NEWS_UNREAD, true),
+            deviceName = preferences.getString(KEY_DEVICE_NAME, null).orEmpty(),
         )
     }
 
@@ -121,6 +133,7 @@ internal class SharedPreferencesAiSettingsRepository(context: Context) : AiSetti
         const val KEY_SPEECH_RATE = "speechRate"
         const val KEY_NEWS_HOURS = "newsHours"
         const val KEY_NEWS_UNREAD = "newsUnreadOnly"
+        const val KEY_DEVICE_NAME = "deviceName"
         const val DEFAULT_NEWS_HOURS = 24
         const val CLIENT_ID_BYTES = 6
     }

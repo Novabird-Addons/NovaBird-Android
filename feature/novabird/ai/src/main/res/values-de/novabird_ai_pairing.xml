@@ -16,4 +16,6 @@
     <string name="novabird_ai_pair_manual">Oder von Hand: Adresse des PCs, mit Kopplungscode oder mit der Zahl zum Vergleichen.</string>
     <string name="novabird_ai_pair_without_code">Ohne Code</string>
     <string name="novabird_ai_error_clock">Die Uhrzeit von Handy und PC weicht um mehr als 10 Minuten ab. Stelle auf beiden die Uhrzeit automatisch ein.</string>
+    <string name="novabird_ai_device_name">Name dieses Geräts</string>
+    <string name="novabird_ai_device_name_note">So erscheint das Handy in der Geräteliste des Helpers. Leer: NovaBird und der Modellname.</string>
 </resources>
