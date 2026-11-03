@@ -72,3 +72,9 @@
 # Moshi uses reflection to read field types. R8 can rewrite List/Map to ArrayList/HashMap,
 # which breaks Moshi's collection interface requirement.
 -keep class com.fsck.k9.controller.MessagingControllerCommands$* { *; }
+
+# NovaBird: native libraries that create Java objects and call Java methods from C/C++ (JNI). R8 cannot see these
+# uses and removed e.g. the TensorInfo constructor, so ONNX Runtime aborted the app in release builds.
+-keep class ai.onnxruntime.** { *; }
+-keep class com.googlecode.tesseract.android.** { *; }
+-keep class com.googlecode.leptonica.android.** { *; }
