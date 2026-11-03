@@ -580,7 +580,9 @@ public class MessagingController implements MessagingControllerRegistry, Messagi
         }
 
         if (visibleLimit > 0) {
-            int newVisibleLimit = visibleLimit + account.getDisplayCount();
+            // "all messages" (0): lift the folder's limit instead of adding nothing
+            int displayCount = account.getDisplayCount();
+            int newVisibleLimit = displayCount > 0 ? visibleLimit + displayCount : 0;
             messageStore.setVisibleLimit(folderId, newVisibleLimit);
         }
 

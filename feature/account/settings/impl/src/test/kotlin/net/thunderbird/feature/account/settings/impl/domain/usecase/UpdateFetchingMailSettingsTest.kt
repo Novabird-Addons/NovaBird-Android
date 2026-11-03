@@ -135,6 +135,7 @@ internal class UpdateFetchingMailSettingsTest {
 
         val updated = requireNotNull(repo.updated)
         assertThat(updated.displayCount).isEqualTo(25)
+        assertThat(updated.isChangedVisibleLimits).isEqualTo(true)
     }
 
     @Test

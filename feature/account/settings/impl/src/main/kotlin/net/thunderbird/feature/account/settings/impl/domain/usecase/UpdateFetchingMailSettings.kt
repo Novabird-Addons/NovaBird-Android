@@ -29,7 +29,11 @@ internal class UpdateFetchingMailSettings(
 
         val updatedAccount = when (command) {
             is Command.UpdateLocalFolderSize -> {
-                account.copy(displayCount = command.value)
+                // the folders keep their own limit; flag the change so saving resets them to the new value
+                account.copy(
+                    displayCount = command.value,
+                    isChangedVisibleLimits = account.isChangedVisibleLimits || command.value != account.displayCount,
+                )
             }
 
             is Command.UpdateSyncMessageFrom -> {
