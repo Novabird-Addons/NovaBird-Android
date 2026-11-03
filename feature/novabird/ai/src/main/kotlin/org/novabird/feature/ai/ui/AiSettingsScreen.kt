@@ -299,5 +299,6 @@ private fun helperStatusText(state: AiSettingsUiState): String = when (val h = s
 private fun errorText(reason: String): String = when (reason) {
     "code" -> stringResource(R.string.novabird_ai_error_code)
     "model" -> stringResource(R.string.novabird_ai_error_model)
+    "clock" -> stringResource(R.string.novabird_ai_error_clock)
     else -> stringResource(R.string.novabird_ai_error_unreachable)
 }

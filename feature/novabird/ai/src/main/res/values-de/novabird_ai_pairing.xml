@@ -15,4 +15,5 @@
     <string name="novabird_ai_pair_off">Der Helper ist nicht im Kopplungsmodus.</string>
     <string name="novabird_ai_pair_manual">Oder von Hand: Adresse des PCs, mit Kopplungscode oder mit der Zahl zum Vergleichen.</string>
     <string name="novabird_ai_pair_without_code">Ohne Code</string>
+    <string name="novabird_ai_error_clock">Die Uhrzeit von Handy und PC weicht um mehr als 10 Minuten ab. Stelle auf beiden die Uhrzeit automatisch ein.</string>
 </resources>

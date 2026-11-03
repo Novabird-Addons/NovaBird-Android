@@ -15,4 +15,5 @@
     <string name="novabird_ai_pair_off">The Helper is not in pairing mode.</string>
     <string name="novabird_ai_pair_manual">Or by hand: address of the PC, with the pairing code or with the number to compare.</string>
     <string name="novabird_ai_pair_without_code">Without code</string>
+    <string name="novabird_ai_error_clock">The clocks of phone and PC differ by more than 10 minutes. Set the time automatically on both.</string>
 </resources>

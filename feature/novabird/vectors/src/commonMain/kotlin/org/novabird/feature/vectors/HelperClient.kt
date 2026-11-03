@@ -1,5 +1,6 @@
 package org.novabird.feature.vectors
 
+import kotlin.concurrent.Volatile
 import kotlin.io.encoding.Base64
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -14,6 +15,7 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
 /**
@@ -211,10 +213,27 @@ class HelperClient(
     }
 
     private fun call(op: String, payload: JsonObject): JsonObject {
+        var msg = send(op, payload)
+        val helperNow = msg["now"]?.jsonPrimitive?.longOrNull
+        if (msg.isClockError() && helperNow != null) {
+            // the clocks of phone and Helper differ by more than the Helper allows (10 min): use the Helper's time
+            // (the answer is encrypted with the group key, so "now" cannot be forged) and send once more
+            clockOffsetMs = helperNow - HelperCrypto.nowMillis()
+            msg = send(op, payload)
+        }
+        if (msg["ok"]?.jsonPrimitive?.boolean != true) {
+            throw HelperException(if (msg.isClockError()) "clock" else msg["error"]?.jsonPrimitive?.content ?: "helper")
+        }
+        return msg
+    }
+
+    private fun JsonObject.isClockError() = this["clock"]?.jsonPrimitive?.booleanOrNull == true
+
+    private fun send(op: String, payload: JsonObject): JsonObject {
         val rid = Base64.encode(HelperCrypto.random(16))
         val iv = HelperCrypto.random(12)
         val plain = buildJsonObject {
-            put("ts", HelperCrypto.nowMillis())
+            put("ts", HelperCrypto.nowMillis() + clockOffsetMs)
             put("rid", rid)
             put("op", op)
             put("label", label)
@@ -241,13 +260,14 @@ class HelperClient(
         } catch (e: Exception) {
             throw HelperException("answer", e)
         }
-        if (msg["ok"]?.jsonPrimitive?.boolean != true) {
-            throw HelperException(msg["error"]?.jsonPrimitive?.content ?: "helper")
-        }
         return msg
     }
 
     companion object {
+        /** Difference between the Helper's clock and ours, learned from a "clock" answer (0 while the clocks agree). */
+        @Volatile
+        private var clockOffsetMs = 0L
+
         const val PATH = "/nbhelper/v1"
         const val DEFAULT_PORT = 47531
         const val MAX_TEXTS = 64
