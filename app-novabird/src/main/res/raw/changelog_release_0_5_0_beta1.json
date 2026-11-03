@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "version": "0.5.0-beta1",
+  "versioncode": 50001,
+  "date": "2026-11-03",
+  "notes": [
+    {
+      "type": "new",
+      "text": "Phishing protection: checks new and opened mails, warns with a banner and before opening links, optional AI check via NovaBird Helper"
+    },
+    {
+      "type": "new",
+      "text": "Text and QR codes in images and the real type of attachments are checked"
+    },
+    {
+      "type": "new",
+      "text": "Spam detection with blocked and allowed senders (off by default)"
+    },
+    {
+      "type": "new",
+      "text": "New editor with formatting bar"
+    },
+    {
+      "type": "new",
+      "text": "Pair with NovaBird Helper without typing the code"
+    },
+    {
+      "type": "new",
+      "text": "Import accounts from Thunderbird on the PC by QR code"
+    },
+    {
+      "type": "new",
+      "text": "Push for new mail can be chosen in the setup wizard"
+    },
+    {
+      "type": "changed",
+      "text": "Sync limits in the settings; About page with NovaBird authors, licenses and links"
+    },
+    {
+      "type": "fixed",
+      "text": "App went back screen by screen and closed while the search index was built"
+    }
+  ]
+}
