@@ -10,6 +10,9 @@ import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.doesNotContain
 import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
+import assertk.assertions.isLessThan
+import assertk.assertions.isLessThanOrEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import java.io.ByteArrayOutputStream
@@ -260,6 +263,23 @@ class ProtectionServiceTest {
             service.checkNewMails()
             assertThat(store.get(account.uuid, 11)!!.verdict.signals.map { it.id }).contains("dmarcFail")
         }
+
+    @Test
+    fun `the learned mail server ids stay bounded and a new provider wins`() {
+        // a sender can make up a new id per mail: at most 10 are kept, and from 200 mails on the counts are halved
+        for (i in 0 until 500) {
+            val id = when {
+                i < 300 -> "old.example"
+                i % 3 != 0 -> "new.example"
+                else -> "x$i.example"
+            }
+            store.countAuthserv(account.uuid, id)
+        }
+        val counts = store.authservCounts(account.uuid)
+        assertThat(counts.size).isLessThanOrEqualTo(10)
+        assertThat(counts.values.sum()).isLessThan(200L)
+        assertThat(counts.getValue("new.example")).isGreaterThan(counts.getValue("old.example"))
+    }
 
     @Test
     fun `without own Authentication-Results headers, ones in the mail are not believed`() = runBlocking<Unit> {

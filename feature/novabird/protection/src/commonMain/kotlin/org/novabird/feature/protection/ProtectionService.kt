@@ -512,13 +512,15 @@ class ProtectionService(
     private suspend fun checkMail(mail: MailForCheck, extras: MailExtras?): StoredVerdict {
         val record = evaluate(mail, extras).record()
         save(record)
-        store.countAuthserv(mail.accountUuid, topAuthserv(mail))
         return record
     }
 
+    // new mails only: they also teach the account's own mail server (an opened or re-rated mail would count twice)
     @Suppress("TooGenericExceptionCaught")
     private suspend fun checkOrSkip(mail: MailForCheck, extras: MailExtras?): StoredVerdict? = try {
-        locked { checkMail(mail, extras) }
+        locked {
+            checkMail(mail, extras).also { store.countAuthserv(mail.accountUuid, topAuthserv(mail)) }
+        }
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {

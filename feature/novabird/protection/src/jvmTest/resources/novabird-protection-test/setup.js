@@ -10,6 +10,9 @@ class NodeBuffer extends Uint8Array {
 
 const utf8 = (s) => unescape(encodeURIComponent(s));
 
+// analyzer.test.js misst Laufzeiten
+globalThis.performance ??= { now: () => Date.now() };
+
 globalThis.Buffer ??= {
   from(x, encoding) {
     if (typeof x !== "string") return NodeBuffer.from(x);

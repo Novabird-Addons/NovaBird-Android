@@ -77,15 +77,31 @@ class ProtectionStore(fileName: String) : AutoCloseable {
         )
     }
 
-    /** Counts the authserv-id of the topmost Authentication-Results header of a checked mail ("" if it has none). */
+    /**
+     * Counts the authserv-id of the topmost Authentication-Results header of a new mail ("" if it has none). Same rule
+     * as the add-on (lib/authserv.js): at most 10 ids per account (a sender can make up a new one per mail), and from
+     * 200 mails on all counts are halved, so a change of the mail provider wins again.
+     */
     fun countAuthserv(accountUuid: String, authserv: String) {
-        connection.prepare(
-            "INSERT INTO nb_protection_authserv (account_uuid, authserv, seen) VALUES (?, ?, 1) " +
-                "ON CONFLICT (account_uuid, authserv) DO UPDATE SET seen = seen + 1",
-        ).use { statement ->
+        val counts = authservCounts(accountUuid).toMutableMap()
+        counts[authserv] = (counts[authserv] ?: 0) + 1
+        var entries = counts.toList()
+        if (entries.sumOf { it.second } >= AUTHSERV_MAX_MAILS) entries = entries.map { (id, n) -> id to n / 2 }
+        entries = entries.filter { it.second > 0 }.sortedByDescending { it.second }.take(AUTHSERV_MAX_IDS)
+
+        connection.prepare("DELETE FROM nb_protection_authserv WHERE account_uuid = ?").use { statement ->
             statement.bindText(1, accountUuid)
-            statement.bindText(2, authserv)
             statement.step()
+        }
+        for ((id, seen) in entries) {
+            connection.prepare(
+                "INSERT INTO nb_protection_authserv (account_uuid, authserv, seen) VALUES (?, ?, ?)",
+            ).use { statement ->
+                statement.bindText(1, accountUuid)
+                statement.bindText(2, id)
+                statement.bindLong(3, seen)
+                statement.step()
+            }
         }
     }
 
@@ -318,5 +334,7 @@ class ProtectionStore(fileName: String) : AutoCloseable {
 
     private companion object {
         const val MAX_PARAMS = 500
+        const val AUTHSERV_MAX_MAILS = 200L
+        const val AUTHSERV_MAX_IDS = 10
     }
 }
