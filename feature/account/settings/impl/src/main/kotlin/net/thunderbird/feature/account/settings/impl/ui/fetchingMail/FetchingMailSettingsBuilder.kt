@@ -12,6 +12,7 @@ import net.thunderbird.feature.account.settings.R
 internal class FetchingMailSettingsBuilder(
     private val resources: StringsResourceManager,
     private val fetchingMailSettingsOptionsMapper: FetchingMailSettingsOptionsMapper,
+    private val showFetchMessageUpTo: Boolean = true,
 ) : FetchingMailSettingsContract.SettingsBuilder {
 
     override fun buildCoreFetchingMailSettings(
@@ -21,7 +22,7 @@ internal class FetchingMailSettingsBuilder(
         val settings = mutableListOf<Setting>()
         settings += localFolderSize(value = state.localFolderSize)
         settings += syncMessageFrom(value = state.syncMessageFrom)
-        settings += fetchMessageUpTo(value = state.fetchMessageUpTo)
+        if (showFetchMessageUpTo) settings += fetchMessageUpTo(value = state.fetchMessageUpTo)
         settings += folderPollFrequency(value = state.folderPollFrequency)
         settings += syncServerDeletions(value = state.syncServerDeletions)
         settings += markAsReadWhenDeleted(value = state.markAsReadWhenDeleted)

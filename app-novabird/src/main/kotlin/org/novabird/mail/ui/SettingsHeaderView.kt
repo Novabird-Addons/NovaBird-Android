@@ -24,6 +24,7 @@ import org.novabird.feature.ai.AiVectorBackend
 import org.novabird.feature.ai.local.LocalEmbedder
 import org.novabird.feature.ai.ui.AiSettingsActivity
 import org.novabird.feature.protection.ProtectionSettings
+import org.novabird.feature.sync.ui.SyncLimitSettingsActivity
 import org.novabird.mail.R
 import org.novabird.mail.logo.SenderLogoSettings
 import org.novabird.mail.protection.ProtectionSettingsActivity
@@ -56,6 +57,10 @@ class SettingsHeaderView @JvmOverloads constructor(context: Context, attrs: Attr
         hint = findViewById(R.id.nb_search_hint)
         logoSwitch = findViewById(R.id.nb_logo_switch)
         protectionStatus = findViewById(R.id.nb_protect_status)
+
+        findViewById<LinearLayout>(R.id.nb_sync_row).setOnClickListener {
+            context.startActivity(Intent(context, SyncLimitSettingsActivity::class.java))
+        }
 
         findViewById<LinearLayout>(R.id.nb_protect_row).setOnClickListener {
             context.startActivity(Intent(context, ProtectionSettingsActivity::class.java))

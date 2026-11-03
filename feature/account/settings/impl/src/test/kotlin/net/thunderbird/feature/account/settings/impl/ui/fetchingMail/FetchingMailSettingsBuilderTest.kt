@@ -75,6 +75,17 @@ internal class FetchingMailSettingsBuilderTest {
     }
 
     @Test
+    fun `fetch message size is left out when the app replaces it`() {
+        val replaced =
+            FetchingMailSettingsBuilder(resources, fetchingMailSettingsOptionsMapper, showFetchMessageUpTo = false)
+
+        val ids = replaced.buildCoreFetchingMailSettings(createState()) {}.map { it.id }
+
+        assertThat(ids.contains(FetchingMailSettingsId.FETCH_MESSAGE_UP_TO)).isEqualTo(false)
+        assertThat(ids.size).isEqualTo(9)
+    }
+
+    @Test
     fun `buildAdvancedFetchingMailSettings should build settings in correct order`() {
         val settings = builder.buildAdvancedFetchingMailSettings(createState()) {}
 

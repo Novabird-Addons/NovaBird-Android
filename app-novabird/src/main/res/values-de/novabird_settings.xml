@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NovaBird: settings entry for the sync limits and texts that named K-9, Thunderbird or Mozilla -->
+<resources>
+    <string name="novabird_settings_sync_limits_note">Mailgröße für mobile Daten und WLAN (ersetzt die Größe pro Konto)</string>
+    <string name="onboarding_welcome_import_button">Einstellungen importieren</string>
+    <string name="onboarding_welcome_developed_by">NovaBird Mail basiert auf Thunderbird für Android und K-9 Mail. Quelloffen, Apache-Lizenz 2.0.</string>
+</resources>
