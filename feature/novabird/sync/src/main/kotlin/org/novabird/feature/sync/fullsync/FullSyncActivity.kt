@@ -15,6 +15,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.fsck.k9.Preferences
@@ -51,7 +52,8 @@ class FullSyncActivity : BaseActivity() {
 
         setContent {
             themeProvider.WithTheme {
-                val state by scheduler.state(accountUuid).collectAsState(initial = FullSyncState.Idle)
+                val states = remember(accountUuid) { scheduler.state(accountUuid) }
+                val state by states.collectAsState(initial = FullSyncState.Idle)
                 FullSyncScreen(
                     accountName = account.displayName,
                     state = state,
