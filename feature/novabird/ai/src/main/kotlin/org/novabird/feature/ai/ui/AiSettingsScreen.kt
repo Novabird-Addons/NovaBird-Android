@@ -31,6 +31,7 @@ import net.thunderbird.components.ui.bolt.atom.button.ButtonText
 import net.thunderbird.components.ui.bolt.atom.text.TextBodyLarge
 import net.thunderbird.components.ui.bolt.atom.text.TextBodyMedium
 import net.thunderbird.components.ui.bolt.atom.text.TextBodySmall
+import net.thunderbird.components.ui.bolt.atom.text.TextDisplayMedium
 import net.thunderbird.components.ui.bolt.atom.text.TextTitleMedium
 import net.thunderbird.components.ui.bolt.molecule.input.PasswordInput
 import net.thunderbird.components.ui.bolt.molecule.input.TextInput
@@ -136,7 +137,83 @@ private fun SpeechRateRow(rate: Float, onChange: (Float) -> Unit) {
 }
 
 @Composable
+private fun AutoPairing(state: AiSettingsUiState, actions: AiSettingsActions) {
+    Column(verticalArrangement = Arrangement.spacedBy(BoltTheme.spacings.default)) {
+        when (val auto = state.autoPair) {
+            AutoPair.Starting -> TextBodyMedium(text = stringResource(R.string.novabird_ai_pair_starting))
+
+            is AutoPair.Compare -> {
+                TextBodyMedium(text = stringResource(R.string.novabird_ai_pair_compare, auto.helperName))
+                TextDisplayMedium(text = auto.number.chunked(NUMBER_GROUP).joinToString(" "))
+                TextBodySmall(
+                    text = stringResource(R.string.novabird_ai_pair_compare_note),
+                    color = BoltTheme.colors.onSurfaceVariant,
+                )
+                ButtonText(text = stringResource(R.string.novabird_ai_pair_cancel), onClick = {
+                    actions.cancelAutoPair()
+                })
+            }
+
+            else -> {
+                TextBodySmall(
+                    text = stringResource(R.string.novabird_ai_pair_intro),
+                    color = BoltTheme.colors.onSurfaceVariant,
+                )
+                val searching = state.search == HelperSearch.Searching
+                ButtonFilled(
+                    text = stringResource(
+                        if (searching) R.string.novabird_ai_pair_searching else R.string.novabird_ai_pair_search,
+                    ),
+                    onClick = { actions.searchHelpers() },
+                    enabled = !searching,
+                )
+                (state.search as? HelperSearch.Done)?.let { done ->
+                    if (done.found.isEmpty()) {
+                        TextBodySmall(text = stringResource(R.string.novabird_ai_pair_none_found))
+                    }
+                    for (helper in done.found) {
+                        ButtonOutlined(
+                            text = stringResource(R.string.novabird_ai_pair_with, helper.name, helper.address),
+                            onClick = { actions.pairWith(helper.url) },
+                        )
+                    }
+                }
+                (auto as? AutoPair.Failed)?.let {
+                    TextBodySmall(text = autoPairError(it.reason), color = BoltTheme.colors.error)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun autoPairError(reason: String): String = when (reason) {
+    "denied" -> stringResource(R.string.novabird_ai_pair_denied)
+    "expired" -> stringResource(R.string.novabird_ai_pair_expired)
+    "pairing-off" -> stringResource(R.string.novabird_ai_pair_off)
+    else -> stringResource(R.string.novabird_ai_error_unreachable)
+}
+
+@Composable
 private fun PairingForm(state: AiSettingsUiState, actions: AiSettingsActions) {
+    Column(verticalArrangement = Arrangement.spacedBy(BoltTheme.spacings.default)) {
+        AutoPairing(state, actions)
+        if (state.autoPair !is AutoPair.Compare && state.autoPair != AutoPair.Starting) {
+            DividerHorizontal()
+            TextBodySmall(
+                text = stringResource(R.string.novabird_ai_pair_manual),
+                color = BoltTheme.colors.onSurfaceVariant,
+            )
+            ManualPairing(state, actions)
+        }
+    }
+}
+
+/** Number shown in groups of three ("843 877"). */
+private const val NUMBER_GROUP = 3
+
+@Composable
+private fun ManualPairing(state: AiSettingsUiState, actions: AiSettingsActions) {
     var address by rememberSaveable { mutableStateOf(state.settings.helperAddress) }
     // the pairing code is typed by the user and kept only until pairing (then only the derived key is stored)
     var code by remember { mutableStateOf("") }
@@ -151,13 +228,21 @@ private fun PairingForm(state: AiSettingsUiState, actions: AiSettingsActions) {
         TextBodySmall(text = stringResource(R.string.novabird_ai_helper_code))
         PasswordInput(onPasswordChange = { code = it }, password = code, modifier = Modifier.fillMaxWidth())
         state.pairingError?.let { TextBodySmall(text = errorText(it), color = BoltTheme.colors.error) }
-        ButtonFilled(
-            text = stringResource(
-                if (state.pairing) R.string.novabird_ai_helper_pairing else R.string.novabird_ai_helper_pair,
-            ),
-            onClick = { actions.pair(address, code) },
-            enabled = !state.pairing && address.isNotBlank() && HelperClient.isValidCode(code),
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(BoltTheme.spacings.default)) {
+            ButtonFilled(
+                text = stringResource(
+                    if (state.pairing) R.string.novabird_ai_helper_pairing else R.string.novabird_ai_helper_pair,
+                ),
+                onClick = { actions.pair(address, code) },
+                enabled = !state.pairing && address.isNotBlank() && HelperClient.isValidCode(code),
+            )
+            // the address alone: pairing with the number to compare (the Helper must be in pairing mode)
+            ButtonOutlined(
+                text = stringResource(R.string.novabird_ai_pair_without_code),
+                onClick = { actions.pairWith(address) },
+                enabled = !state.pairing && address.isNotBlank() && code.isBlank(),
+            )
+        }
     }
 }
 

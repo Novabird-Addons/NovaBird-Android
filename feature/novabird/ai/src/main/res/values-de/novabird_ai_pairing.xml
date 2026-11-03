@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pairing with the Helper without typing the code (Helper 0.4.1+) -->
+<resources>
+    <string name="novabird_ai_pair_intro">Am PC im Helper: PCs → „Gerät über Kopplung hinzufügen“. Dann hier suchen.</string>
+    <string name="novabird_ai_pair_search">Helper im Netz suchen</string>
+    <string name="novabird_ai_pair_searching">Suche …</string>
+    <string name="novabird_ai_pair_none_found">Kein Helper gefunden. Ist der Kopplungsmodus am Helper an? Sonst die Adresse unten eingeben.</string>
+    <string name="novabird_ai_pair_with">Mit %1$s koppeln (%2$s)</string>
+    <string name="novabird_ai_pair_starting">Verbinde mit dem Helper …</string>
+    <string name="novabird_ai_pair_compare">Vergleiche diese Zahl mit der am Helper „%1$s“ und klicke dort „Zulassen“:</string>
+    <string name="novabird_ai_pair_compare_note">Nur zulassen, wenn beide Zahlen gleich sind. Es wird bis zu 5 Minuten gewartet.</string>
+    <string name="novabird_ai_pair_cancel">Abbrechen</string>
+    <string name="novabird_ai_pair_denied">Der Helper hat die Kopplung abgelehnt.</string>
+    <string name="novabird_ai_pair_expired">Kopplung abgelaufen. Starte den Kopplungsmodus am Helper erneut.</string>
+    <string name="novabird_ai_pair_off">Der Helper ist nicht im Kopplungsmodus.</string>
+    <string name="novabird_ai_pair_manual">Oder von Hand: Adresse des PCs, mit Kopplungscode oder mit der Zahl zum Vergleichen.</string>
+    <string name="novabird_ai_pair_without_code">Ohne Code</string>
+</resources>

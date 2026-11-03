@@ -34,6 +34,7 @@ val novaBirdAiModule = module {
     }
     single<NovaBirdVectorBackend> { get<AiVectorBackend>() }
     single { DigestCache(androidContext()) }
+    single { HelperDiscovery(androidContext()) }
     single { AiAssistant(backend = get(), settings = get(), mailTexts = get(), cache = get()) }
     single { SpeechPlayer(context = androidContext(), backend = get(), settings = get(), logger = get()) }
     viewModel { params -> AiMailViewModel(location = params.get(), assistant = get(), speech = get()) }
@@ -48,6 +49,7 @@ val novaBirdAiModule = module {
             local = get(),
             vectorIndexer = get(),
             indexTrigger = get(),
+            discovery = get(),
         )
     }
 }

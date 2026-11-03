@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pairing with the Helper without typing the code (Helper 0.4.1+) -->
+<resources>
+    <string name="novabird_ai_pair_intro">At the PC, in the Helper: PCs → "Add a device by pairing". Then search here.</string>
+    <string name="novabird_ai_pair_search">Find Helper in the network</string>
+    <string name="novabird_ai_pair_searching">Searching …</string>
+    <string name="novabird_ai_pair_none_found">No Helper found. Is pairing mode on at the Helper? Otherwise enter the address below.</string>
+    <string name="novabird_ai_pair_with">Pair with %1$s (%2$s)</string>
+    <string name="novabird_ai_pair_starting">Connecting to the Helper …</string>
+    <string name="novabird_ai_pair_compare">Compare this number with the one at the Helper „%1$s“ and click „Allow“ there:</string>
+    <string name="novabird_ai_pair_compare_note">Only allow it if both numbers are the same. Waiting up to 5 minutes.</string>
+    <string name="novabird_ai_pair_cancel">Cancel</string>
+    <string name="novabird_ai_pair_denied">The Helper declined the pairing.</string>
+    <string name="novabird_ai_pair_expired">Pairing expired. Start pairing mode at the Helper again.</string>
+    <string name="novabird_ai_pair_off">The Helper is not in pairing mode.</string>
+    <string name="novabird_ai_pair_manual">Or by hand: address of the PC, with the pairing code or with the number to compare.</string>
+    <string name="novabird_ai_pair_without_code">Without code</string>
+</resources>

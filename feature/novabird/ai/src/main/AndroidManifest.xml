@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- finding the Helper in pairing mode (UDP multicast in the local network) -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+
     <application>
 
         <!-- exported like the sync settings, so the launcher shortcut can open it; it takes no extras -->
