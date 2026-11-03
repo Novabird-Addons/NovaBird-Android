@@ -2,6 +2,7 @@ package net.thunderbird.feature.account.settings
 
 import kotlinx.collections.immutable.ImmutableList
 import net.thunderbird.core.common.resources.StringsResourceManager
+import net.thunderbird.feature.account.settings.api.AccountFullSync
 import net.thunderbird.feature.account.settings.api.AccountSettingsNavigation
 import net.thunderbird.feature.account.settings.api.ReplacedAccountSettings
 import net.thunderbird.feature.account.settings.impl.DefaultAccountSettingsNavigation
@@ -132,6 +133,7 @@ val featureAccountSettingsModule = module {
             resources = get<StringsResourceManager>(),
             fetchingMailSettingsOptionsMapper = get<FetchingMailSettingsOptionsMapper>(),
             showFetchMessageUpTo = getOrNull<ReplacedAccountSettings>()?.isFetchMessageSizeReplaced() != true,
+            showFullSync = getOrNull<AccountFullSync>() != null,
         )
     }
 

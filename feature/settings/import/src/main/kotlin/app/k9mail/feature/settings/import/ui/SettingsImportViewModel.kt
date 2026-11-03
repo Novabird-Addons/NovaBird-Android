@@ -299,8 +299,20 @@ internal class SettingsImportViewModel(
     }
 
     fun onCloseButtonClicked() {
-        sendActionEvent(Action.Close(importSuccess = uiModel.wasAccountImportSuccessful))
+        sendActionEvent(
+            Action.Close(
+                importSuccess = uiModel.wasAccountImportSuccessful,
+                importedAccountUuids = importedAccountUuids(),
+            ),
+        )
     }
+
+    // after the import accountsMap holds the uuids of the imported accounts
+    private fun importedAccountUuids(): List<AccountUuid> = uiModel.settingsList.asSequence()
+        .filterIsInstance<SettingsListItem.Account>()
+        .filter { it.importStatus.isSuccess }
+        .mapNotNull { accountsMap[it.accountIndex] }
+        .toList()
 
     fun onSettingsListItemClicked(position: Int) {
         val settingsListItem = uiModel.settingsList[position]
@@ -591,7 +603,7 @@ internal class SettingsImportViewModel(
 }
 
 sealed class Action {
-    class Close(val importSuccess: Boolean) : Action()
+    class Close(val importSuccess: Boolean, val importedAccountUuids: List<String> = emptyList()) : Action()
     object PickDocument : Action()
     object ScanQrCode : Action()
     object PickApp : Action()

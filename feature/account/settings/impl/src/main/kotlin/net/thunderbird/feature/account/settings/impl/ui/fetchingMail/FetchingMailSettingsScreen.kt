@@ -14,7 +14,9 @@ import net.thunderbird.core.common.provider.AppNameProvider
 import net.thunderbird.core.ui.contract.mvi.observe
 import net.thunderbird.core.ui.setting.SettingViewProvider
 import net.thunderbird.feature.account.AccountId
+import net.thunderbird.feature.account.settings.api.AccountFullSync
 import net.thunderbird.feature.account.settings.impl.ui.fetchingMail.FetchingMailSettingsContract.Effect
+import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -31,6 +33,7 @@ internal fun FetchingMailSettingsScreen(
     provider: SettingViewProvider = koinInject(),
     builder: FetchingMailSettingsContract.SettingsBuilder = koinInject(),
     appNameProvider: AppNameProvider = koinInject(),
+    fullSync: AccountFullSync? = getKoin().getOrNull(),
 ) {
     val context = LocalContext.current
     val (state, dispatch) = viewModel.observe { effect ->
@@ -44,6 +47,10 @@ internal fun FetchingMailSettingsScreen(
                     context = context,
                     target = FeatureLauncherTarget.AccountEditIncomingSettings(accountUuid = "${accountId.value}"),
                 )
+            }
+
+            is Effect.NavigateToFullSync -> {
+                fullSync?.let { context.startActivity(it.createIntent(context, "${accountId.value}")) }
             }
 
             is Effect.NavigateToAdvancedFetchingMailSettings -> {

@@ -8,4 +8,38 @@
     <string name="novabird_sync_settings_no_limit">No limit</string>
     <string name="novabird_sync_settings_size_kib">%d KB</string>
     <string name="novabird_sync_settings_size_mib">%d MB</string>
+    <string name="novabird_sync_import_title">Fetching mail</string>
+    <string name="novabird_sync_import_intro">How far back and how many messages should NovaBird load for the imported accounts? The values from the PC are often small (e.g. 25 messages). You can change this later in the account settings under "Fetching mail".</string>
+    <string name="novabird_sync_import_period">Sync messages from</string>
+    <string name="novabird_sync_import_count">Number of messages</string>
+    <string name="novabird_sync_import_done">Done</string>
+    <string name="novabird_sync_import_period_1_month">the last month</string>
+    <string name="novabird_sync_import_period_3_months">the last 3 months</string>
+    <string name="novabird_sync_import_period_6_months">the last 6 months</string>
+    <string name="novabird_sync_import_period_1_year">the last year</string>
+    <string name="novabird_sync_import_period_2_years">the last 2 years</string>
+    <string name="novabird_sync_import_period_all">any time (no limit)</string>
+    <plurals name="novabird_sync_import_period_days">
+        <item quantity="one">the last day</item>
+        <item quantity="other">the last %d days</item>
+    </plurals>
+    <string name="novabird_sync_import_count_all">all messages</string>
+    <plurals name="novabird_sync_import_count_n">
+        <item quantity="one">%d message</item>
+        <item quantity="other">%d messages</item>
+    </plurals>
+    <string name="novabird_sync_full_title">Load all messages</string>
+    <string name="novabird_sync_full_description">Loads all messages of this account in one go, with the period and number of messages from the account settings. Only on Wi-Fi.</string>
+    <string name="novabird_sync_full_note">Runs with a notification, also with the screen off. If Wi-Fi goes away, it continues later on its own. Android allows this for about 6 hours a day; if it is not done by then, just start it again.</string>
+    <string name="novabird_sync_full_start">Load all messages now</string>
+    <string name="novabird_sync_full_stop">Stop</string>
+    <string name="novabird_sync_full_waiting">Waiting for Wi-Fi …</string>
+    <string name="novabird_sync_full_preparing">Getting the folder list …</string>
+    <string name="novabird_sync_full_folder">Folder %1$d of %2$d: %3$s</string>
+    <string name="novabird_sync_full_messages">%1$d of %2$d messages</string>
+    <string name="novabird_sync_full_finished">Done: all folders are loaded. Large messages are completed on Wi-Fi in the background.</string>
+    <string name="novabird_sync_full_failed">Loading stopped with an error. Please try again.</string>
+    <string name="novabird_sync_full_notification_title">Loading all messages: %s</string>
+    <string name="novabird_sync_full_progress_folder">Folder %1$d of %2$d: %3$s</string>
+    <string name="novabird_sync_full_progress_messages">Folder %1$d of %2$d: %3$s, %4$d of %5$d</string>
 </resources>

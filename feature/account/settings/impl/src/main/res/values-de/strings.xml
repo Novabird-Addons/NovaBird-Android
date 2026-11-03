@@ -131,4 +131,6 @@
     <string name="account_settings_expunge_policy_manual">Nur manuell</string>
     <string name="account_settings_push_limit_label">Maximale Push-Ordneranzahl</string>
     <string name="account_settings_idle_refresh_period_label">Push-Verbindung erneuern</string>
+    <string name="account_settings_full_sync_title">Jetzt alle Mails abrufen</string>
+    <string name="account_settings_full_sync_summary">Am Stück im WLAN, mit Fortschritt</string>
 </resources>

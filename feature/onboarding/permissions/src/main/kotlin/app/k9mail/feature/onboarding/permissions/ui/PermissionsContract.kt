@@ -10,6 +10,8 @@ interface PermissionsContract {
         val contactsPermissionState: UiPermissionState = UiPermissionState.Unknown,
         val notificationsPermissionState: UiPermissionState = UiPermissionState.Unknown,
         val isNotificationsPermissionVisible: Boolean = false,
+        val backgroundActivityState: UiPermissionState = UiPermissionState.Unknown,
+        val isBackgroundActivityVisible: Boolean = false,
         val isNextButtonVisible: Boolean = false,
     )
 
@@ -18,9 +20,12 @@ interface PermissionsContract {
 
         data object AllowContactsPermissionClicked : Event
         data object AllowNotificationsPermissionClicked : Event
+        data object AllowBackgroundActivityClicked : Event
+        data object OpenAppSettingsClicked : Event
 
         data class ContactsPermissionResult(val success: Boolean) : Event
         data class NotificationsPermissionResult(val success: Boolean) : Event
+        data object BackgroundActivityResult : Event
 
         data object NextClicked : Event
     }
@@ -28,6 +33,8 @@ interface PermissionsContract {
     sealed interface Effect {
         data object RequestContactsPermission : Effect
         data object RequestNotificationsPermission : Effect
+        data object RequestBackgroundActivity : Effect
+        data object OpenAppSettings : Effect
 
         data object NavigateNext : Effect
     }

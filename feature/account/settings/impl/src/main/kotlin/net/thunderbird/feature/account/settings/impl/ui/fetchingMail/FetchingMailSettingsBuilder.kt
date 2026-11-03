@@ -13,6 +13,7 @@ internal class FetchingMailSettingsBuilder(
     private val resources: StringsResourceManager,
     private val fetchingMailSettingsOptionsMapper: FetchingMailSettingsOptionsMapper,
     private val showFetchMessageUpTo: Boolean = true,
+    private val showFullSync: Boolean = false,
 ) : FetchingMailSettingsContract.SettingsBuilder {
 
     override fun buildCoreFetchingMailSettings(
@@ -22,6 +23,7 @@ internal class FetchingMailSettingsBuilder(
         val settings = mutableListOf<Setting>()
         settings += localFolderSize(value = state.localFolderSize)
         settings += syncMessageFrom(value = state.syncMessageFrom)
+        if (showFullSync) settings += fullSync(onEvent = onEvent)
         if (showFetchMessageUpTo) settings += fetchMessageUpTo(value = state.fetchMessageUpTo)
         settings += folderPollFrequency(value = state.folderPollFrequency)
         settings += syncServerDeletions(value = state.syncServerDeletions)
@@ -129,6 +131,15 @@ internal class FetchingMailSettingsBuilder(
             value = resources.stringResource(R.string.account_settings_incoming_summary),
             onClick = { onEvent(FetchingMailSettingsContract.Event.OnInComingServerClick) },
         )
+
+    private fun fullSync(onEvent: (FetchingMailSettingsContract.Event) -> Unit): Setting = SettingValue.ActionText(
+        id = FetchingMailSettingsId.FULL_SYNC,
+        title = { resources.stringResource(R.string.account_settings_full_sync_title) },
+        description = { null },
+        icon = { null },
+        value = resources.stringResource(R.string.account_settings_full_sync_summary),
+        onClick = { onEvent(FetchingMailSettingsContract.Event.OnFullSyncClick) },
+    )
 
     private fun advanced(onEvent: (FetchingMailSettingsContract.Event) -> Unit): Setting = SettingValue.ActionText(
         id = FetchingMailSettingsId.ADVANCE,

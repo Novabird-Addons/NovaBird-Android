@@ -7,4 +7,8 @@
     <string name="onboarding_permissions_contacts_title">Kontakte</string>
     <string name="onboarding_permissions_allow_button">Erlauben</string>
     <string name="onboarding_permissions_skip_button">Überspringen</string>
+    <string name="onboarding_permissions_background_title">Hintergrundaktivität</string>
+    <string name="onboarding_permissions_background_description">Erlaube die uneingeschränkte Akkunutzung. Sonst kommen nach einer längeren Pause neue Mails erst, wenn du die App wieder öffnest.</string>
+    <string name="onboarding_permissions_background_vendor_note">Manche Handys (z. B. OPPO, OnePlus, Xiaomi) haben in den App-Infos zusätzlich einen Schalter „Hintergrundaktivität zulassen“.</string>
+    <string name="onboarding_permissions_background_app_settings">App-Infos öffnen</string>
 </resources>

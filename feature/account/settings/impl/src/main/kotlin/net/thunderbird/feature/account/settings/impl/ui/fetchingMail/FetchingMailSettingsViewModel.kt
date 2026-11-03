@@ -213,6 +213,10 @@ internal class FetchingMailSettingsViewModel(
                 emitEffect(Effect.NavigateToAdvancedFetchingMailSettings)
             }
 
+            is Event.OnFullSyncClick -> {
+                emitEffect(Effect.NavigateToFullSync)
+            }
+
             is Event.OnMaxFolderToCheckWithPushChange -> {
                 viewModelScope.launch {
                     updateFetchingMailSettings(

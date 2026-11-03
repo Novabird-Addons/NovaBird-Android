@@ -18,6 +18,7 @@ dependencies {
     implementation(projects.legacy.ui.base)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.jetbrains.compose.material3)
     implementation(libs.androidx.work.runtime)
 
     testImplementation(projects.core.logging.testing)

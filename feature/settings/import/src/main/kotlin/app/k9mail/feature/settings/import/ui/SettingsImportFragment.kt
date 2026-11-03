@@ -19,12 +19,14 @@ import androidx.fragment.app.setFragmentResultListener
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import app.k9mail.feature.migration.launcher.api.MigrationManager
+import app.k9mail.feature.settings.import.SettingsImportExternalContract.ImportedAccountsReview
 import app.k9mail.feature.settings.importing.R
 import com.fsck.k9.ui.base.livedata.observeNotNull
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.adapters.ItemAdapter
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import com.fsck.k9.ui.base.R as BaseR
@@ -32,6 +34,7 @@ import com.fsck.k9.ui.base.R as BaseR
 class SettingsImportFragment : Fragment() {
     private val viewModel: SettingsImportViewModel by viewModel()
     private val migrationManager: MigrationManager by inject()
+    private val importedAccountsReview: ImportedAccountsReview? by lazy { getKoin().getOrNull() }
 
     private lateinit var settingsImportAdapter: FastAdapter<ImportListItem<*>>
     private lateinit var itemAdapter: ItemAdapter<ImportListItem<*>>
@@ -52,6 +55,11 @@ class SettingsImportFragment : Fragment() {
         migrationManager.getQrCodeActivityResultContract(),
         pickDocumentCallback,
     )
+
+    // only launched after a successful import, so the import screen closes with success afterwards
+    private val reviewLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        finishImportScreen(importSuccess = true)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -215,9 +223,18 @@ class SettingsImportFragment : Fragment() {
         }
     }
 
-    @Suppress("SwallowedException")
     private fun closeImportScreen(action: Action.Close) {
-        setFragmentResult(action.importSuccess)
+        val review = importedAccountsReview
+        if (action.importSuccess && action.importedAccountUuids.isNotEmpty() && review != null) {
+            reviewLauncher.launch(review.createIntent(requireContext(), action.importedAccountUuids))
+        } else {
+            finishImportScreen(action.importSuccess)
+        }
+    }
+
+    @Suppress("SwallowedException")
+    private fun finishImportScreen(importSuccess: Boolean) {
+        setFragmentResult(importSuccess)
 
         try {
             findNavController().popBackStack()

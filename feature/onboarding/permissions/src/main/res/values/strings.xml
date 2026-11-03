@@ -10,6 +10,14 @@
     <string name="onboarding_permissions_notifications_title">Notifications</string>
     <!-- Description of why we ask the permission to post notifications -->
     <string name="onboarding_permissions_notifications_description">Turn on notifications so you don\'t miss any emails.</string>
+    <!-- NovaBird: title of the section asking to run in the background without battery optimization -->
+    <string name="onboarding_permissions_background_title">Background activity</string>
+    <!-- NovaBird: why we ask to be exempted from battery optimization -->
+    <string name="onboarding_permissions_background_description">Allow unrestricted battery use. Otherwise, after a longer break, new emails only arrive when you open the app again.</string>
+    <!-- NovaBird: note on the phone makers' own background settings -->
+    <string name="onboarding_permissions_background_vendor_note">Some phones (e.g. OPPO, OnePlus, Xiaomi) also have a switch "Allow background activity" in the app info.</string>
+    <!-- NovaBird: button that opens the app info in the system settings -->
+    <string name="onboarding_permissions_background_app_settings">Open app info</string>
     <!-- Text of the button that will trigger the system dialog to ask for an Android permission -->
     <string name="onboarding_permissions_allow_button">Allow</string>
     <!-- Text of the button to skip the onboarding screen to ask for Android permissions -->

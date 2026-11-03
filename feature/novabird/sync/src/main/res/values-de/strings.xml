@@ -8,4 +8,38 @@
     <string name="novabird_sync_settings_no_limit">Unbegrenzt</string>
     <string name="novabird_sync_settings_size_kib">%d KB</string>
     <string name="novabird_sync_settings_size_mib">%d MB</string>
+    <string name="novabird_sync_import_title">E-Mails abrufen</string>
+    <string name="novabird_sync_import_intro">Wie weit zurück und wie viele Mails soll NovaBird für die importierten Konten laden? Die Werte vom PC sind oft klein (z. B. 25 Mails). Später änderbar in den Kontoeinstellungen unter „E-Mails abrufen“.</string>
+    <string name="novabird_sync_import_period">Mails synchronisieren ab</string>
+    <string name="novabird_sync_import_count">Anzahl der Nachrichten</string>
+    <string name="novabird_sync_import_done">Fertig</string>
+    <string name="novabird_sync_import_period_1_month">dem letzten Monat</string>
+    <string name="novabird_sync_import_period_3_months">den letzten 3 Monaten</string>
+    <string name="novabird_sync_import_period_6_months">den letzten 6 Monaten</string>
+    <string name="novabird_sync_import_period_1_year">dem letzten Jahr</string>
+    <string name="novabird_sync_import_period_2_years">den letzten 2 Jahren</string>
+    <string name="novabird_sync_import_period_all">beliebiger Zeit (unbegrenzt)</string>
+    <plurals name="novabird_sync_import_period_days">
+        <item quantity="one">dem letzten Tag</item>
+        <item quantity="other">den letzten %d Tagen</item>
+    </plurals>
+    <string name="novabird_sync_import_count_all">alle Nachrichten</string>
+    <plurals name="novabird_sync_import_count_n">
+        <item quantity="one">%d Nachricht</item>
+        <item quantity="other">%d Nachrichten</item>
+    </plurals>
+    <string name="novabird_sync_full_title">Alle Mails abrufen</string>
+    <string name="novabird_sync_full_description">Lädt alle Mails dieses Kontos am Stück, mit Zeitraum und Anzahl aus den Kontoeinstellungen. Nur im WLAN.</string>
+    <string name="novabird_sync_full_note">Läuft mit einer Benachrichtigung, auch bei ausgeschaltetem Display. Fällt das WLAN weg, geht es später von selbst weiter. Android erlaubt das etwa 6 Stunden am Tag; ist es bis dahin nicht fertig, einfach noch einmal starten.</string>
+    <string name="novabird_sync_full_start">Jetzt alle Mails abrufen</string>
+    <string name="novabird_sync_full_stop">Stopp</string>
+    <string name="novabird_sync_full_waiting">Wartet auf WLAN …</string>
+    <string name="novabird_sync_full_preparing">Ordnerliste wird geholt …</string>
+    <string name="novabird_sync_full_folder">Ordner %1$d von %2$d: %3$s</string>
+    <string name="novabird_sync_full_messages">%1$d von %2$d Mails</string>
+    <string name="novabird_sync_full_finished">Fertig: Alle Ordner sind geladen. Große Mails werden im WLAN im Hintergrund vervollständigt.</string>
+    <string name="novabird_sync_full_failed">Das Laden ist mit einem Fehler abgebrochen. Bitte noch einmal starten.</string>
+    <string name="novabird_sync_full_notification_title">Alle Mails abrufen: %s</string>
+    <string name="novabird_sync_full_progress_folder">Ordner %1$d von %2$d: %3$s</string>
+    <string name="novabird_sync_full_progress_messages">Ordner %1$d von %2$d: %3$s, %4$d von %5$d</string>
 </resources>

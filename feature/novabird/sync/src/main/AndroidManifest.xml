@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    >
+
+    <!-- full sync of an account as a foreground service (WorkManager); legacy/common limits this to API 33 -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+        tools:remove="android:maxSdkVersion"
+        />
 
     <application>
 
@@ -14,6 +23,24 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="org.novabird.feature.sync.fullsync.FullSyncActivity"
+            android:exported="false"
+            android:label="@string/novabird_sync_full_title"
+            />
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge"
+            />
+
+        <activity
+            android:name="org.novabird.feature.sync.ui.ImportedAccountsSyncActivity"
+            android:exported="false"
+            android:label="@string/novabird_sync_import_title"
+            />
 
     </application>
 </manifest>

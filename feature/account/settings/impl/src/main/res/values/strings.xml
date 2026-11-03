@@ -134,6 +134,9 @@
     <string name="account_settings_incoming_summary">Configure the incoming mail server</string>
 
     <string name="account_settings_push_advanced_title">Advanced</string>
+    <!-- NovaBird: entry that loads all messages of the account at once -->
+    <string name="account_settings_full_sync_title">Load all messages now</string>
+    <string name="account_settings_full_sync_summary">In one go on Wi-Fi, with progress</string>
 
     <string name="account_settings_push_limit_label">Max folders to check with push</string>
     <string name="account_settings_push_limit_5">5 folders</string>

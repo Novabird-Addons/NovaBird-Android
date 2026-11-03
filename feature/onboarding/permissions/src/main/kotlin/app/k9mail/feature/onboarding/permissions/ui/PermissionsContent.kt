@@ -40,6 +40,7 @@ import net.thunderbird.components.ui.bolt.atom.Surface
 import net.thunderbird.components.ui.bolt.atom.button.ButtonFilled
 import net.thunderbird.components.ui.bolt.atom.button.ButtonText
 import net.thunderbird.components.ui.bolt.atom.icon.Icons
+import net.thunderbird.components.ui.bolt.atom.text.TextBodySmall
 import net.thunderbird.components.ui.bolt.atom.text.TextHeadlineSmall
 import net.thunderbird.components.ui.bolt.template.ResponsiveWidthContainer
 import net.thunderbird.components.ui.bolt.template.Scaffold
@@ -147,6 +148,45 @@ private fun PermissionBoxes(
             description = stringResource(R.string.onboarding_permissions_notifications_description),
             onAllowClick = { onEvent(Event.AllowNotificationsPermissionClicked) },
         )
+    }
+
+    if (state.isBackgroundActivityVisible) {
+        BackgroundActivityBox(state, onEvent)
+    }
+}
+
+// NovaBird: run without battery optimization, plus the phone makers' own switch
+@Composable
+private fun BackgroundActivityBox(
+    state: State,
+    onEvent: (Event) -> Unit,
+) {
+    Column {
+        Spacer(modifier = Modifier.height(BoltTheme.spacings.quadruple))
+
+        PermissionBox(
+            icon = Icons.Outlined.Sync,
+            permissionState = state.backgroundActivityState,
+            title = stringResource(R.string.onboarding_permissions_background_title),
+            description = stringResource(R.string.onboarding_permissions_background_description),
+            onAllowClick = { onEvent(Event.AllowBackgroundActivityClicked) },
+        )
+
+        // the system flag doesn't cover the phone makers' own background switches
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.End,
+        ) {
+            TextBodySmall(
+                text = stringResource(R.string.onboarding_permissions_background_vendor_note),
+                color = BoltTheme.colors.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = BoltTheme.spacings.double),
+            )
+            ButtonText(
+                text = stringResource(R.string.onboarding_permissions_background_app_settings),
+                onClick = { onEvent(Event.OpenAppSettingsClicked) },
+            )
+        }
     }
 }
 

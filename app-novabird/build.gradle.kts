@@ -186,6 +186,8 @@ dependencies {
     implementation(projects.feature.telemetry.noop)
     implementation(projects.feature.funding.noop)
     implementation(projects.feature.migration.launcher.thunderbird)
+    implementation(projects.feature.settings.import)
+    implementation(projects.feature.onboarding.permissions)
     implementation(projects.feature.onboarding.migration.noop)
     implementation(projects.feature.thundermail.api)
     implementation(projects.feature.thundermail.k9mail)

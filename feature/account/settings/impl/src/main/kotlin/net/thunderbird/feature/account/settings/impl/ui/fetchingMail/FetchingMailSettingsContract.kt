@@ -42,6 +42,7 @@ interface FetchingMailSettingsContract {
         data class OnEraseDeletedMessageOnServerChange(val eraseDeletedMessageOnServer: SelectOption) : Event
         data object OnInComingServerClick : Event
         data object OnAdvanceClick : Event
+        data object OnFullSyncClick : Event
 
         data class OnMaxFolderToCheckWithPushChange(val maxFolderToCheckWithPushChanges: SelectOption) : Event
         data class OnRefreshIdleConnectionFrequencyChange(val refreshIdleConnectionFrequency: SelectOption) : Event
@@ -51,6 +52,7 @@ interface FetchingMailSettingsContract {
         object NavigateBack : Effect
         object NavigateToIncomingServerSettings : Effect
         object NavigateToAdvancedFetchingMailSettings : Effect
+        object NavigateToFullSync : Effect
     }
 
     interface SettingsBuilder {

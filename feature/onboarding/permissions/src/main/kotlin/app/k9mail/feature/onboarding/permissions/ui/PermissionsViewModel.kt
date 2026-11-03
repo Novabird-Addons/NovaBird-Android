@@ -18,6 +18,7 @@ import net.thunderbird.core.ui.contract.mvi.BaseViewModel
 class PermissionsViewModel(
     private val checkPermission: UseCase.CheckPermission,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val checkBackgroundActivity: UseCase.CheckBackgroundActivity? = null,
 ) : BaseViewModel<State, Event, Effect>(initialState = State(isLoading = true)), ViewModel {
 
     override fun event(event: Event) {
@@ -27,6 +28,9 @@ class PermissionsViewModel(
             Event.AllowNotificationsPermissionClicked -> handleAllowNotificationsPermissionClicked()
             is Event.ContactsPermissionResult -> handleContactsPermissionResult(event.success)
             is Event.NotificationsPermissionResult -> handleNotificationsPermissionResult(event.success)
+            Event.AllowBackgroundActivityClicked -> emitEffect(Effect.RequestBackgroundActivity)
+            Event.OpenAppSettingsClicked -> emitEffect(Effect.OpenAppSettings)
+            Event.BackgroundActivityResult -> handleBackgroundActivityResult()
             Event.NextClicked -> handleNextClicked()
         }
     }
@@ -51,6 +55,9 @@ class PermissionsViewModel(
                 PermissionState.Denied -> UiPermissionState.Unknown
             }
             val isNotificationsPermissionVisible = notificationsPermissionState != PermissionState.GrantedImplicitly
+            val backgroundActivity = checkBackgroundActivity?.let { check ->
+                withContext(backgroundDispatcher) { check() }
+            }
 
             updateState { state ->
                 state.copy(
@@ -58,6 +65,12 @@ class PermissionsViewModel(
                     contactsPermissionState = contactsUiPermissionState,
                     notificationsPermissionState = notificationsUiPermissionState,
                     isNotificationsPermissionVisible = isNotificationsPermissionVisible,
+                    backgroundActivityState = if (backgroundActivity == true) {
+                        UiPermissionState.Granted
+                    } else {
+                        UiPermissionState.Unknown
+                    },
+                    isBackgroundActivityVisible = backgroundActivity != null,
                 )
             }
             updateNextButtonState()
@@ -90,6 +103,20 @@ class PermissionsViewModel(
         updateNextButtonState()
     }
 
+    // the user comes back from the system dialog or settings: check again
+    private fun handleBackgroundActivityResult() {
+        val check = checkBackgroundActivity ?: return
+        viewModelScope.launch {
+            val allowed = withContext(backgroundDispatcher) { check() }
+            updateState { state ->
+                state.copy(
+                    backgroundActivityState = if (allowed) UiPermissionState.Granted else UiPermissionState.Denied,
+                )
+            }
+        }
+    }
+
+    // background activity is optional: it doesn't decide between "Next" and "Skip"
     private fun updateNextButtonState() {
         updateState { state ->
             val isContactsPermissionGranted = state.contactsPermissionState == UiPermissionState.Granted

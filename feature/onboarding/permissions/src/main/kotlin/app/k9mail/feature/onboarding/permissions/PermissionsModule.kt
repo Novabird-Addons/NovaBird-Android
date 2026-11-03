@@ -16,6 +16,7 @@ val featureOnboardingPermissionsModule: Module = module {
     viewModel {
         PermissionsViewModel(
             checkPermission = get(),
+            checkBackgroundActivity = getOrNull(),
         )
     }
 }

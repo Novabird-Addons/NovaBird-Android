@@ -11,6 +11,7 @@ object FetchingMailSettingsId {
     const val ERASE_DELETED_MESSAGE_ON_SERVER = "erase_deleted_message_on_server"
     const val IN_COMING_SERVER = "in_coming_server"
     const val ADVANCE = "advance"
+    const val FULL_SYNC = "full_sync"
     const val MAX_FOLDER_TO_CHECK_WITH_PUSH = "max_folder_to_check_with_push"
     const val REFRESH_IDLE_CONNECTION = "refresh_idle_connection"
 }

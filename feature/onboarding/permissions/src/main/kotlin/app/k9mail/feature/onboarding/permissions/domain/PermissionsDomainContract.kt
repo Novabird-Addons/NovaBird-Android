@@ -10,5 +10,10 @@ interface PermissionsDomainContract {
         fun interface CheckPermission {
             operator fun invoke(permission: Permission): PermissionState
         }
+
+        /** Optional (bound by the app): true if the app may run in the background without battery optimization. */
+        fun interface CheckBackgroundActivity {
+            operator fun invoke(): Boolean
+        }
     }
 }
