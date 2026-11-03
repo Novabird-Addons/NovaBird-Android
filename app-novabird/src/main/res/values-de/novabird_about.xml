@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NovaBird: Über-Seite -->
+<resources>
+    <string name="about_app_authors_k9">NovaBird</string>
+    <string name="about_app_authors_thunderbird">mit der Arbeit des Thunderbird Mobile Teams und der K-9 Dog Walkers</string>
+    <string name="app_license">Apache-Lizenz, Version 2.0 · Phishing-Schutz: MIT-Lizenz</string>
+    <string name="user_forum_title">Fragen und Fehler melden</string>
+    <string name="about_special_thanks_title">Besonderer Dank</string>
+    <string name="about_special_thanks">An das Thunderbird-Team und die K-9-Mail-Gemeinschaft: Ohne ihre Arbeit wäre dieser Fork nicht möglich gewesen.</string>
+</resources>

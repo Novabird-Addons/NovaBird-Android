@@ -4,15 +4,21 @@ import com.fsck.k9.ui.settings.AboutContract.Effect
 import com.fsck.k9.ui.settings.AboutContract.Event
 import com.fsck.k9.ui.settings.AboutContract.State
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import net.thunderbird.core.common.provider.AppVersionProvider
 import net.thunderbird.core.ui.contract.mvi.BaseViewModel
 
 internal class AboutViewModel(
     appVersionProvider: AppVersionProvider,
+    extraLibraries: List<Library> = emptyList(),
 ) : BaseViewModel<State, Event, Effect>(
     initialState = State(
         version = appVersionProvider.getVersionNumber(),
-        libraries = USED_LIBRARIES,
+        libraries = if (extraLibraries.isEmpty()) {
+            USED_LIBRARIES
+        } else {
+            (USED_LIBRARIES + extraLibraries).sortedBy { it.name.lowercase() }.toPersistentList()
+        },
     ),
 ) {
     override fun event(event: Event) {

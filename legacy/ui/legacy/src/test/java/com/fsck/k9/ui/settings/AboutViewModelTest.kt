@@ -33,6 +33,20 @@ class AboutViewModelTest {
     }
 
     @Test
+    fun `extra libraries of the app are added to the shared ones in name order`() {
+        val extra = Library(name = "zz NovaBird Lib", url = "https://novabird.example", license = "MIT License")
+        val withExtra = AboutViewModel(
+            appVersionProvider = mock<AppVersionProvider> { on { getVersionNumber() } doReturn "9.9.9" },
+            extraLibraries = listOf(extra, extra.copy(name = "AAA First")),
+        )
+
+        val libraries = withExtra.state.value.libraries
+        assertThat(libraries.size).isEqualTo(viewModel.state.value.libraries.size + 2)
+        assertThat(libraries.first().name).isEqualTo("AAA First")
+        assertThat(libraries.last()).isEqualTo(extra)
+    }
+
+    @Test
     fun `OnChangeLogClick emits OpenChangeLog effect`() = runTest {
         viewModel.effect.test {
             viewModel.event(Event.OnChangeLogClick)

@@ -122,6 +122,13 @@ class AboutFragment : Fragment() {
                                 ),
                             )
                         },
+                        displaySpecialThanks = {
+                            dispatch(
+                                Event.OnSectionContentClick(
+                                    getString(R.string.about_special_thanks_url),
+                                ),
+                            )
+                        },
                     )
                 }
             }
@@ -196,6 +203,7 @@ fun AboutScreen(
     displayLicense: () -> Unit = {},
     displayWebSite: () -> Unit = {},
     displayForum: () -> Unit = {},
+    displaySpecialThanks: () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     Surface(
@@ -229,6 +237,16 @@ fun AboutScreen(
                 sectionImageId = DesignSystemR.drawable.ic_code,
                 onClick = displayLicense,
             )
+
+            val specialThanks = stringResource(R.string.about_special_thanks)
+            if (specialThanks.isNotEmpty()) {
+                SectionContent(
+                    sectionLabel = stringResource(R.string.about_special_thanks_title),
+                    sectionText = specialThanks,
+                    sectionImageId = DesignSystemR.drawable.ic_favorite,
+                    onClick = displaySpecialThanks,
+                )
+            }
 
             SectionTitle(title = projectTitle)
 
