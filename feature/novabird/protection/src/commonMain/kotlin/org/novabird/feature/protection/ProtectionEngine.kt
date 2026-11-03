@@ -202,16 +202,25 @@ class ProtectionEngine private constructor(
             }
             val quickJs = QuickJs.create(dispatcher, loader)
             try {
+                // a crafted mail must not take all memory or block the check forever (e.g. a pattern that backtracks)
+                quickJs.memoryLimit = MEMORY_LIMIT_BYTES
                 quickJs.function("__nbHost") { args -> HostNames.toAscii(args[0] as String) }
                 quickJs.extraBindings()
                 val boot = entryModules.joinToString("\n") { "import ${jsString(it)};" }
                 quickJs.evaluate<Any?>(boot, BOOT_NAME, true)
+                quickJs.evaluationTimeoutMillis = EVALUATION_TIMEOUT_MILLIS
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                 quickJs.close()
                 throw e
             }
             ProtectionEngine(quickJs, dispatcher)
         }
+
+        /** Memory of the JS engine; the add-on core with a large mail needs a few dozen MB. */
+        const val MEMORY_LIMIT_BYTES = 256L * 1024 * 1024
+
+        /** Longest a single call may run; a normal check takes well under a second. */
+        const val EVALUATION_TIMEOUT_MILLIS = 15_000L
 
         /** JSON string literal; valid JavaScript (ES2019+) for any input, so no code can be injected. */
         internal fun jsString(value: String): String = JsonPrimitive(value).toString()

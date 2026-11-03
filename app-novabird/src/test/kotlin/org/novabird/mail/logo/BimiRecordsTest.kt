@@ -40,4 +40,15 @@ class BimiRecordsTest {
         assertThat(BimiRecords.logoUrl("v=BIMI1; l=http://example.com/logo.svg")).isNull()
         assertThat(BimiRecords.logoUrl("v=BIMI1; l=;")).isNull()
     }
+
+    @Test
+    fun `a logo needs a DMARC policy that rejects or quarantines all failing mail`() {
+        assertThat(BimiRecords.enforcesDmarc("v=DMARC1; p=reject; rua=mailto:d@example.com")).isEqualTo(true)
+        assertThat(BimiRecords.enforcesDmarc("v=DMARC1; p=quarantine")).isEqualTo(true)
+        assertThat(BimiRecords.enforcesDmarc("v=DMARC1; p=none")).isEqualTo(false)
+        assertThat(BimiRecords.enforcesDmarc("v=DMARC1; p=reject; pct=50")).isEqualTo(false)
+        assertThat(BimiRecords.enforcesDmarc("v=spf1 -all")).isEqualTo(false)
+        assertThat(BimiRecords.enforcesDmarc("v=DMARC1; p=reject; sp=none", forSubdomain = true)).isEqualTo(false)
+        assertThat(BimiRecords.enforcesDmarc("v=DMARC1; p=none; sp=reject", forSubdomain = true)).isEqualTo(true)
+    }
 }

@@ -36,5 +36,23 @@ internal object BimiRecords {
         return tags["l"]?.takeIf { it.startsWith("https://", ignoreCase = true) }
     }
 
+    /**
+     * True if a DMARC record lets receivers reject or quarantine mail that fails the check, for all mail (no `pct`
+     * below 100). BIMI requires this: without it anyone could send in the domain's name and get its logo shown.
+     * [forSubdomain]: the record of the organizational domain applies to a subdomain (its `sp=` wins).
+     */
+    fun enforcesDmarc(record: String, forSubdomain: Boolean = false): Boolean {
+        val tags = record.split(';').mapNotNull { part ->
+            val key = part.substringBefore('=', "").trim().lowercase()
+            if (key.isEmpty()) null else key to part.substringAfter('=').trim().lowercase()
+        }.toMap()
+        if (!tags["v"].equals("dmarc1", ignoreCase = true)) return false
+        val policy = (if (forSubdomain) tags["sp"] else null) ?: tags["p"]
+        val pct = tags["pct"]?.toIntOrNull() ?: FULL_PCT
+        return policy in ENFORCING && pct >= FULL_PCT
+    }
+
+    private val ENFORCING = setOf("quarantine", "reject")
+    private const val FULL_PCT = 100
     private const val MAX_DOMAIN = 253
 }

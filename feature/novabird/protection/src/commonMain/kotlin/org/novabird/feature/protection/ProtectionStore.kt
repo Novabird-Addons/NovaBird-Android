@@ -71,7 +71,41 @@ class ProtectionStore(fileName: String) : AutoCloseable {
             "CREATE TABLE IF NOT EXISTS nb_protection_media (account_uuid TEXT NOT NULL, k9_id INTEGER NOT NULL, " +
                 "PRIMARY KEY (account_uuid, k9_id))",
         )
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS nb_protection_authserv (account_uuid TEXT NOT NULL, authserv TEXT NOT NULL, " +
+                "seen INTEGER NOT NULL, PRIMARY KEY (account_uuid, authserv))",
+        )
     }
+
+    /** Counts the authserv-id of the topmost Authentication-Results header of a checked mail ("" if it has none). */
+    fun countAuthserv(accountUuid: String, authserv: String) {
+        connection.prepare(
+            "INSERT INTO nb_protection_authserv (account_uuid, authserv, seen) VALUES (?, ?, 1) " +
+                "ON CONFLICT (account_uuid, authserv) DO UPDATE SET seen = seen + 1",
+        ).use { statement ->
+            statement.bindText(1, accountUuid)
+            statement.bindText(2, authserv)
+            statement.step()
+        }
+    }
+
+    /** How often each authserv-id ("" = none) was seen on top of the account's mails. */
+    fun authservCounts(accountUuid: String): Map<String, Long> =
+        connection.prepare(
+            "SELECT authserv, seen FROM nb_protection_authserv WHERE account_uuid = ?",
+        ).use { statement ->
+            statement.bindText(1, accountUuid)
+            buildMap { while (statement.step()) put(statement.getText(0), statement.getLong(1)) }
+        }
+
+    /** True if a mail of [sender] (address in lower case) was rated suspicious or dangerous. */
+    fun isFlagged(sender: String): Boolean =
+        connection.prepare(
+            "SELECT 1 FROM nb_protection WHERE sender = ? AND level != 'normal' LIMIT 1",
+        ).use { statement ->
+            statement.bindText(1, sender)
+            statement.step()
+        }
 
     fun save(record: StoredVerdict) {
         connection.prepare(

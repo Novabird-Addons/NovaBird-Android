@@ -238,6 +238,46 @@ class ProtectionServiceTest {
     }
 
     @Test
+    fun `an Authentication-Results header written by the sender is ignored once the own server is known`() =
+        runBlocking<Unit> {
+            service.enable(consentVersion = 1)
+            fun withAuth(id: Long, vararg values: String) {
+                mail(id, "Kollege <k@partner.example>", "Hallo $id")
+                mails[id] =
+                    mails.getValue(id).let {
+                        it.copy(
+                            headers =
+                            it.headers + ("authentication-results" to values.toList()),
+                        )
+                    }
+            }
+            // the own server writes "mx.provider.example" on top of every mail
+            for (id in 1L..10L) withAuth(id, "mx.provider.example; dmarc=pass header.from=partner.example")
+            service.checkNewMails()
+
+            // forged pass on top, the server's fail below: the server's result counts
+            withAuth(11, "evil.example; dmarc=pass", "mx.provider.example; dmarc=fail header.from=partner.example")
+            service.checkNewMails()
+            assertThat(store.get(account.uuid, 11)!!.verdict.signals.map { it.id }).contains("dmarcFail")
+        }
+
+    @Test
+    fun `without own Authentication-Results headers, ones in the mail are not believed`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        for (id in 1L..10L) mail(id, "Kollege <k@partner.example>", "Hallo $id")
+        service.checkNewMails()
+
+        mail(
+            11,
+            "Kollege <k@partner.example>",
+            "Hallo",
+            extraHeaders = mapOf("authentication-results" to "x.example; dmarc=fail"),
+        )
+        service.checkNewMails()
+        assertThat(store.get(account.uuid, 11)!!.verdict.signals.map { it.id }).doesNotContain("dmarcFail")
+    }
+
+    @Test
     fun `a device contact is known, a stranger is a first contact`() = runBlocking<Unit> {
         deviceContacts = listOf(DeviceContact(listOf("Anna Beispiel"), listOf("anna@partner.example")))
         service.enable(consentVersion = 1)

@@ -1,5 +1,6 @@
 package org.novabird.feature.protection
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
@@ -324,7 +325,8 @@ class ProtectionService(
                     val mail = locked { texts.mailForCheck(account.uuid, id) } ?: continue
                     // images outside the lock: an opened mail need not wait for the text reading
                     val extras = guardedMedia(mail, previous = null, withOcr = true)
-                    val record = locked { checkMail(mail, extras) }
+                    // a mail the rules cannot check (time or memory limit) is left for the open path, not retried here
+                    val record = checkOrSkip(mail, extras) ?: continue
                     count++
                     if (wantsAi(record)) refineWithAi(account.uuid, id)
                     moveIfSpam(account.uuid, id)
@@ -461,14 +463,35 @@ class ProtectionService(
         }
     }
 
-    private fun config() = JsonObject(
-        mapOf("trustedSenders" to JsonArray(settings.trustedSenders.map { JsonPrimitive(it.address) })),
+    private fun config(accountUuid: String) = JsonObject(
+        mapOf(
+            "trustedSenders" to JsonArray(settings.trustedSenders.map { JsonPrimitive(it.address) }),
+            "trustedAuthservIds" to JsonArray(trustedAuthserv(accountUuid).map(::JsonPrimitive)),
+        ),
     )
+
+    /**
+     * The authserv-id the account's own mail server writes, learned from the topmost Authentication-Results header of
+     * its mails (the receiving server adds its header on top). Once one id (or "no header at all") makes up most of
+     * them, only headers with that id count, so a header the sender wrote into the mail himself is ignored. Before
+     * that, the add-on's rule applies (the topmost header).
+     */
+    private fun trustedAuthserv(accountUuid: String): List<String> {
+        val counts = store.authservCounts(accountUuid)
+        val total = counts.values.sum()
+        if (total < AUTHSERV_MIN_MAILS) return emptyList()
+        val (top, seen) = counts.maxBy { it.value }
+        if (seen * PERCENT < total * AUTHSERV_SHARE_PERCENT) return emptyList()
+        return listOf(top.ifEmpty { NO_AUTHSERV })
+    }
+
+    private fun topAuthserv(mail: MailForCheck): String =
+        mail.headers["authentication-results"]?.firstOrNull()?.substringBefore(';')?.trim()?.lowercase().orEmpty()
 
     private suspend fun evaluate(mail: MailForCheck, extras: MailExtras?): Evaluation {
         val js = engine()
         refreshContext(js)
-        val config = config()
+        val config = config(mail.accountUuid)
         val features = js.features(input(mail, extras), config)
         val context = mutableMapOf<String, JsonElement>(
             "ownDomains" to JsonArray(ownDomains().map(::JsonPrimitive)),
@@ -489,8 +512,22 @@ class ProtectionService(
     private suspend fun checkMail(mail: MailForCheck, extras: MailExtras?): StoredVerdict {
         val record = evaluate(mail, extras).record()
         save(record)
+        store.countAuthserv(mail.accountUuid, topAuthserv(mail))
         return record
     }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun checkOrSkip(mail: MailForCheck, extras: MailExtras?): StoredVerdict? = try {
+        locked { checkMail(mail, extras) }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+
+    /** True if the protection rated a mail of [address] suspicious or dangerous (e.g. no brand logo for it). */
+    suspend fun isFlaggedSender(address: String): Boolean =
+        settings.enabled && locked { store.isFlagged(address.trim().lowercase()) }
 
     /**
      * QR codes in images and attachment types of [mail], and with [withOcr] the text in images (only the images the
@@ -517,7 +554,7 @@ class ProtectionService(
             )
         }
         if (withOcr && scanner != null && !extras.ocrDone) {
-            val candidates = js.ocrCandidates(js.features(input(mail, extras), config()))
+            val candidates = js.ocrCandidates(js.features(input(mail, extras), config(mail.accountUuid)))
             val imageTexts = LinkedHashMap<String, String>()
             MailMedia.images(mail)
                 .filter { candidates.mostlyImages || MailMedia.imageKey(it) in candidates.linked }
@@ -691,6 +728,12 @@ class ProtectionService(
         private const val DAY_MILLIS = 86_400_000L
         private const val NEW_MAILS_PER_RUN = 200
         private const val ARRIVAL_SLACK_MILLIS = 24 * 60 * 60_000L
+        private const val AUTHSERV_MIN_MAILS = 10L
+        private const val AUTHSERV_SHARE_PERCENT = 80L
+        private const val PERCENT = 100L
+
+        /** Matches no real authserv-id: the account's server writes no Authentication-Results, so none is trusted. */
+        private const val NO_AUTHSERV = "no-authserv.invalid"
         private val RELATED_SKIPPED_TYPES = setOf("spam", "trash", "drafts", "outbox")
     }
 }

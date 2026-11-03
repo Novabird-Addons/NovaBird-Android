@@ -21,7 +21,7 @@ class NovaBirdIndexWorker(
 
     override suspend fun doWork(): Result {
         indexer.indexChanges()
-        scheduler.requestVectors()
+        scheduler.continueVectors()
         return Result.success()
     }
 }

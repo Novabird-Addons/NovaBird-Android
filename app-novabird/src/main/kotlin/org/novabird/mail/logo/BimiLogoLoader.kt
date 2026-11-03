@@ -27,8 +27,10 @@ class BimiLogoLoader(
     context: Context,
     private val settings: SenderLogoSettings,
     private val logger: Logger,
+    private val isFlaggedSender: (String) -> Boolean = { false },
 ) : SenderLogoLoader {
-    private val cacheDir = File(context.cacheDir, "nb_logos")
+    // "2": logos cached before the DMARC check are not used any more
+    private val cacheDir = File(context.cacheDir, "nb_logos2")
     private val locks = ConcurrentHashMap<String, Any>()
     private val http by lazy {
         OkHttpClient.Builder()
@@ -38,7 +40,9 @@ class BimiLogoLoader(
     }
 
     override fun loadLogo(emailAddress: String, sizePx: Int): Bitmap? {
-        val domain = if (settings.isEnabled) BimiRecords.domainOf(emailAddress) else null
+        // a brand logo must not make a sender look trustworthy that the phishing protection already flagged
+        if (!settings.isEnabled || isFlaggedSender(emailAddress)) return null
+        val domain = BimiRecords.domainOf(emailAddress)
         return domain?.let { synchronized(locks.getOrPut(it) { Any() }) { cachedOrFetch(it) } }
     }
 
@@ -72,8 +76,17 @@ class BimiLogoLoader(
 
     private fun fetch(domain: String): Bitmap? {
         val organizational = BimiRecords.organizationalDomain(domain)
+        if (!enforcesDmarc(domain, organizational)) return null
         val url = logoUrl(domain) ?: organizational.takeIf { it != domain }?.let(::logoUrl)
         return url?.let(::download)?.let(::render)
+    }
+
+    /** DMARC policy of the domain, else of its organizational domain (as receivers apply it). */
+    private fun enforcesDmarc(domain: String, organizational: String): Boolean {
+        val own = BimiDns.txtRecords("_dmarc.$domain").filter { it.trim().startsWith("v=DMARC1", ignoreCase = true) }
+        if (own.isNotEmpty()) return own.any { BimiRecords.enforcesDmarc(it) }
+        if (organizational == domain) return false
+        return BimiDns.txtRecords("_dmarc.$organizational").any { BimiRecords.enforcesDmarc(it, forSubdomain = true) }
     }
 
     private fun logoUrl(domain: String): String? =

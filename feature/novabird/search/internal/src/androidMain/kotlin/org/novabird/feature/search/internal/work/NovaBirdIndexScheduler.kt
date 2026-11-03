@@ -48,6 +48,24 @@ class NovaBirdIndexScheduler(
     }
 
     /**
+     * After an index run: computes vectors for the new messages without cancelling a run that is already going (with
+     * many syncs in a row, replacing would restart it again and again, so it never finished). The running run works
+     * through the whole queue, new messages included.
+     */
+    fun continueVectors() {
+        val request = OneTimeWorkRequestBuilder<NovaBirdVectorWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresStorageNotLow(true)
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiresCharging(vectorsOnlyWhileCharging())
+                    .build(),
+            )
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_VECTORS, ExistingWorkPolicy.KEEP, request)
+    }
+
+    /**
      * Periodic fallback (e.g. after sync from other code paths), and a daily vector run while charging (the phone catches
      * up there if the Helper has been away for a day).
      */
