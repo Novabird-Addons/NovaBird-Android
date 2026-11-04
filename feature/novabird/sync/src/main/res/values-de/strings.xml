@@ -9,10 +9,22 @@
     <string name="novabird_sync_settings_size_kib">%d KB</string>
     <string name="novabird_sync_settings_size_mib">%d MB</string>
     <string name="novabird_sync_import_title">E-Mails abrufen</string>
-    <string name="novabird_sync_import_intro">Wie weit zurück und wie viele Mails soll NovaBird für die importierten Konten laden? Die Werte vom PC sind oft klein (z. B. 25 Mails). Später änderbar in den Kontoeinstellungen unter „E-Mails abrufen“.</string>
+    <string name="novabird_sync_import_intro">Einstellungen für die importierten Konten. Die Werte vom PC passen oft nicht zum Handy (z. B. nur 25 Mails, keine Benachrichtigung). Alles ist später in den Kontoeinstellungen änderbar.</string>
     <string name="novabird_sync_import_period">Mails synchronisieren ab</string>
     <string name="novabird_sync_import_count">Anzahl der Nachrichten</string>
     <string name="novabird_sync_import_done">Fertig</string>
+    <string name="novabird_sync_import_full">Jetzt alle Mails laden</string>
+    <string name="novabird_sync_import_full_all">Alle Ordner (außer Papierkorb und Spam)</string>
+    <string name="novabird_sync_import_full_inbox">Nur Posteingang</string>
+    <string name="novabird_sync_import_full_none">Nicht jetzt</string>
+    <string name="novabird_sync_import_no_password">Erst nach Eintragen des Passworts (Kontoeinstellungen, Posteingangsserver). Danach unter „E-Mails abrufen“ starten.</string>
+    <string name="novabird_sync_import_phone_header">Auf diesem Handy: %s</string>
+    <string name="novabird_sync_import_notify">Neue Mails melden</string>
+    <string name="novabird_sync_import_notify_note">Die Einstellung vom PC gilt hier nicht: Ohne sie zeigt Android keine Benachrichtigung.</string>
+    <string name="novabird_sync_import_push">Neue Mails sofort (Push)</string>
+    <string name="novabird_sync_import_push_note">Hält eine Verbindung zum Server offen. Android verlangt dafür eine ständige Benachrichtigung; sie lässt sich ausblenden (lange antippen, diese Art Benachrichtigung aus).</string>
+    <string name="novabird_sync_import_background">Hintergrundaktivität erlauben</string>
+    <string name="novabird_sync_import_background_note">Sonst stoppt Android NovaBird nach einer Weile im Hintergrund, und neue Mails kommen erst beim Öffnen der App. Manche Hersteller (z. B. OPPO, Xiaomi) haben zusätzlich eine eigene Einstellung unter App-Infos → Akku.</string>
     <string name="novabird_sync_import_period_1_month">dem letzten Monat</string>
     <string name="novabird_sync_import_period_3_months">den letzten 3 Monaten</string>
     <string name="novabird_sync_import_period_6_months">den letzten 6 Monaten</string>
@@ -29,9 +41,10 @@
         <item quantity="other">%d Nachrichten</item>
     </plurals>
     <string name="novabird_sync_full_title">Alle Mails abrufen</string>
-    <string name="novabird_sync_full_description">Lädt alle Mails dieses Kontos am Stück, mit Zeitraum und Anzahl aus den Kontoeinstellungen. Nur im WLAN.</string>
+    <string name="novabird_sync_full_description">Lädt alle Mails dieses Kontos am Stück, mit Zeitraum und Anzahl aus den Kontoeinstellungen. Nur im WLAN. „Alle Ordner“ schaltet dabei den Abgleich für alle Ordner außer Papierkorb und Spam ein.</string>
     <string name="novabird_sync_full_note">Läuft mit einer Benachrichtigung, auch bei ausgeschaltetem Display. Fällt das WLAN weg, geht es später von selbst weiter. Android erlaubt das etwa 6 Stunden am Tag; ist es bis dahin nicht fertig, einfach noch einmal starten.</string>
-    <string name="novabird_sync_full_start">Jetzt alle Mails abrufen</string>
+    <string name="novabird_sync_full_start">Alle Ordner abrufen</string>
+    <string name="novabird_sync_full_start_inbox">Nur Posteingang</string>
     <string name="novabird_sync_full_stop">Stopp</string>
     <string name="novabird_sync_full_waiting">Wartet auf WLAN …</string>
     <string name="novabird_sync_full_preparing">Ordnerliste wird geholt …</string>

@@ -23,13 +23,23 @@ sealed interface FullSyncState {
     data class Failed(val reason: String?) : FullSyncState
 }
 
+/** Which folders a full sync loads. */
+enum class FullSyncScope {
+    /** the folders that are synchronized anyway (for a new account only the inbox) */
+    SYNCED,
+    INBOX,
+
+    /** first switches synchronization on for all folders except trash and spam ([AccountFolderSetup]) */
+    ALL,
+}
+
 /** Starts, stops and observes the full sync ([FullSyncWorker]) of an account; one at a time per account. */
 class FullSyncScheduler(private val workManager: WorkManager) {
     /** Starts the full sync of the account (only on Wi-Fi); does nothing if it is already waiting or running. */
-    fun start(accountUuid: String) {
+    fun start(accountUuid: String, scope: FullSyncScope = FullSyncScope.SYNCED) {
         val request = OneTimeWorkRequestBuilder<FullSyncWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.UNMETERED).build())
-            .setInputData(workDataOf(ARG_ACCOUNT_UUID to accountUuid))
+            .setInputData(workDataOf(ARG_ACCOUNT_UUID to accountUuid, ARG_SCOPE to scope.name))
             .addTag(TAG)
             .build()
         workManager.enqueueUniqueWork(workName(accountUuid), ExistingWorkPolicy.KEEP, request)
@@ -70,6 +80,7 @@ class FullSyncScheduler(private val workManager: WorkManager) {
 
         internal const val KEY_ERROR = "error"
         internal const val ARG_ACCOUNT_UUID = "accountUuid"
+        internal const val ARG_SCOPE = "scope"
         internal const val KEY_FOLDER_INDEX = "folderIndex"
         internal const val KEY_FOLDER_COUNT = "folderCount"
         internal const val KEY_FOLDER_NAME = "folderName"

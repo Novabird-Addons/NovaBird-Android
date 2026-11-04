@@ -15,6 +15,7 @@ import org.novabird.feature.sync.backfill.PartialMessageBackfillScheduler
 import org.novabird.feature.sync.backfill.PartialMessageBackfiller
 import org.novabird.feature.sync.backfill.PartialMessageFinder
 import org.novabird.feature.sync.backfill.WorkManagerBackfillWorkEnqueuer
+import org.novabird.feature.sync.fullsync.AccountFolderSetup
 import org.novabird.feature.sync.fullsync.FullSyncScheduler
 import org.novabird.feature.sync.limit.AndroidNetworkState
 import org.novabird.feature.sync.limit.NetworkAwareSyncDownloadLimitProvider
@@ -58,6 +59,7 @@ val novaBirdSyncModule = module {
     single { PartialMessageBackfillScheduler(enqueuer = get()) }
 
     single { FullSyncScheduler(workManager = get()) }
+    single { AccountFolderSetup(localStoreProvider = get(), messageStoreManager = get()) }
 
     viewModel {
         SyncLimitSettingsViewModel(

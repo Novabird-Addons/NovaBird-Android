@@ -9,10 +9,22 @@
     <string name="novabird_sync_settings_size_kib">%d KB</string>
     <string name="novabird_sync_settings_size_mib">%d MB</string>
     <string name="novabird_sync_import_title">Fetching mail</string>
-    <string name="novabird_sync_import_intro">How far back and how many messages should NovaBird load for the imported accounts? The values from the PC are often small (e.g. 25 messages). You can change this later in the account settings under "Fetching mail".</string>
+    <string name="novabird_sync_import_intro">Settings for the imported accounts. The values from the PC often do not suit the phone (e.g. only 25 messages, no notifications). Everything can be changed later in the account settings.</string>
     <string name="novabird_sync_import_period">Sync messages from</string>
     <string name="novabird_sync_import_count">Number of messages</string>
     <string name="novabird_sync_import_done">Done</string>
+    <string name="novabird_sync_import_full">Load all messages now</string>
+    <string name="novabird_sync_import_full_all">All folders (except trash and spam)</string>
+    <string name="novabird_sync_import_full_inbox">Inbox only</string>
+    <string name="novabird_sync_import_full_none">Not now</string>
+    <string name="novabird_sync_import_no_password">Only after the password is entered (account settings, incoming server). Then start it under "Fetching mail".</string>
+    <string name="novabird_sync_import_phone_header">On this phone: %s</string>
+    <string name="novabird_sync_import_notify">Notify about new messages</string>
+    <string name="novabird_sync_import_notify_note">The setting from the PC does not count here: without it Android shows no notification.</string>
+    <string name="novabird_sync_import_push">New messages right away (push)</string>
+    <string name="novabird_sync_import_push_note">Keeps a connection to the server open. Android requires a permanent notification for it; you can hide it (long press, turn off this kind of notification).</string>
+    <string name="novabird_sync_import_background">Allow background activity</string>
+    <string name="novabird_sync_import_background_note">Otherwise Android stops NovaBird in the background after a while, and new messages only arrive when you open the app. Some makers (e.g. OPPO, Xiaomi) have an extra setting under App info, Battery.</string>
     <string name="novabird_sync_import_period_1_month">the last month</string>
     <string name="novabird_sync_import_period_3_months">the last 3 months</string>
     <string name="novabird_sync_import_period_6_months">the last 6 months</string>
@@ -29,9 +41,10 @@
         <item quantity="other">%d messages</item>
     </plurals>
     <string name="novabird_sync_full_title">Load all messages</string>
-    <string name="novabird_sync_full_description">Loads all messages of this account in one go, with the period and number of messages from the account settings. Only on Wi-Fi.</string>
+    <string name="novabird_sync_full_description">Loads all messages of this account in one go, with the period and number of messages from the account settings. Only on Wi-Fi. "All folders" also switches synchronization on for every folder except trash and spam.</string>
     <string name="novabird_sync_full_note">Runs with a notification, also with the screen off. If Wi-Fi goes away, it continues later on its own. Android allows this for about 6 hours a day; if it is not done by then, just start it again.</string>
-    <string name="novabird_sync_full_start">Load all messages now</string>
+    <string name="novabird_sync_full_start">Load all folders</string>
+    <string name="novabird_sync_full_start_inbox">Inbox only</string>
     <string name="novabird_sync_full_stop">Stop</string>
     <string name="novabird_sync_full_waiting">Waiting for Wi-Fi …</string>
     <string name="novabird_sync_full_preparing">Getting the folder list …</string>

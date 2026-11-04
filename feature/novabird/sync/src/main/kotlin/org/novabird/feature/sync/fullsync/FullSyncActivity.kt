@@ -57,7 +57,7 @@ class FullSyncActivity : BaseActivity() {
                 FullSyncScreen(
                     accountName = account.displayName,
                     state = state,
-                    onStart = { scheduler.start(accountUuid) },
+                    onStart = { scope -> scheduler.start(accountUuid, scope) },
                     onStop = { scheduler.stop(accountUuid) },
                     onBack = { finish() },
                 )
@@ -77,7 +77,7 @@ class FullSyncActivity : BaseActivity() {
 private fun FullSyncScreen(
     accountName: String,
     state: FullSyncState,
-    onStart: () -> Unit,
+    onStart: (FullSyncScope) -> Unit,
     onStop: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -104,7 +104,14 @@ private fun FullSyncScreen(
             if (state is FullSyncState.Waiting || state is FullSyncState.Running) {
                 ButtonOutlined(text = stringResource(R.string.novabird_sync_full_stop), onClick = onStop)
             } else {
-                ButtonFilled(text = stringResource(R.string.novabird_sync_full_start), onClick = onStart)
+                ButtonFilled(
+                    text = stringResource(R.string.novabird_sync_full_start),
+                    onClick = { onStart(FullSyncScope.ALL) },
+                )
+                ButtonOutlined(
+                    text = stringResource(R.string.novabird_sync_full_start_inbox),
+                    onClick = { onStart(FullSyncScope.INBOX) },
+                )
             }
         }
     }

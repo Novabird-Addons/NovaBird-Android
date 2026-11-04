@@ -128,7 +128,7 @@ const DE = {
   opt_folders_hint: 'Zum Beispiel deine gesammelten Spam- oder Phishing-Mails: Sonst gelten deren Absender irgendwann als „bekannt“. Als Spam markierte Mails sowie die Ordner Junk und Papierkorb zählen ohnehin nie. Nach dem Speichern wird die Historie neu aufgebaut.',
   opt_folders_error: 'Ordner konnten nicht gelesen werden: {0}',
   opt_authserv: 'Eigene Mailserver (authserv-id, eine pro Zeile)',
-  opt_authserv_hint: 'Nur <code>Authentication-Results</code> dieser Server werden ausgewertet. Leer = jeweils der oberste Header.',
+  opt_authserv_hint: 'Nur <code>Authentication-Results</code> dieser Server werden ausgewertet. Leer = wird je Konto aus neuen Mails gelernt (bis dahin der oberste Header).',
   opt_own: 'Eigene / wichtige Domains (eine pro Zeile)',
   opt_own_hint: 'Ähnliche Domains werden als Nachahmung gemeldet.',
   opt_trusted: 'Vertraute Absender',
@@ -164,6 +164,11 @@ const DE = {
   onb_save: 'Übernehmen',
   onb_more: 'Weitere Einstellungen',
   onb_saved: 'Gespeichert.',
+  disc_title: 'Wichtig – bitte lesen',
+  disc_p1: 'Dieser Filter soll dich vor bösartigen Mails schützen. Er prüft neue und geöffnete Mails nach Regeln, auf diesem Rechner – auf Wunsch mit deiner eigenen KI.',
+  disc_p2: 'Der Filter arbeitet nach bestem Wissen, ist aber keineswegs perfekt. Er kann eine gefährliche Mail übersehen und vor einer harmlosen warnen. Eine fehlende Warnung ist keine Garantie, dass eine Mail sicher ist.',
+  disc_p3: 'Die Nutzung erfolgt auf eigene Verantwortung. Was du mit einer Mail machst – einen Link öffnen, antworten, einen Anhang laden oder öffnen, bezahlen – bleibt deine eigene Entscheidung und deine eigene Verantwortung.',
+  disc_check: 'Ich habe das gelesen und verstanden.',
 };
 const EN = {
   sig_dmarcFail: 'Sender authentication (DMARC) failed – the mail probably does not come from the stated sender.',
@@ -294,7 +299,7 @@ const EN = {
   opt_folders_hint: 'For example your collected spam or phishing mail – otherwise those senders would eventually count as “known”. Mail marked as junk and the Junk and Trash folders never count. Saving rebuilds the history.',
   opt_folders_error: 'Could not read folders: {0}',
   opt_authserv: 'Own mail servers (authserv-id, one per line)',
-  opt_authserv_hint: 'Only <code>Authentication-Results</code> from these servers are used. Empty = the topmost header.',
+  opt_authserv_hint: 'Only <code>Authentication-Results</code> from these servers are used. Empty = learned per account from new mail (until then the topmost header).',
   opt_own: 'Own / important domains (one per line)',
   opt_own_hint: 'Similar-looking domains are reported as impersonation.',
   opt_trusted: 'Trusted senders',
@@ -330,6 +335,11 @@ const EN = {
   onb_save: 'Apply',
   onb_more: 'More settings',
   onb_saved: 'Saved.',
+  disc_title: 'Important – please read',
+  disc_p1: 'This filter is meant to protect you from malicious mail. It checks new and opened messages by rules, on this computer – optionally with your own AI.',
+  disc_p2: 'The filter works to the best of its knowledge but is by no means perfect. It can miss a dangerous mail, and it can warn about a harmless one. A missing warning is not a guarantee that a mail is safe.',
+  disc_p3: 'You use it at your own risk. Whatever you do with a mail — open a link, reply, download or open an attachment, pay — remains your own decision and your own responsibility.',
+  disc_check: 'I have read and understood this.',
 };
 const DICTS = { de: DE, en: EN };
 

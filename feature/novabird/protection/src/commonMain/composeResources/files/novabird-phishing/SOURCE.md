@@ -1,8 +1,9 @@
 # Herkunft
 
-Unveränderte Kopie des Prüfkerns aus dem Thunderbird-Add-on „Novabird-phishing“ 0.9.1 (MIT, Arbeitsstand), Fork unter
-`C:\Claude\NovaBird-Android\phishing`, Branch `novabird/android`, Commit `9035a01adb0be44b86babfa2bffd825ebbbb030d`
-(Add-on 0.9.1 vom 02.11.2026; im Fork nur persönliche Daten in einem Kommentar und einem Test durch Platzhalter ersetzt).
+Unveränderte Kopie des Prüfkerns aus dem Thunderbird-Add-on „Novabird-phishing“ 0.9.1 (MIT), Repo
+`Novabird-Addons/Phishing`, Branch `main`, Commit `bacb347` (Release 0.9.1, 04.11.2026: lineare HTML-Prüfung, lange
+Anzeigenamen gekürzt, Bank-Eintrag entfernt). Ausnahme: `lib/authserv.js` (Lernen der authserv-id je Konto) ist in Kotlin
+nachgebaut (`ProtectionStore.countAuthserv`, gleiche Grenzen); dessen Test fehlt daher in `analyzer.test.js`.
 
 Mitgeliefert: `source/src/lib/` ohne die Dateien, die an Thunderbird oder am Browser hängen, dazu `source/src/data/brands.js`,
 `source/src/data/banks-wikidata.js` (Wikidata, CC0) und `source/src/i18n.js` (Texte der Signale, DE/EN).

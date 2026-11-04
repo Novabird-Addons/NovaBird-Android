@@ -45,9 +45,14 @@ class FullSyncWorker(
     private val channels: NotificationChannelManager by inject()
     private val icons: NotificationResourceProvider by inject()
     private val backfillScheduler: PartialMessageBackfillScheduler by inject()
+    private val folderSetup: AccountFolderSetup by inject()
     private val logger: Logger by inject()
 
     private val accountUuid get() = requireNotNull(inputData.getString(FullSyncScheduler.ARG_ACCOUNT_UUID))
+    private val scope
+        get() = inputData.getString(FullSyncScheduler.ARG_SCOPE)
+            ?.let { id -> FullSyncScope.entries.firstOrNull { it.name == id } }
+            ?: FullSyncScope.SYNCED
 
     @Volatile
     private var progress = FullSyncProgress()
@@ -61,7 +66,10 @@ class FullSyncWorker(
 
         // the account may have been set up a moment ago: get the folder list first
         controller.refreshFolderListBlocking(account)
-        val folders = syncedFolders(account)
+        // the folder list may have set the special folders (inbox, trash, spam)
+        val current = preferences.getAccount(accountUuid) ?: account
+        if (scope == FullSyncScope.ALL) folderSetup.enableSyncForAllFolders(current)
+        val folders = syncedFolders(current, inboxOnly = scope == FullSyncScope.INBOX)
         if (folders.isEmpty()) {
             return@withContext Result.failure(
                 workDataOf(FullSyncScheduler.KEY_ERROR to FullSyncScheduler.ERROR_NO_FOLDERS),
@@ -94,12 +102,13 @@ class FullSyncWorker(
         return foregroundInfo(account?.displayName.orEmpty(), account?.accountNumber ?: 0)
     }
 
-    private fun syncedFolders(account: LegacyAccountDto): List<FolderToSync> {
+    private fun syncedFolders(account: LegacyAccountDto, inboxOnly: Boolean): List<FolderToSync> {
         val localStore = localStoreProvider.getInstance(account)
         return localStore.getPersonalNamespaces(false).mapNotNull { folder ->
             folder.open()
             // like the normal mail check: only folders that are shown and synchronized
-            if (folder.isLocalOnly || !folder.isVisible || !folder.isSyncEnabled) {
+            val synced = !folder.isLocalOnly && folder.isVisible && folder.isSyncEnabled
+            if (!synced || (inboxOnly && folder.databaseId != account.inboxFolderId)) {
                 null
             } else {
                 FolderToSync(folder.serverId, folder.name ?: folder.serverId)
