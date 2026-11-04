@@ -120,6 +120,23 @@ class SemanticIndex(
         return stats()
     }
 
+    /** After an index run: drops vectors and queued texts of messages that are no longer in any indexed folder. */
+    suspend fun removeOrphans() {
+        val removed = core.engine().withMainDatabase { db ->
+            ORPHAN_TABLES.sumOf { table ->
+                db.execute(
+                    "DELETE FROM $table WHERE NOT EXISTS " +
+                        "(SELECT 1 FROM messages m WHERE m.header_msg_id = $table.header_msg_id)",
+                    NONE,
+                )
+            }
+        }
+        if (removed > 0) {
+            memoryLock.withLock { memory = null }
+            logger.info(TAG) { "Vectors of deleted messages removed: $removed" }
+        }
+    }
+
     override suspend fun recollectTexts() {
         core.engine().withMainDatabase { db ->
             db.execute("DELETE FROM nb_meta WHERE key = ?", JsonArray(listOf(JsonPrimitive(META_TEXT_VERSION))))
@@ -266,6 +283,7 @@ class SemanticIndex(
         private const val SQL_CHUNK = 500
         private const val INT8_MAX = 127f
         private val NONE = JsonArray(emptyList())
+        private val ORPHAN_TABLES = listOf("nb_vectors", "nb_vec_queue")
 
         /** int8 with one scale per vector: v ≈ q * scale. */
         internal fun quantize(v: FloatArray): Pair<Double, ByteArray> {

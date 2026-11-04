@@ -59,12 +59,12 @@ constructor(
 
     /**
      * Semantic search as `semanticAugment` in NovaBird-Search: messages similar by meaning are added to the keyword hits
-     * (relevance: both rankings fused like `fuseRanks`, otherwise appended). Only for plain text queries for now: chips like
-     * sender, date or attachment would have to filter the similar messages too.
+     * (relevance: both rankings fused like `fuseRanks`, otherwise appended). Chips like sender, date or attachment filter
+     * the similar messages with the same conditions as the keyword hits.
      */
     override suspend fun addSimilar(text: String, result: SearchResult, options: SearchOptions): SearchResult {
         val index = semanticIndex ?: return result
-        if (result.isEmptyQuery || result.chips.any { it.kind != "text" }) return result
+        if (result.isEmptyQuery) return result
         val query = SemanticIndex.freeText(text)
         if (query.length < MIN_SEMANTIC_QUERY) return result
         val similar = index.similar(query, limit = SEMANTIC_LIMIT * 3) ?: return result
@@ -72,9 +72,15 @@ constructor(
 
         val score = similar.toMap()
         val have = result.hits.mapTo(HashSet()) { it.headerMessageId }
-        val extraRows = core.engine().withMainDatabase { db ->
-            db.similarRows(similar.map { it.first }.filterNot { it in have }, options.includeTrash)
-        }.sortedByDescending { score[it.text("header_msg_id")] ?: 0.0 }.take(SEMANTIC_LIMIT)
+        val candidates = similar.map { it.first }.filterNot { it in have }
+        val ids = if (result.chips.any { it.kind != "text" }) {
+            allowedByFilters(result.parsedQuery, candidates, options)
+        } else {
+            candidates
+        }
+        val extraRows = core.engine().withMainDatabase { db -> db.similarRows(ids, options.includeTrash) }
+            .sortedByDescending { score[it.text("header_msg_id")] ?: 0.0 }
+            .take(SEMANTIC_LIMIT)
         if (extraRows.isEmpty()) return result
         val locations = core.engine().withMainDatabase { db -> db.locationsOf(extraRows) }
         val extras = extraRows.map { row ->
@@ -90,6 +96,14 @@ constructor(
             (result.hits + extras).sortedByDescending { it.date }
         }
         return result.copy(hits = hits, similarCount = extras.size)
+    }
+
+    private suspend fun allowedByFilters(parsedQuery: String, ids: List<String>, options: SearchOptions): List<String> {
+        if (ids.isEmpty()) return ids
+        val idsJson = JsonArray(ids.map(::JsonPrimitive)).toString()
+        val json = core.engine().call("filterIds", parsedQuery, idsJson, optionsJson(options))
+        val allowed = Json.parseToJsonElement(checkNotNull(json)).jsonArray.map { it.jsonPrimitive.content }.toSet()
+        return ids.filter { it in allowed }
     }
 
     private fun SearchIndexDatabase.similarRows(ids: List<String>, includeTrash: Boolean): List<JsonObject> {

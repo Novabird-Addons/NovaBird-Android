@@ -3,5 +3,9 @@
 <resources>
     <color name="nb_status_ok">#81C995</color>
     <color name="nb_status_warn">#FFB86C</color>
+    <!-- phishing protection: "gefährlich" badge, "Vorsicht" banner (dark amber box, light text) -->
+    <color name="nb_status_danger">#F2B8B5</color>
+    <color name="nb_protect_caution_bg">#4A3500</color>
+    <color name="nb_protect_caution_fg">#FFDEA8</color>
     <color name="nb_status_spam">#9CA3AF</color>
 </resources>

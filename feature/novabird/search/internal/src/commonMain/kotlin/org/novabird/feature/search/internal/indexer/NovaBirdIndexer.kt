@@ -50,6 +50,8 @@ class NovaBirdIndexer(
             }
         }
         removed += removeAccountsExcept(accounts.map { it.uuid }.toSet())
+        // after all accounts, so a message moved to another folder keeps its vector
+        semanticIndex?.removeOrphans()
 
         val total = engine.withMainDatabase { db ->
             db.select("SELECT count(*) FROM messages", JsonArray(emptyList())).single().jsonArray[0].jsonPrimitive.long
