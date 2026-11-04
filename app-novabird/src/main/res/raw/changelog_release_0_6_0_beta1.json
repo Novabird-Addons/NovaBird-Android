@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.0-beta1",
+  "versioncode": 60001,
+  "date": "2026-11-04",
+  "notes": [
+    {
+      "type": "new",
+      "text": "Load the whole mailbox in one go (all folders or only the inbox), on Wi-Fi with progress, also with the screen off; starts by itself after setting up an account"
+    },
+    {
+      "type": "new",
+      "text": "After an import (QR code or file): period, number of messages, notifications, push and background activity for each account on one page"
+    },
+    {
+      "type": "new",
+      "text": "Setup wizard asks to allow background activity, so new mail keeps arriving"
+    },
+    {
+      "type": "new",
+      "text": "Name of this device for NovaBird Helper"
+    },
+    {
+      "type": "new",
+      "text": "Marking a mail as spam puts the sender on the blocked list of the spam detection"
+    },
+    {
+      "type": "fixed",
+      "text": "\"All messages\" kept loading only about 100 messages per folder"
+    },
+    {
+      "type": "fixed",
+      "text": "Phishing check of very large HTML mails is fast again (phishing core 0.9.1)"
+    }
+  ]
+}
