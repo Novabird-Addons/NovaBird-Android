@@ -5,9 +5,11 @@ import app.k9mail.feature.account.setup.AccountSetupExternalContract.MessageDisp
 import app.k9mail.feature.account.setup.AccountSetupExternalContract.SyncPeriodProvider
 import app.k9mail.feature.account.setup.domain.entity.EmailDisplayCount
 import app.k9mail.feature.account.setup.domain.entity.EmailSyncPeriod
+import net.thunderbird.app.common.account.NewAccountHook
 import net.thunderbird.core.android.account.AccountDefaultsProvider
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import org.novabird.feature.sync.fullsync.FullSyncScheduler
 
 internal val novaBirdAccountModule = module {
     single<AccountDefaultsProvider>(named("app")) {
@@ -29,5 +31,11 @@ internal val novaBirdAccountModule = module {
     // ... and whether new mail in the inbox should come right away via push (user decision: ask, preselected on)
     single<InboxPushProvider>(named("app")) {
         InboxPushProvider { true }
+    }
+
+    // a new account loads its whole mailbox in one go (user decision; waits for Wi-Fi, progress in a notification)
+    single<NewAccountHook> {
+        val fullSync = get<FullSyncScheduler>()
+        NewAccountHook { accountUuid -> fullSync.start(accountUuid) }
     }
 }

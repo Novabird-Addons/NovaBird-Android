@@ -127,6 +127,19 @@ class ProtectionService(
         return true
     }
 
+    /**
+     * Thunderbird's own "Spam" action: the senders go onto the blocked list (and off the allowed one), so their next
+     * mails are moved too. Only while spam detection is on; contacts and people the user wrote to still win.
+     */
+    suspend fun blockSenders(senders: Collection<String>) {
+        if (!settings.enabled || !settings.spam.enabled) return
+        val addresses = senders.map { it.trim().lowercase() }.filter { '@' in it }.distinct()
+        if (addresses.isEmpty()) return
+        updateSpam { spam ->
+            spam.copy(blocked = (spam.blocked + addresses).distinct(), allowed = spam.allowed - addresses.toSet())
+        }
+    }
+
     fun updateScanImages(on: Boolean) = settings.updateScanImages(on)
 
     /** Reads contacts and the sender history again on the next check (e.g. after the contacts permission was granted). */

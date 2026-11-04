@@ -583,6 +583,21 @@ class ProtectionServiceTest {
     }
 
     @Test
+    fun `marking as spam by hand blocks the sender, but only while spam detection is on`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        service.blockSenders(listOf("news@werbung.example"))
+        assertThat(settings.spam.blocked).isEqualTo(emptyList())
+
+        settings.spam = SpamSettings(enabled = true, allowed = listOf("news@werbung.example"))
+        service.blockSenders(listOf(" News@Werbung.example ", "news@werbung.example", "kaputt"))
+
+        assertThat(settings.spam.blocked).isEqualTo(listOf("news@werbung.example"))
+        assertThat(settings.spam.allowed).isEqualTo(emptyList())
+        mail(1, "Angebote <news@werbung.example>", "Nur heute")
+        assertThat(service.verdictOnOpen(account.uuid, 1)?.spam?.reason).isEqualTo(SpamReason.BLOCKED)
+    }
+
+    @Test
     fun `extras survive a round trip through JSON`() {
         val extras = MailExtras(listOf("https://a.example/"), mapOf("logo" to "Text"), ocrDone = false)
 

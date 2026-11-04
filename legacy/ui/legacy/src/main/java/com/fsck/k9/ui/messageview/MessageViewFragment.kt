@@ -45,6 +45,7 @@ import com.fsck.k9.activity.MessageLoaderHelper
 import com.fsck.k9.activity.MessageLoaderHelper.MessageLoaderCallbacks
 import com.fsck.k9.activity.MessageLoaderHelperFactory
 import com.fsck.k9.activity.compose.MessageActions
+import com.fsck.k9.controller.ManualSpamHook
 import com.fsck.k9.controller.MessagingController
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment
 import com.fsck.k9.fragment.ConfirmationDialogFragment
@@ -121,6 +122,7 @@ class MessageViewFragment :
     private val messageLoaderHelperFactory: MessageLoaderHelperFactory by inject()
     private val accountManager: LegacyAccountDtoManager by inject()
     private val messageViewHook: MessageViewHook? by lazy { getKoin().getOrNull() }
+    private val manualSpamHook: ManualSpamHook? by lazy { getKoin().getOrNull() }
     private val messagingController: MessagingController by inject()
     private val attachmentLoadingController: AttachmentLoadingController by inject()
     private val shareIntentBuilder: ShareIntentBuilder by inject()
@@ -712,6 +714,7 @@ class MessageViewFragment :
         fragmentListener.performNavigationAfterMessageRemoval()
 
         val sourceFolderId = messageReference.folderId
+        if (destinationFolderId == account.spamFolderId) manualSpamHook?.onMarkedAsSpam(listOf(messageReference))
         messagingController.moveMessage(account, sourceFolderId, messageReference, destinationFolderId)
     }
 

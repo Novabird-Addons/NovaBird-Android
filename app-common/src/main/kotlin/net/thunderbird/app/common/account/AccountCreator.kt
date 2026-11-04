@@ -42,6 +42,7 @@ internal class AccountCreator(
     private val avatarMonogramCreator: AvatarMonogramCreator,
     private val unifiedInboxConfigurator: UnifiedInboxConfigurator,
     private val messageStoreManager: MessageStoreManager? = null,
+    private val newAccountHook: NewAccountHook? = null,
     private val coroutineDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AccountSetupExternalContract.AccountCreator {
 
@@ -111,6 +112,8 @@ internal class AccountCreator(
         if (account.options.checkFrequencyInMinutes == -1) {
             messagingController.checkMail(newAccount, false, true, false, null)
         }
+
+        newAccountHook?.onAccountCreated(newAccount.uuid)
 
         return newAccount.uuid
     }

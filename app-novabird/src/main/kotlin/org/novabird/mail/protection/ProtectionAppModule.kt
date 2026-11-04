@@ -1,5 +1,6 @@
 package org.novabird.mail.protection
 
+import com.fsck.k9.controller.ManualSpamHook
 import com.fsck.k9.ui.MessageLinkGate
 import com.fsck.k9.ui.MessageListItemDecorator
 import com.fsck.k9.ui.MessageViewHook
@@ -19,6 +20,13 @@ internal val novaBirdProtectionAppModule = module {
     single<SpamMover> { K9SpamMover(preferences = get(), messagingController = get(), notifications = get()) }
     single<MessageViewHook> { ProtectionMessageViewHook(service = get()) }
     single<MessageLinkGate> { ProtectionLinkGate() }
+    single<ManualSpamHook> {
+        ProtectionSpamHook(
+            service = get(),
+            messageStoreManager = get(),
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        )
+    }
     single<MessageListItemDecorator> {
         ProtectionListDecorator(service = get(), scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate))
     }

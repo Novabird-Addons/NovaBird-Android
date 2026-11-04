@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.IBinder
 import app.k9mail.legacy.message.controller.MessageReference
 import com.fsck.k9.Preferences
+import com.fsck.k9.controller.ManualSpamHook
 import com.fsck.k9.controller.MessageReferenceHelper
 import com.fsck.k9.controller.MessagingController
 import kotlinx.coroutines.CoroutineScope
@@ -14,6 +15,7 @@ import net.thunderbird.core.android.account.LegacyAccountDto
 import net.thunderbird.core.common.mail.Flag
 import net.thunderbird.legacy.logging.Log
 import net.thunderbird.core.preference.interaction.InteractionSettingsPreferenceManager
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.core.qualifier.named
 
@@ -23,6 +25,7 @@ class NotificationActionService : Service() {
     private val coroutineScope: CoroutineScope by inject(named("AppCoroutineScope"))
     private val interactionPreferences: InteractionSettingsPreferenceManager by inject()
     private val interactionSettings get() = interactionPreferences.getConfig()
+    private val manualSpamHook: ManualSpamHook? by lazy { getKoin().getOrNull() }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.i("NotificationActionService started with startId = %d", startId)
@@ -118,6 +121,7 @@ class NotificationActionService : Service() {
 
         if (!interactionSettings.isConfirmSpam && messagingController.isMoveCapable(account)) {
             val sourceFolderId = messageReference.folderId
+            manualSpamHook?.onMarkedAsSpam(listOf(messageReference))
             messagingController.moveMessage(account, sourceFolderId, messageReference, spamFolderId)
         }
     }

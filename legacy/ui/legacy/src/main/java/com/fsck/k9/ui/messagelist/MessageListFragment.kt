@@ -83,6 +83,7 @@ import app.k9mail.legacy.ui.folder.FolderNameFormatter
 import com.fsck.k9.K9
 import com.fsck.k9.activity.FolderInfoHolder
 import com.fsck.k9.activity.MessageSearchActivity
+import com.fsck.k9.controller.ManualSpamHook
 import com.fsck.k9.controller.MessagingControllerWrapper
 import com.fsck.k9.fragment.ConfirmationDialogFragment
 import com.fsck.k9.fragment.ConfirmationDialogFragment.ConfirmationDialogFragmentListener
@@ -170,6 +171,7 @@ import net.thunderbird.feature.notification.api.ui.dialog.ErrorNotificationsDial
 import net.thunderbird.feature.search.legacy.LocalMessageSearch
 import net.thunderbird.feature.search.legacy.SearchAccount
 import net.thunderbird.feature.search.legacy.serialization.LocalMessageSearchSerializer
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
@@ -210,6 +212,7 @@ class MessageListFragment :
     private val recentChangesViewModel: RecentChangesViewModel by viewModel()
 
     private val generalSettingsManager: GeneralSettingsManager by inject()
+    private val manualSpamHook: ManualSpamHook? by lazy { getKoin().getOrNull() }
     private val sortTypeToastProvider: SortTypeToastProvider by inject()
     private val folderNameFormatter: FolderNameFormatter by inject { parametersOf(requireContext()) }
     private val messagingController: MessagingControllerWrapper by inject()
@@ -1513,6 +1516,7 @@ class MessageListFragment :
     }
 
     private fun onSpamConfirmed(messages: List<MessageReference>) {
+        manualSpamHook?.onMarkedAsSpam(messages)
         for ((account, messagesInAccount) in groupMessagesByAccount(messages)) {
             account.spamFolderId?.let { spamFolderId ->
                 move(messagesInAccount, spamFolderId)

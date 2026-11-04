@@ -120,6 +120,7 @@ internal val appCommonAccountModule = module {
             avatarMonogramCreator = get(),
             unifiedInboxConfigurator = get(),
             messageStoreManager = get(),
+            newAccountHook = getOrNull(),
         )
     }
 }
