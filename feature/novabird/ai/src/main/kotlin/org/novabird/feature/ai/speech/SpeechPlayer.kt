@@ -28,6 +28,7 @@ import org.novabird.feature.ai.AiVectorBackend
 import org.novabird.feature.ai.settings.AiSettingsRepository
 import org.novabird.feature.vectors.HelperClient
 import org.novabird.feature.vectors.ai.AiText
+import org.novabird.feature.vectors.ai.SpeechChunks
 import org.novabird.feature.vectors.ai.SpokenText
 
 /**
@@ -61,7 +62,7 @@ class SpeechPlayer(
     /** Starts reading [text] (language code [lang], e.g. "de"); [key] names what is read (shown by the screens). */
     fun speak(key: String, text: String, lang: String) {
         stop()
-        val sentences = AiText.sentences(text)
+        val sentences = SpeechChunks.quickStart(AiText.sentences(text))
         if (sentences.isEmpty()) return
         mutableState.value = State(key, Status.LOADING)
         job = scope.launch {
