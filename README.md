@@ -1,95 +1,94 @@
-# NovaBird Mail für Android
+# NovaBird Mail for Android
 
-NovaBird Mail ist ein Fork von [Thunderbird für Android](https://github.com/thunderbird/thunderbird-android)
-(Stand: Thunderbird 25.0b2). Er bringt die Funktionen des NovaBird-Add-ons für Thunderbird am PC aufs Handy und
-ergänzt Thunderbird um einige Punkte, die uns im Alltag gefehlt haben.
+NovaBird Mail is a fork of [Thunderbird for Android](https://github.com/thunderbird/thunderbird-android)
+(based on Thunderbird 25.0b2). It brings the features of the NovaBird add-on for Thunderbird on the desktop to the
+phone and adds a few things to Thunderbird that we missed in everyday use.
 
-Die Suche, der Phishing-Schutz und die KI-Texte nutzen denselben Kern wie das Add-on am PC. Rechenintensive Aufgaben
-übernimmt auf Wunsch der **NovaBird Helper** auf dem PC: Vektoren für die Suche, Zusammenfassungen und Vorlesen.
-Alles läuft im eigenen Netz, eine Cloud wird nicht verwendet.
+Search, phishing protection and the AI texts use the same core as the desktop add-on. Heavy work can be handed to the
+**NovaBird Helper** on your PC: vectors for the search, summaries and reading aloud. Everything stays in your own
+network; no cloud is involved.
 
-> **Beta.** NovaBird Mail ist noch in Entwicklung. Es läuft auf Android 14 und neuer (64 Bit).
-
-<table>
-  <tr>
-    <td><img src="docs/novabird/screenshots/search.png" width="220" alt="Suche in Alltagssprache mit Chips"></td>
-    <td><img src="docs/novabird/screenshots/phishing.png" width="220" alt="Phishing-Warnung mit Begründung"></td>
-    <td><img src="docs/novabird/screenshots/inbox.png" width="220" alt="Posteingang mit Schnellfiltern"></td>
-  </tr>
-  <tr>
-    <td align="center">Suche in Alltagssprache</td>
-    <td align="center">Phishing-Warnung</td>
-    <td align="center">Posteingang</td>
-  </tr>
-</table>
-
-## Was NovaBird gegenüber Thunderbird ändert
-
-Sortiert nach Wichtigkeit.
-
-1. **Suche in Alltagssprache.** „von Petra im März mit PDF“ wird zu Chips für Absender, Zeitraum und Anhang.
-   Ein Chip lässt sich mit einem Tipp entfernen, seine Wörter verschwinden dann auch aus dem Suchfeld. Der eigene
-   Suchindex auf dem Handy findet auch Text im Inhalt und in Anhangnamen, ohne Server.
-2. **Semantische Suche.** Findet Mails nach ihrer Bedeutung, auch ohne das genaue Wort, etwa „Kosten“ für
-   Rechnungen. Die Vektoren rechnet der NovaBird Helper auf der Grafikkarte des PCs, rund 50-mal schneller als das
-   Handy, und teilt sie mit allen Handys der Gruppe. Ohne Helper rechnet das Handy selbst, auf Wunsch nur beim Laden.
-   Die Chips filtern auch diese Treffer.
-3. **Phishing-Schutz.** Prüft Absender, Links, Anhänge und Formulierungen neuer und geöffneter Mails nach Regeln.
-   Er liest auch QR-Codes und Text in Bildern, etwa ein gefälschtes Bank-Logo als Link. Das Ergebnis erscheint als
-   Banner mit Begründung in der Mail und als Symbol in der Liste. Links in verdächtigen Mails fragen vor dem Öffnen.
-   Im Graubereich darf das Sprachmodell des Helpers eine Warnung verschärfen, aber nie abschwächen. Die Prüfung
-   läuft auf dem Handy.
-4. **Spam-Erkennung.** Feste Regeln, mit Listen für gesperrte und erlaubte Absender. Kontakte und Leute, denen du
-   geschrieben hast, gelten nie als Spam. „Als Spam markieren“ sperrt den Absender.
-5. **KI über den Helper.** Zusammenfassung einer Mail, „Was gibt's Neues?“ über die neuen Mails und Vorlesen mit
-   der Stimme des Helpers. Ist der Helper nicht erreichbar, liest die Stimme des Handys.
-6. **Ganzes Postfach am Stück laden.** Wahlweise den Posteingang oder alle Ordner, nur im WLAN, mit
-   Fortschrittsanzeige, auch bei ausgeschaltetem Bildschirm. Startet nach dem Einrichten eines Kontos von selbst.
-   Außerdem lädt „Alle Nachrichten“ jetzt wirklich alle Nachrichten. Bei Thunderbird waren es rund 100 pro Ordner.
-7. **Übernahme vom PC.** Konten lassen sich per QR-Code aus Thunderbird am PC übernehmen. Danach stellst du auf
-   einer Seite pro Konto Zeitraum, Anzahl, Benachrichtigungen, Push und Hintergrundaktivität ein.
-8. **Sync-Grenzen.** Eigene Grenzen für die Mailgröße im mobilen Netz und im WLAN, statt einer festen Größe pro
-   Konto.
-9. **Einrichtungsassistent.** Fragt nach Zeitraum (bis zu zwei Jahre oder alles), Anzahl, Push für den Posteingang
-   und Hintergrundaktivität, damit neue Mails auch nach längerer Pause ankommen. Die Anmeldung bei Thundermail ist
-   ausgeblendet.
-10. **Editor mit Formatierung.** Fett, kursiv, Listen, Überschriften, Zitat, Schriftart und Schriftgröße.
-11. **Oberfläche.** NovaBird-Design, Schnellfilter „Alle“ und „Ungelesen“, Konto-Chips über der Liste und
-    Absender-Logos (BIMI) von der Domain des Absenders.
-12. **Kleinere Korrekturen.** Zeichensatz von Mailteilen aus dem Content-Type-Header und Seite „Über“ mit Autoren
-    und Lizenzen. Unterstützt werden nur Android-Versionen, die noch Sicherheitsupdates bekommen.
+> **Beta.** NovaBird Mail is still in development. It runs on Android 14 and newer (64-bit).
 
 <table>
   <tr>
-    <td><img src="docs/novabird/screenshots/phishing-settings.png" width="220" alt="Einstellungen Phishing-Schutz"></td>
-    <td><img src="docs/novabird/screenshots/ai-settings.png" width="220" alt="Vektorsuche und KI, Kopplung mit dem Helper"></td>
-    <td><img src="docs/novabird/screenshots/editor.png" width="220" alt="Editor mit Formatierung"></td>
+    <td><img src="docs/novabird/screenshots/search.png" width="220" alt="Everyday-language search with chips"></td>
+    <td><img src="docs/novabird/screenshots/phishing.png" width="220" alt="Phishing warning with reasons"></td>
+    <td><img src="docs/novabird/screenshots/inbox.png" width="220" alt="Inbox with quick filters"></td>
   </tr>
   <tr>
-    <td align="center">Phishing-Schutz</td>
-    <td align="center">Helper koppeln</td>
-    <td align="center">Formatierung</td>
+    <td align="center">Everyday-language search</td>
+    <td align="center">Phishing warning</td>
+    <td align="center">Inbox</td>
   </tr>
 </table>
 
-## Zusammenspiel mit dem PC
+## What NovaBird changes compared to Thunderbird
 
-- **NovaBird-Add-on** für Thunderbird am PC: [Novabird-Addons/NovaBird](https://github.com/Novabird-Addons/NovaBird).
-  Suche, Phishing-Schutz und KI-Texte verhalten sich auf dem Handy wie dort.
-- **NovaBird Helper**: läuft auf dem PC, rechnet Vektoren, Zusammenfassungen und Vorlesen und wird im Heimnetz
-  gekoppelt. Die Verbindung ist verschlüsselt.
+Sorted by importance.
 
-## Bauen
+1. **Everyday-language search.** "von Petra im März mit PDF" ("from Petra in March with PDF") becomes chips for
+   sender, date range and attachment. One tap removes a chip, and its words leave the search field too. A search
+   index on the phone also finds text in the message body and in attachment names, without asking the server.
+2. **Semantic search.** Finds mails by meaning, even without the exact word, e.g. "costs" for invoices. The NovaBird
+   Helper computes the vectors on the PC's graphics card, about 50 times faster than the phone, and shares them with
+   all phones of the group. Without the Helper the phone computes them itself, optionally only while charging. The
+   chips filter these hits as well.
+3. **Phishing protection.** Checks sender, links, attachments and wording of new and opened mails with rules. It
+   also reads QR codes and text in images, e.g. a fake bank logo used as a link. The result shows as a banner with
+   reasons in the mail and as an icon in the list. Links in suspicious mails ask before they open. In the grey zone
+   the Helper's language model may raise a warning, never lower it. The check runs on the phone.
+4. **Spam detection.** Fixed rules, with lists of blocked and allowed senders. Contacts and people you have written
+   to are never spam. "Mark as spam" blocks the sender.
+5. **Editor with formatting.** Bold, italic, lists, headings, quote, font and font size.
+6. **AI via the Helper.** Summary of a mail, "Was gibt's Neues?" ("What's new?") over the new mails, and reading aloud
+   with the Helper's voice. If the Helper can't be reached, the phone's own voice reads.
+7. **Load the whole mailbox in one go.** Inbox only or all folders, on Wi-Fi only, with progress, also with the
+   screen off. Starts by itself after an account is set up. "All messages" now really loads all messages; in
+   Thunderbird it stopped at about 100 per folder.
+8. **Sync limits.** Separate limits for the message size on mobile data and on Wi-Fi, instead of one fixed size per
+   account.
+9. **Setup wizard.** Asks for the period (up to two years, or everything), the number of messages, push for the
+   inbox, and background activity, so new mail keeps arriving after a longer pause. The Thundermail sign-in is
+   hidden.
+10. **User interface.** NovaBird design, quick filters "All" and "Unread", account chips above the list, and sender
+    logos (BIMI) from the sender's domain.
+11. **Smaller fixes.** Charset of message parts taken from their Content-Type header, and an About page with
+    authors and licenses. Only Android versions that still receive security updates are supported.
 
-Der Code liegt im Zweig `novabird/main`. Die App ist das Modul `app-novabird`, die NovaBird-Funktionen liegen unter
+<table>
+  <tr>
+    <td><img src="docs/novabird/screenshots/phishing-settings.png" width="220" alt="Phishing protection settings"></td>
+    <td><img src="docs/novabird/screenshots/ai-settings.png" width="220" alt="Vector search and AI, pairing with the Helper"></td>
+    <td><img src="docs/novabird/screenshots/editor.png" width="220" alt="Editor with formatting"></td>
+  </tr>
+  <tr>
+    <td align="center">Phishing protection</td>
+    <td align="center">Pair the Helper</td>
+    <td align="center">Formatting</td>
+  </tr>
+</table>
+
+The screenshots show the German user interface.
+
+## Working with the PC
+
+- **NovaBird add-on** for Thunderbird on the desktop: [Novabird-Addons/NovaBird](https://github.com/Novabird-Addons/NovaBird).
+  Search, phishing protection and AI texts behave on the phone as they do there.
+- **NovaBird Helper**: runs on the PC, computes vectors, summaries and speech, and is paired over the home network.
+  The connection is encrypted.
+
+## Building
+
+The code is on the branch `novabird/main`. The app is the module `app-novabird`; the NovaBird features live under
 `feature/novabird/`.
 
 ```bash
 ./gradlew :app-novabird:assembleFossRelease
 ```
 
-## Lizenz und Dank
+## License and thanks
 
-NovaBird Mail steht wie Thunderbird für Android unter der [Apache-Lizenz 2.0](LICENSE). Dank an das Thunderbird-Team
-und alle, die zu K-9 Mail und Thunderbird für Android beigetragen haben. Die Lizenzen der verwendeten Bibliotheken
-stehen in der App unter „Über“.
+Like Thunderbird for Android, NovaBird Mail is licensed under the [Apache License 2.0](LICENSE). Thanks to the
+Thunderbird team and everyone who contributed to K-9 Mail and Thunderbird for Android. The licenses of the libraries
+used are listed in the app under "About".
