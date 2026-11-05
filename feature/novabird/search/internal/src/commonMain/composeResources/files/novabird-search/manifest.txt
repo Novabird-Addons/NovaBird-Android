@@ -24,4 +24,5 @@ src/query/resolvePeople.js
 src/query/suggest.js
 src/search.js
 src/text/clean.js
+src/util/logtext.js
 src/util/normalize.js

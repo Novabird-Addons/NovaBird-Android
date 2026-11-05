@@ -13,9 +13,9 @@
 import {
   addDays, addMonths, isoWeekOf, isoWeekStart, periodOf, startOfDay, subtractUnits,
 } from "./dates.js";
-import { stemWith } from "./stem.js";
+import { stemWith, stemsWith } from "./stem.js";
 import { norm, sanitizeTerm } from "../util/normalize.js";
-import { alt, fragments, B, E } from "./lang/common.js";
+import { alt, fragments, B } from "./lang/common.js";
 import { resolvePacks } from "./lang/index.js";
 
 const re = (src) => new RegExp(src, "giu");
@@ -111,6 +111,7 @@ function buildContext(codes) {
       return null;
     },
     stem: stemWith(packs[0]),
+    stems: stemsWith(packs), // alle Sprachen der Anfrage: Suchbegriffe treffen dann auch in Mails der anderen Sprachen
   };
   ctxCache.set(key, ctx);
   return ctx;
@@ -310,7 +311,7 @@ function extractPhrases(rest, q) {
 
 function extractDates(rest, q, ctx, entry) {
   const { today } = ctx;
-  const { pack, f, p } = entry;
+  const { pack, p } = entry;
   const d = p.dates;
   const range = (a, b) => {
     const ra = parseTimeAnchor(a, ctx);
@@ -553,16 +554,16 @@ function extractTerms(rest, q, ctx) {
       continue;
     }
     if (clean.length < 2) continue;
-    const s = ctx.stem(clean);
     if (negative) {
-      q.exclude.push(s);
+      q.exclude.push(ctx.stem(clean)); // ausschließen nur mit der Hauptsprache (sonst fiele zu viel weg)
       continue;
     }
+    const ss = ctx.stems(clean);
     if (pendingOr && q.terms.length) {
       const last = q.terms[q.terms.length - 1];
-      if (!last.includes(s)) last.push(s);
-    } else if (!q.terms.some((g) => g.length === 1 && g[0] === s)) {
-      q.terms.push([s]);
+      for (const s of ss) if (!last.includes(s)) last.push(s);
+    } else if (!q.terms.some((g) => g.length === ss.length && ss.every((s) => g.includes(s)))) {
+      q.terms.push(ss);
     }
     pendingOr = false;
   }

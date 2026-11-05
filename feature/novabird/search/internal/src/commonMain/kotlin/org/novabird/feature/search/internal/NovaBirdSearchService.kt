@@ -34,6 +34,7 @@ import org.novabird.feature.search.internal.vectors.SemanticIndex
  *
  * @param ownEmails own addresses of all accounts, for "von mir" / "an mich" (merged with [SearchOptions.myEmails]).
  * @param now current time in ms; relative dates ("letzte Woche") are resolved against it.
+ * @param defaultLanguages query languages when [SearchOptions.languages] is empty.
  */
 class NovaBirdSearchService
 @OptIn(ExperimentalTime::class)
@@ -42,6 +43,7 @@ constructor(
     private val ownEmails: () -> List<String> = { emptyList() },
     private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     private val semanticIndex: SemanticIndex? = null,
+    private val defaultLanguages: () -> List<String> = { listOf("de") },
 ) : NovaBirdSearch {
 
     override suspend fun search(text: String, options: SearchOptions): SearchResult {
@@ -136,7 +138,7 @@ constructor(
         put("includeTrash", options.includeTrash)
         put("now", now())
         putJsonArray("myEmails") { (options.myEmails + ownEmails()).distinct().forEach { add(it.lowercase()) } }
-        putJsonArray("langs") { options.languages.forEach { add(it) } }
+        putJsonArray("langs") { options.languages.ifEmpty { defaultLanguages() }.forEach { add(it) } }
     }.toString()
 
     private suspend fun toResult(json: String?): SearchResult {

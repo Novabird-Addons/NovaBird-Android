@@ -192,9 +192,18 @@ export async function headerIdsInFolder(db, folderId) {
 export async function updateFlags(db, headerMessageId, folderId, { isRead, isFlagged, tags }) {
   const sets = [];
   const params = [];
-  if (isRead !== undefined) (sets.push("is_read = ?"), params.push(isRead ? 1 : 0));
-  if (isFlagged !== undefined) (sets.push("is_flagged = ?"), params.push(isFlagged ? 1 : 0));
-  if (tags !== undefined) (sets.push("tags = ?"), params.push(toListField(tags)));
+  if (isRead !== undefined) {
+    sets.push("is_read = ?");
+    params.push(isRead ? 1 : 0);
+  }
+  if (isFlagged !== undefined) {
+    sets.push("is_flagged = ?");
+    params.push(isFlagged ? 1 : 0);
+  }
+  if (tags !== undefined) {
+    sets.push("tags = ?");
+    params.push(toListField(tags));
+  }
   if (!sets.length) return;
   await db.execute(
     `UPDATE messages SET ${sets.join(", ")} WHERE header_msg_id = ? AND folder_id = ?`,
@@ -301,6 +310,16 @@ export async function hasHeadersOnly(db, folderId) {
 export async function countHeadersOnly(db) {
   const [r] = await db.select("SELECT COUNT(*) AS n FROM messages WHERE body_hash = ?", [HEADERS_ONLY], ["n"]);
   return r.n;
+}
+
+/** Mails ohne Volltext je Ordner (meiste zuerst), mit ältester/neuester Mail: zeigt, wo Thunderbird nichts lokal hat. */
+export async function headersOnlyByFolder(db, limit = 50) {
+  return db.select(
+    `SELECT folder_id, MAX(folder_name), MAX(account_id), COUNT(*) AS n, MIN(date), MAX(date)
+       FROM messages WHERE body_hash = ? GROUP BY folder_id ORDER BY n DESC LIMIT ?`,
+    [HEADERS_ONLY, limit],
+    ["folderId", "folderName", "accountId", "n", "oldest", "newest"],
+  );
 }
 
 /** Datum (ms) der neuesten indizierten Mail eines Kontos oder null. */

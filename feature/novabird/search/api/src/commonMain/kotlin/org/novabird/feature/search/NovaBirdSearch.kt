@@ -104,8 +104,11 @@ data class SearchOptions(
     val includeTrash: Boolean = false,
     /** Own email addresses, needed for "von mir" / "an mich". */
     val myEmails: List<String> = emptyList(),
-    /** Query languages, first one is used for chip labels. */
-    val languages: List<String> = listOf("de"),
+    /**
+     * Query languages, first one is used for chip labels and exclusions. Empty: the search's default languages
+     * (the app's language and English, like the desktop).
+     */
+    val languages: List<String> = emptyList(),
 )
 
 enum class SearchSort {

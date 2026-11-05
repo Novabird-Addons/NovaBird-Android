@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createNodeAdapter } from "./helpers/node-adapter.js";
 import { MESSAGES, NOW } from "./helpers/fixtures.js";
-import { migrate, repository, search, buildSearchSql, parseQuery } from "../src/search.js";
+import { migrate, repository, search, filterIds, buildSearchSql, parseQuery } from "../src/search.js";
 import { removeChip } from "../src/parser/chips.js";
 
 const ME = ["leitung@firma.example"];
@@ -161,5 +161,68 @@ describe("Suche – Fallback-Modi", async () => {
     const ctx = await setup("fts4");
     expect(ids(await run(ctx, "speiseplan von Jonas"))).toContain("m1");
     expect(ids(await run(ctx, "speiseplan von Petra"))).not.toContain("m1");
+  });
+});
+
+describe("Bedeutungssuche: Kandidaten mit den Bedingungen der Wortsuche filtern", async () => {
+  const ctx = await setup();
+  const all = MESSAGES.map((m) => m.headerMessageId);
+  const allowed = (text, opts = {}) => filterIds(ctx.db, ctx.caps, text, all, { now: NOW, myEmails: ME, ...opts });
+
+  it("nur Suchwörter: keine Bedingung (null), auch „nicht X“ ist hier kein Ausschluss", async () => {
+    expect(await allowed("rechnung bezahlen")).toBeNull();
+    expect(await allowed("Server nicht erreichbar")).toBeNull();
+  });
+
+  it("von: lässt nur Mails dieses Absenders durch, die Suchwörter selbst filtern nicht", async () => {
+    const got = await allowed("von:jonas.mueller@firma.example ganz anderes thema");
+    expect([...got].map((id) => id.split("@")[0]).sort()).toEqual(
+      [...new Set(MESSAGES.filter((m) => m.authorEmail === "jonas.mueller@firma.example" && !["trash", "junk"].includes(m.folderType)).map((m) => m.headerMessageId.split("@")[0]))].sort(),
+    );
+  });
+
+  it("Papierkorb nur mit includeTrash", async () => {
+    const without = await allowed("von:jonas.mueller@firma.example x");
+    const withTrash = await allowed("von:jonas.mueller@firma.example x", { includeTrash: true });
+    expect(withTrash.size).toBeGreaterThanOrEqual(without.size);
+  });
+});
+
+describe("Wortformen in Französisch, Spanisch und Englisch (Stamm als Präfix)", async () => {
+  const db = createNodeAdapter();
+  const caps = await migrate(db, {});
+  const mail = (id, subject, body) => ({
+    accountId: "account1", folderId: "inbox", folderName: "Inbox", folderType: "inbox", recipients: "x <x@example.invalid>",
+    hasAttachment: false, attachmentTypes: [], attachmentNames: [], tags: [], isRead: true, isFlagged: false, attachmentText: "",
+    headerMessageId: `${id}@example.invalid`, date: +new Date(2026, 8, 1), authorName: "A", authorEmail: "a@example.invalid", subject, body,
+  });
+  await repository.upsertMessages(db, caps, [
+    mail("fr1", "Facturation septembre", "Votre facturation est disponible."),
+    mail("fr2", "Colis envoyé", "Le colis a été envoyé hier."),
+    mail("fr3", "Réunions de projet", "Les réunions auront lieu mardi."),
+    mail("es1", "Facturación", "Adjuntamos la facturación del mes."),
+    mail("es2", "Pedido enviado", "Su pedido ha sido enviado."),
+    mail("en1", "Companies list", "All companies in the region."),
+    mail("en2", "Note", "A short note for you."),
+    mail("en3", "Booking confirmation", "Your booking is confirmed."),
+  ], +NOW);
+  const find = async (text, langs) => (await search(db, caps, text, { now: NOW, langs })).rows.map((x) => x.header_msg_id.split("@")[0]).sort();
+
+  it("Französisch", async () => {
+    expect(await find("facture", ["fr"])).toEqual(["es1", "fr1"]); // „factur*“: auch die spanische
+    expect(await find("envoyer", ["fr"])).toEqual(["fr2"]);
+    expect(await find("réunion", ["fr"])).toEqual(["fr3"]);
+  });
+  it("Spanisch", async () => {
+    expect(await find("factura", ["es"])).toEqual(["es1", "fr1"]);
+    expect(await find("enviar", ["es"])).toEqual(["es2"]);
+  });
+  it("Englisch", async () => {
+    expect(await find("company", ["en"])).toEqual(["en1"]);
+    expect(await find("notes", ["en"])).toEqual(["en2"]);
+  });
+  it("mehrere Sprachen: Englisch kürzt bei deutscher Oberfläche mit", async () => {
+    expect(await find("booked", ["de"])).toEqual([]); // nur deutsche Endungen: „booked*“
+    expect(await find("booked", ["de", "en"])).toEqual(["en3"]); // dazu Englisch: „book*“
   });
 });

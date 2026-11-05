@@ -1,5 +1,6 @@
 package org.novabird.feature.search.internal
 
+import java.util.Locale
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -20,6 +21,13 @@ import org.novabird.feature.search.internal.work.NovaBirdIndexScheduler
 
 /** Index file next to the K-9 databases, but a separate file. */
 private const val INDEX_DATABASE = "novabird-search.db"
+
+/** Languages the search parser knows. */
+private val PARSER_LANGUAGES = setOf("de", "en", "fr", "es")
+
+/** Like the desktop: the app's language (English if the parser doesn't know it) plus English. */
+internal fun searchLanguages(language: String = Locale.getDefault().language): List<String> =
+    listOf(language.takeIf { it in PARSER_LANGUAGES } ?: "en", "en").distinct()
 
 /**
  * NovaBird search. Needs a [K9AccountProvider] and a `net.thunderbird.core.logging.Logger` from the app.
@@ -42,6 +50,7 @@ val novaBirdSearchModule = module {
             core = get(),
             ownEmails = { accounts.accounts().flatMap { it.emails } },
             semanticIndex = get(),
+            defaultLanguages = { searchLanguages() },
         )
     }
     single<NovaBirdSearchIndexer> {

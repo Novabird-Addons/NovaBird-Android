@@ -86,19 +86,15 @@ globalThis.NovaBird = {
     return "null";
   },
   /**
-   * Bedeutungs-Treffer (ids: Message-IDs) nach den Filtern der Anfrage: Personen, Zeitraum, Anhang, Status, Schlagwort,
-   * Ordner und „ohne:“, mit denselben SQL-Bedingungen wie die Wortsuche, nur ohne deren Suchwörter.
-   * Antwort: die erlaubten Message-IDs.
+   * Bedeutungs-Treffer (ids: Message-IDs) nach den Filtern der Anfrage wie am PC (core.filterIds): Personen, Zeitraum,
+   * Anhang, Status, Schlagwort, Ordner, ohne Suchwörter und Wort-Ausschlüsse.
+   * Antwort: die erlaubten Message-IDs (alle, wenn die Anfrage keine Bedingung hat).
    */
   async filterIds(queryJson, idsJson, optionsJson) {
     const ids = JSON.parse(idsJson);
     if (!ids.length) return "[]";
-    const q = { ...JSON.parse(queryJson), terms: [], phrases: [], subjectTerms: [] };
-    const o = { ...options(JSON.parse(optionsJson)), sort: "date", limit: -1, offset: 0, dedupe: false };
-    const built = core.buildSearchSql(q, caps, o);
-    const sql = `SELECT DISTINCT header_msg_id FROM (${built.sql}) WHERE header_msg_id IN (${ids.map(() => "?").join(",")})`;
-    const rows = await db.select(sql, [...built.params, ...ids], ["header_msg_id"]);
-    return JSON.stringify(rows.map((r) => r.header_msg_id));
+    const allowed = await core.filterIds(db, caps, JSON.parse(queryJson), ids, options(JSON.parse(optionsJson)));
+    return JSON.stringify(allowed ? ids.filter((id) => allowed.has(id)) : ids);
   },
   /**
    * items: [{ header, part, refs }] (part wie messages.getFull) -> Datensätze wie indexer/indexer.js, dann in den Index.
