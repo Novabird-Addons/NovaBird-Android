@@ -17,6 +17,17 @@ interface NovaBirdSearch {
     ): SearchResult
 
     /**
+     * [text] without the words the chip [chipId] of [previous] came from, so they leave the search field too;
+     * null if they cannot be found (the text then stays as it is).
+     */
+    suspend fun textWithoutChip(
+        text: String,
+        previous: SearchResult,
+        chipId: String,
+        options: SearchOptions = SearchOptions(),
+    ): String? = null
+
+    /**
      * Adds messages that match [text] by meaning (semantic search) to [result]; they are marked [SearchHit.isSimilar].
      * Returns [result] unchanged if no vector backend is available or there are no vectors yet.
      */

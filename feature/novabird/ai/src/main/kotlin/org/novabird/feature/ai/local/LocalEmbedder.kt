@@ -62,14 +62,20 @@ class LocalEmbedder(
     /** Vectors for [texts] (one model run per text), or null if the model isn't there. */
     suspend fun embed(texts: List<String>): List<FloatArray>? = withContext(Dispatchers.Default) {
         if (!isAvailable()) return@withContext null
-        mutex.withLock {
-            val threads = settings.settings.value.effectiveThreads()
-            if (embedder == null || loadedThreads != threads) load(threads)
-            val tok = tokenizer!!
-            val emb = embedder!!
-            val maxTokens = files.model.maxTokens
-            texts.map { emb.embed(tok.encode(it, maxTokens)) }
+        // the model is locked per text, not per batch (the lock is fair): a search query waits for one text of an
+        // index batch, not for the whole batch (about 30 s)
+        texts.map { text ->
+            mutex.withLock {
+                val (tok, emb) = loaded()
+                emb.embed(tok.encode(text, files.model.maxTokens))
+            }
         }.also { scheduleUnload() }
+    }
+
+    private fun loaded(): Pair<BpeTokenizer, OnnxEmbedder> {
+        val threads = settings.settings.value.effectiveThreads()
+        if (embedder == null || loadedThreads != threads) load(threads)
+        return tokenizer!! to embedder!!
     }
 
     private fun load(threads: Int) {

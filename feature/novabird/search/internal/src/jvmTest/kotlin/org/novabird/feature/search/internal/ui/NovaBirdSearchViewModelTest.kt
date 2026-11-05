@@ -55,6 +55,7 @@ class NovaBirdSearchViewModelTest {
         advanceUntilIdle()
 
         assertThat(search.removedChips).containsExactly("q:von Jonas im Juni" to "date")
+        assertThat(testSubject.state.value.query).isEqualTo("von Jonas")
     }
 
     @Test
@@ -108,6 +109,13 @@ class NovaBirdSearchViewModelTest {
             removedChips += previous.parsedQuery to chipId
             return result("ohne $chipId", suggestion = null)
         }
+
+        override suspend fun textWithoutChip(
+            text: String,
+            previous: SearchResult,
+            chipId: String,
+            options: SearchOptions,
+        ): String? = text.removeSuffix(" im Juni").takeIf { chipId == "date" }
 
         private fun result(text: String, suggestion: String?) = SearchResult(
             hits = emptyList(),

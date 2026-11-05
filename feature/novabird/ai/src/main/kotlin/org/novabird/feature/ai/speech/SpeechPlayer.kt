@@ -96,6 +96,8 @@ class SpeechPlayer(
         rate: Float,
     ): Boolean = coroutineScope {
         val client = backend.helper(TTS_TIMEOUT_MS) ?: return@coroutineScope false
+        // a Helper that cannot be reached (e.g. away from home) would only be noticed after the long wait below
+        if (backend.helperStatus().isFailure) return@coroutineScope false
         val voiceLang = AiText.TTS_LANG[lang] ?: "english"
         val first = Wav.parse(
             client.tts(SpokenText.text(sentences.first(), lang).take(HelperClient.MAX_TTS_CHARS), voiceLang),
@@ -180,7 +182,10 @@ class SpeechPlayer(
 
     private companion object {
         const val TAG = "NovaBirdSpeech"
-        const val TTS_TIMEOUT_MS = 60_000
+
+        // the Helper may first start its voice (up to 2 minutes, Speech.cs StartWait), then reads the sentence;
+        // a shorter wait made the phone's voice read whenever the Helper's voice was not loaded yet
+        const val TTS_TIMEOUT_MS = 150_000
         const val AHEAD = 3
         const val PAUSE_S = 0.25f
         const val POLL_MS = 100L

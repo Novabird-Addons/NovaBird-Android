@@ -34,6 +34,10 @@ let caps = null;
 
 const options = (o) => ({ ...o, now: o.now == null ? undefined : new Date(o.now) });
 
+// textWithoutChip: längere Anfragen und längere Wortstücke werden nicht durchprobiert
+const CHIP_TEXT_MAX_WORDS = 30;
+const CHIP_TEXT_MAX_WINDOW = 6;
+
 /** Schnittstelle für Kotlin. Ein- und Ausgaben als JSON-Text. */
 globalThis.NovaBird = {
   core,
@@ -51,6 +55,35 @@ globalThis.NovaBird = {
     const q = core.removeChip(JSON.parse(queryJson), chipId);
     const r = await core.search(db, caps, q, options(JSON.parse(optionsJson)));
     return JSON.stringify({ query: r.query, chips: r.chips, rows: r.rows, empty: r.empty, suggest: r.suggest });
+  },
+  /**
+   * Suchtext ohne die Wörter, aus denen der Chip chipId entstand (nur Android; der Kern merkt sich keine Textstellen):
+   * das kürzeste zusammenhängende Wortstück, ohne das der Text genau die übrigen Chips ergibt, dann nach links um
+   * Wörter erweitert, die keinen Chip tragen („von“ bei „von Jonas“; nach rechts nicht: „mit“ in „mit PDF“ ist
+   * entbehrlich, gehört aber zum nächsten Chip).
+   * Antwort: der neue Text oder null (kein solches Stück; der Text bleibt dann, wie er ist).
+   */
+  async textWithoutChip(input, queryJson, chipId, optionsJson) {
+    const o = options(JSON.parse(optionsJson));
+    const lang = o.langs?.[0];
+    const key = (q) => JSON.stringify(core.toChips(q, lang).map((c) => [c.kind, c.label]));
+    const want = key(core.removeChip(JSON.parse(queryJson), chipId));
+    const words = String(input).trim().split(/\s+/).filter(Boolean);
+    if (!words.length || words.length > CHIP_TEXT_MAX_WORDS) return "null";
+    const without = (start, end) => [...words.slice(0, start), ...words.slice(end)].join(" ");
+    const matches = async (start, end) => {
+      const parsed = core.parseQuery(without(start, end), { now: o.now, langs: o.langs, dateOrder: o.dateOrder });
+      return key(await core.resolvePeople(db, parsed, o)) === want;
+    };
+    for (let size = 1; size <= Math.min(CHIP_TEXT_MAX_WINDOW, words.length); size++) {
+      for (let start = 0; start + size <= words.length; start++) {
+        let end = start + size;
+        if (!(await matches(start, end))) continue;
+        while (start > 0 && (await matches(start - 1, end))) start--;
+        return JSON.stringify(without(start, end));
+      }
+    }
+    return "null";
   },
   /**
    * Bedeutungs-Treffer (ids: Message-IDs) nach den Filtern der Anfrage: Personen, Zeitraum, Anhang, Status, Schlagwort,

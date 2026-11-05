@@ -158,6 +158,23 @@ class NovaBirdIndexerTest {
     }
 
     @Test
+    fun `removing a chip also removes its words from the text`() = runBlocking<Unit> {
+        fillMailbox()
+        testSubject.indexChanges()
+        val text = "Speiseplan von Jonas seit August mit PDF"
+        val chips = search(text)
+
+        fun without(chipId: String) = runBlocking {
+            this@NovaBirdIndexerTest.search.textWithoutChip(text, chips, chipId)
+        }
+
+        assertThat(without("date")).isEqualTo("Speiseplan von Jonas mit PDF")
+        assertThat(without("from:0")).isEqualTo("Speiseplan seit August mit PDF")
+        assertThat(without("attType:pdf")).isEqualTo("Speiseplan von Jonas seit August")
+        assertThat(without("term:0")).isEqualTo("von Jonas seit August mit PDF")
+    }
+
+    @Test
     fun `second run only reads changed messages and removes deleted ones`() = runBlocking<Unit> {
         fillMailbox()
         testSubject.indexChanges()

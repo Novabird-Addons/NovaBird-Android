@@ -35,7 +35,14 @@ internal class NovaBirdSearchViewModel(
 
             is Event.RemoveChip -> {
                 val previous = state.value.result ?: return
-                launchSearch(delayMillis = 0) { search.searchWithoutChip(previous, event.chipId) }
+                val text = state.value.query
+                launchSearch(delayMillis = 0) {
+                    // the chip's words leave the search field too, so typing on does not bring the chip back
+                    textWithoutChip(text, previous, event.chipId)?.let { newText ->
+                        updateState { it.copy(query = newText) }
+                    }
+                    search.searchWithoutChip(previous, event.chipId)
+                }
             }
 
             Event.ApplySuggestion -> {
@@ -79,6 +86,15 @@ internal class NovaBirdSearchViewModel(
             }
             updateState { it.copy(result = withSimilar.getOrNull() ?: it.result, isAddingSimilar = false) }
         }
+    }
+
+    private suspend fun textWithoutChip(text: String, previous: SearchResult, chipId: String): String? {
+        val result = runCatching { search.textWithoutChip(text, previous, chipId) }
+        result.exceptionOrNull()?.let { e ->
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            logger.warn(TAG) { "Chip text not removed: ${e::class.simpleName}" }
+        }
+        return result.getOrNull()
     }
 
     private companion object {

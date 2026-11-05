@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -55,6 +56,16 @@ constructor(
     ): SearchResult {
         val json = core.engine().call("searchWithoutChip", previous.parsedQuery, chipId, optionsJson(options))
         return toResult(json)
+    }
+
+    override suspend fun textWithoutChip(
+        text: String,
+        previous: SearchResult,
+        chipId: String,
+        options: SearchOptions,
+    ): String? {
+        val json = core.engine().call("textWithoutChip", text, previous.parsedQuery, chipId, optionsJson(options))
+        return Json.parseToJsonElement(checkNotNull(json)).jsonPrimitive.contentOrNull
     }
 
     /**
