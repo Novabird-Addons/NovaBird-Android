@@ -9,4 +9,6 @@
     <string name="novabird_search_similar_busy">Suche ähnliche Mails …</string>
     <string name="novabird_search_similar_count">+%1$d ähnlich (nach Bedeutung)</string>
     <string name="novabird_search_similar_label">ähnlich</string>
+    <string name="novabird_search_best_count">%1$d beste oben, danach nach Datum</string>
+    <string name="novabird_search_more_by_date">Weitere Treffer nach Datum</string>
 </resources>

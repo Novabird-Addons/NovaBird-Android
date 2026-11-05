@@ -13,6 +13,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -72,8 +73,9 @@ constructor(
 
     /**
      * Semantic search as `semanticAugment` in NovaBird-Search: messages similar by meaning are added to the keyword hits
-     * (relevance: both rankings fused like `fuseRanks`, otherwise appended). Chips like sender, date or attachment filter
-     * the similar messages with the same conditions as the keyword hits.
+     * (relevance: both rankings fused like `fuseRanks`; best: keyword and meaning hits rated together like `fuseBest`,
+     * the rest by date; date: appended). Chips like sender, date or attachment filter the similar messages with the same
+     * conditions as the keyword hits.
      */
     override suspend fun addSimilar(text: String, result: SearchResult, options: SearchOptions): SearchResult {
         val index = semanticIndex ?: return result
@@ -100,15 +102,88 @@ constructor(
             toHit(row, locations[row.text("folder_id") to row.text("header_msg_id")])
                 .copy(score = score[row.text("header_msg_id")], isSimilar = true)
         }
-        val hits = if (options.sort == SearchSort.RELEVANCE) {
-            val semanticRank = similar.withIndex().associate { (i, s) -> s.first to i }
-            val lexicalRank = result.hits.withIndex().associate { (i, h) -> h.headerMessageId to i }
-            fun fused(id: String) = listOfNotNull(lexicalRank[id], semanticRank[id]).sumOf { 1.0 / (RRF_K + it + 1) }
-            (result.hits + extras).sortedByDescending { fused(it.headerMessageId) }
-        } else {
-            (result.hits + extras).sortedByDescending { it.date }
+        return when (options.sort) {
+            SearchSort.RELEVANCE -> {
+                val semanticRank = similar.withIndex().associate { (i, s) -> s.first to i }
+                val lexicalRank = result.hits.withIndex().associate { (i, h) -> h.headerMessageId to i }
+                fun fused(
+                    id: String,
+                ) = listOfNotNull(lexicalRank[id], semanticRank[id]).sumOf { 1.0 / (RRF_K + it + 1) }
+                val hits = (result.hits + extras).sortedByDescending { fused(it.headerMessageId) }
+                result.copy(hits = hits, similarCount = extras.size, bestCount = 0)
+            }
+
+            SearchSort.BEST -> {
+                val (hits, bestCount) = bestFirst(result, extras, similar, options)
+                result.copy(hits = hits, similarCount = extras.size, bestCount = bestCount)
+            }
+
+            SearchSort.DATE -> result.copy(
+                hits = (result.hits + extras).sortedByDescending { it.date },
+                similarCount = extras.size,
+                bestCount = 0,
+            )
         }
-        return result.copy(hits = hits, similarCount = extras.size)
+    }
+
+    /**
+     * Best keyword and meaning hits on top, the rest by date (core `fuseBest` and `bestThenDate`, like the desktop).
+     * Returns the hits and how many of them are the best ones.
+     */
+    private suspend fun bestFirst(
+        result: SearchResult,
+        extras: List<SearchHit>,
+        similar: List<Pair<String, Double>>,
+        options: SearchOptions,
+    ): Pair<List<SearchHit>, Int> {
+        val all = result.hits + extras
+        val shown = all.mapTo(HashSet()) { it.headerMessageId }
+        val semJson = JsonArray(
+            similar.filter { it.first in shown }.map { (id, score) ->
+                buildJsonObject {
+                    put("header_msg_id", id)
+                    put("score", score)
+                }
+            },
+        )
+        val allJson = JsonArray(
+            all.mapIndexed { i, hit ->
+                buildJsonObject {
+                    put("header_msg_id", hit.headerMessageId)
+                    put("date", hit.date)
+                    put("i", i)
+                }
+            },
+        )
+        val json = core.engine().call(
+            "fuseBestThenDate",
+            result.relevantRows,
+            semJson.toString(),
+            allJson.toString(),
+            optionsJson(options),
+        )
+        val out = Json.parseToJsonElement(checkNotNull(json)).jsonObject
+        val rows = out["rows"]!!.jsonArray.map { it.jsonObject }
+        val bestRows = out["bestIds"]!!.jsonArray.size
+        // best rows come from the relevance list or the meaning hits: matched to a shown hit by Message-ID
+        val firstIndex = HashMap<String, Int>()
+        all.forEachIndexed { i, hit -> firstIndex.putIfAbsent(hit.headerMessageId, i) }
+        val missing = rows.filter { it["i"] == null && it.text("header_msg_id") !in firstIndex && "folder_id" in it }
+        val locations = if (missing.isEmpty()) {
+            emptyMap()
+        } else {
+            core.engine().withMainDatabase { db -> db.locationsOf(missing) }
+        }
+        val used = HashSet<Int>()
+        val hits = rows.map { row ->
+            val i = row["i"]?.jsonPrimitive?.intOrNull ?: firstIndex[row.text("header_msg_id")]
+            when {
+                i != null -> all[i].takeIf { used.add(i) }
+                "folder_id" in row -> toHit(row, locations[row.text("folder_id") to row.text("header_msg_id")])
+                else -> null
+            }
+        }
+        return hits.filterNotNull() to hits.take(bestRows).count { it != null }
     }
 
     private suspend fun allowedByFilters(parsedQuery: String, ids: List<String>, options: SearchOptions): List<String> {
@@ -133,7 +208,14 @@ constructor(
     }
 
     private fun optionsJson(options: SearchOptions): String = buildJsonObject {
-        put("sort", if (options.sort == SearchSort.RELEVANCE) "relevance" else "date")
+        put(
+            "sort",
+            when (options.sort) {
+                SearchSort.BEST -> "best"
+                SearchSort.DATE -> "date"
+                SearchSort.RELEVANCE -> "relevance"
+            },
+        )
         put("limit", options.limit)
         put("includeTrash", options.includeTrash)
         put("now", now())
@@ -159,6 +241,9 @@ constructor(
             suggestion = (result["suggest"] as? JsonObject)?.text("text")?.takeIf { it.isNotEmpty() },
             isEmptyQuery = result["empty"]?.jsonPrimitive?.booleanOrNull == true,
             parsedQuery = result["query"].toString(),
+            // core search (sort "best"): the best rows are already on top
+            bestCount = (result["bestIds"] as? JsonArray)?.size ?: 0,
+            relevantRows = (result["relevant"] as? JsonArray)?.toString() ?: "[]",
         )
     }
 

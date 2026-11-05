@@ -1,21 +1,28 @@
 package org.novabird.feature.search.internal.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
@@ -37,9 +44,11 @@ import org.novabird.feature.search.MessageLocation
 import org.novabird.feature.search.SearchChip
 import org.novabird.feature.search.SearchHit
 import org.novabird.feature.search.internal.resources.Res
+import org.novabird.feature.search.internal.resources.novabird_search_best_count
 import org.novabird.feature.search.internal.resources.novabird_search_did_you_mean
 import org.novabird.feature.search.internal.resources.novabird_search_error
 import org.novabird.feature.search.internal.resources.novabird_search_hint
+import org.novabird.feature.search.internal.resources.novabird_search_more_by_date
 import org.novabird.feature.search.internal.resources.novabird_search_no_results
 import org.novabird.feature.search.internal.resources.novabird_search_similar_busy
 import org.novabird.feature.search.internal.resources.novabird_search_similar_count
@@ -145,10 +154,24 @@ internal fun NovaBirdSearchContent(
                     color = BoltTheme.colors.onSurfaceVariant,
                 )
             }
+            val bestCount = if (state.hasError) 0 else result?.bestCount ?: 0
+            if (bestCount > 0) {
+                TextBodySmall(
+                    text = stringResource(Res.string.novabird_search_best_count, bestCount),
+                    color = BoltTheme.colors.onSurfaceVariant,
+                )
+            }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(result?.hits.orEmpty(), key = { "${it.folderName}/${it.headerMessageId}/${it.date}" }) { hit ->
-                    HitRow(hit = hit, onClick = { hit.location?.let { onEvent(Event.OpenHit(it)) } })
-                    DividerHorizontal()
+                itemsIndexed(
+                    result?.hits.orEmpty(),
+                    key = { _, hit -> "${hit.folderName}/${hit.headerMessageId}/${hit.date}" },
+                ) { index, hit ->
+                    HitRow(
+                        hit = hit,
+                        isBest = index < bestCount,
+                        onClick = { hit.location?.let { onEvent(Event.OpenHit(it)) } },
+                    )
+                    if (index == bestCount - 1) MoreByDate() else DividerHorizontal()
                 }
             }
         }
@@ -161,25 +184,67 @@ private fun Chip(chip: SearchChip, onRemove: () -> Unit) {
     ButtonOutlined(text = "${chip.label}  ✕", onClick = onRemove)
 }
 
+/** Line below the best hits: the rest of the list is ordered by date. */
 @Composable
-private fun HitRow(hit: SearchHit, onClick: () -> Unit) {
-    ClickableSurface(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(vertical = BoltTheme.spacings.default)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                TextBodyMedium(
-                    text = hit.authorName.ifEmpty { hit.authorEmail },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+private fun MoreByDate() {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(BoltTheme.colors.primary),
+        )
+        TextBodySmall(
+            text = stringResource(Res.string.novabird_search_more_by_date),
+            color = BoltTheme.colors.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = BoltTheme.spacings.half),
+        )
+        DividerHorizontal()
+    }
+}
+
+/** One hit; the best ones (sort "best") get an accent on the left and a light background. */
+@Composable
+private fun HitRow(hit: SearchHit, isBest: Boolean, onClick: () -> Unit) {
+    ClickableSurface(
+        onClick = onClick,
+        color = if (isBest) BoltTheme.colors.surfaceContainerLow else BoltTheme.colors.surface,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            if (isBest) {
+                Box(
+                    modifier = Modifier
+                        .width(3.dp)
+                        .fillMaxHeight()
+                        .background(BoltTheme.colors.primary),
                 )
-                TextBodySmall(text = formatDate(hit.date))
             }
-            val prefix = (if (hit.isRead) "" else "● ") + (if (hit.isFlagged) "★ " else "") +
-                (if (hit.hasAttachment) "📎 " else "")
-            TextBodyMedium(text = prefix + hit.subject, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            val similar = if (hit.isSimilar) " · " + stringResource(Res.string.novabird_search_similar_label) else ""
-            TextBodySmall(text = hit.folderName + similar, color = BoltTheme.colors.onSurfaceVariant)
+            HitContent(
+                hit = hit,
+                modifier = Modifier.padding(start = if (isBest) BoltTheme.spacings.default else 0.dp),
+            )
         }
+    }
+}
+
+@Composable
+private fun HitContent(hit: SearchHit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(vertical = BoltTheme.spacings.default)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            TextBodyMedium(
+                text = hit.authorName.ifEmpty { hit.authorEmail },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            TextBodySmall(text = formatDate(hit.date))
+        }
+        val prefix = (if (hit.isRead) "" else "● ") + (if (hit.isFlagged) "★ " else "") +
+            (if (hit.hasAttachment) "📎 " else "")
+        TextBodyMedium(text = prefix + hit.subject, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        val similar = if (hit.isSimilar) " · " + stringResource(Res.string.novabird_search_similar_label) else ""
+        TextBodySmall(text = hit.folderName + similar, color = BoltTheme.colors.onSurfaceVariant)
     }
 }
 

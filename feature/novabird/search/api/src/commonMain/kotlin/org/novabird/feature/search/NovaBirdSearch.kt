@@ -99,7 +99,7 @@ interface NovaBirdSearchIndexer {
 }
 
 data class SearchOptions(
-    val sort: SearchSort = SearchSort.RELEVANCE,
+    val sort: SearchSort = SearchSort.BEST,
     val limit: Int = 200,
     val includeTrash: Boolean = false,
     /** Own email addresses, needed for "von mir" / "an mich". */
@@ -112,6 +112,8 @@ data class SearchOptions(
 )
 
 enum class SearchSort {
+    /** Up to 10 hits that fit clearly on top ([SearchResult.bestCount]), then all hits by date (like the desktop). */
+    BEST,
     DATE,
     RELEVANCE,
 }
@@ -126,6 +128,10 @@ data class SearchResult(
     val parsedQuery: String,
     /** Number of hits added by [NovaBirdSearch.addSimilar]. */
     val similarCount: Int = 0,
+    /** [SearchSort.BEST]: the first [bestCount] hits are the best ones, the rest follows by date; 0 = no split. */
+    val bestCount: Int = 0,
+    /** [SearchSort.BEST]: best keyword hits by relevance, opaque. Used by [NovaBirdSearch.addSimilar]. */
+    val relevantRows: String = "[]",
 )
 
 data class SearchChip(

@@ -56,6 +56,40 @@ class SemanticSearchTest {
     }
 
     @Test
+    fun `best first rates keyword and meaning hits together, the rest by date`() = runBlocking<Unit> {
+        fill()
+        // keyword hits for "Kosten" with another topic: one in the subject (strong), five only in a long text
+        mail(10, "Kosten Termin", "a@firma.example", "Termin fuer die Planung", DAY_SEP_1)
+        for (id in 11L..15L) {
+            mail(
+                id,
+                "Termin $id",
+                "b@firma.example",
+                "Termin mit Listen. " + FILLER.repeat(6) + " Kosten folgen.",
+                DAY_OCT_1 + id,
+            )
+        }
+        indexer.indexChanges()
+        semanticIndex.indexVectors { false }
+        val best = options.copy(sort = SearchSort.BEST)
+
+        val result = search.addSimilar("Kosten", search.search("Kosten", best), best)
+
+        // the two bills by meaning (similarity 1) and the subject hit on top
+        assertThat(result.hits.take(result.bestCount).map { it.headerMessageId })
+            .containsExactlyInAnyOrder("m1@x.example", "m2@x.example", "m10@x.example")
+        val rest = result.hits.drop(result.bestCount)
+        assertThat(rest.map { it.headerMessageId }).containsExactlyInAnyOrder(
+            "m11@x.example",
+            "m12@x.example",
+            "m13@x.example",
+            "m14@x.example",
+            "m15@x.example",
+        )
+        assertThat(rest.map { it.date }).isEqualTo(rest.map { it.date }.sortedDescending())
+    }
+
+    @Test
     fun `vectors of deleted messages are removed after the next index run`() = runBlocking<Unit> {
         fill()
         mailStore.exec("UPDATE messages SET deleted = 1 WHERE id = 2")
@@ -97,6 +131,7 @@ class SemanticSearchTest {
         private fun topic(text: String): FloatArray {
             val t = text.lowercase()
             return when {
+                "termin" in t -> floatArrayOf(0f, 0f, 1f)
                 "rechnung" in t || "kosten" in t -> floatArrayOf(1f, 0f, 0f)
                 "urlaub" in t -> floatArrayOf(0f, 1f, 0f)
                 else -> floatArrayOf(0f, 0f, 1f)
@@ -114,5 +149,6 @@ class SemanticSearchTest {
         val NOW = day(10, 5)
         val DAY_OCT_1 = day(10, 1)
         val DAY_SEP_1 = day(9, 1)
+        const val FILLER = "Dazu kommen Hinweise zu Raeumen, Zeiten, Wegen, Fahrten, Essen, Getraenken und Pausen. "
     }
 }

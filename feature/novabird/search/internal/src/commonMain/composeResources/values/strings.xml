@@ -9,4 +9,6 @@
     <string name="novabird_search_similar_busy">Looking for similar messages …</string>
     <string name="novabird_search_similar_count">+%1$d similar (by meaning)</string>
     <string name="novabird_search_similar_label">similar</string>
+    <string name="novabird_search_best_count">%1$d best on top, then by date</string>
+    <string name="novabird_search_more_by_date">More hits by date</string>
 </resources>

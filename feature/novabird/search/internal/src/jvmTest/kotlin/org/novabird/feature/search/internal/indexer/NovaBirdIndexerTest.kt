@@ -124,6 +124,40 @@ class NovaBirdIndexerTest {
     }
 
     @Test
+    fun `best matches first, then the other hits by date`() = runBlocking<Unit> {
+        mailStore.addFolder(1, "INBOX", "inbox")
+        // the word in the subject (oldest mail) fits clearly better than at the end of a long text (newer mails)
+        mailStore.insertMessage(
+            id = 1, folderId = 1, uid = "u1", messageId = "<best@x.example>", subject = "Heizungswartung Angebot",
+            date = day(2026, 9, 1), sender = "a@x.example", to = "leitung@firma.example",
+            root = text("text/plain", null, "utf-8", "Anbei das Angebot für die Heizungswartung."),
+        )
+        for (i in 2..8) {
+            mailStore.insertMessage(
+                id = i.toLong(), folderId = 1, uid = "u$i", messageId = "<m$i@x.example>", subject = "Woche $i",
+                date = day(2026, 9, i), sender = "b@x.example", to = "leitung@firma.example",
+                root = text(
+                    "text/plain",
+                    null,
+                    "utf-8",
+                    "Termine, Listen und Pläne der Woche. " + FILLER.repeat(6) + " Angebot",
+                ),
+            )
+        }
+        testSubject.indexChanges()
+
+        val result = search("Angebot", sort = SearchSort.BEST)
+
+        assertThat(ids(result).first()).isEqualTo("best@x.example")
+        assertThat(result.bestCount).isEqualTo(1)
+        val rest = result.hits.drop(result.bestCount).map { it.date }
+        assertThat(rest).isEqualTo(rest.sortedDescending())
+        assertThat(ids(result).toSet().size).isEqualTo(8)
+        // by date: no split
+        assertThat(search("Angebot", sort = SearchSort.DATE).bestCount).isEqualTo(0)
+    }
+
+    @Test
     fun `hits carry the K-9 location for opening the message`() = runBlocking<Unit> {
         fillMailbox()
         testSubject.indexChanges()
@@ -243,6 +277,7 @@ class NovaBirdIndexerTest {
         const val ACCOUNT = "3c1a5f7e-0000-4000-8000-00000000a001"
         const val MESSAGE_COUNT = 3000
         const val MAX_SEARCH_MS = 500L
+        const val FILLER = "Dazu kommen Hinweise zu Räumen, Zeiten, Wegen, Fahrten, Essen, Getränken und Pausen."
 
         // Monday, 05.10.2026, 12:00 Europe/Berlin (like the NovaBird-Search fixtures)
         val NOW = java.time.ZonedDateTime.of(2026, 10, 5, 12, 0, 0, 0, java.time.ZoneId.of("Europe/Berlin"))

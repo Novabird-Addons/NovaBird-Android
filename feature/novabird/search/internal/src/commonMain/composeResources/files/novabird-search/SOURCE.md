@@ -1,7 +1,7 @@
 # Herkunft
 
 Unveränderte Kopie (ohne `indexer/indexer.js`, siehe unten) von `novabird-search/db/src` aus dem NovaBird-Repository
-(Branch `novabird-2.0`, Commit `69a892ccfb8a8ec832f44070042c840563fde93a`, Stand 05.11.2026: Wortformen für FR/ES/EN, `filterIds`).
+(Branch `novabird-2.0`, Commit `23e316cea9494d81414b6899fa52fd306711bd2d`, Stand 05.11.2026: beste Treffer zuerst, danach nach Datum).
 
 Nicht hier ändern: Änderungen gehören in NovaBird-Search und werden dann neu kopiert
 (Ordner `src` ersetzen, `src/indexer/indexer.js` stattdessen nach
