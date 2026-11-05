@@ -1,100 +1,95 @@
-# Thunderbird for Android
+# NovaBird Mail für Android
 
-<a href="https://play.google.com/store/apps/details?id=net.thunderbird.android&referrer=utm_campaign%3Dandroid_metadata%26utm_medium%3Dweb%26utm_source%3Dgithub.com%26utm_content%3Dbadge" target="_blank"><img src="./docs/assets/get-it-on-play.png" alt="Get it on Google Play" height="28"></a>
-<a href="https://f-droid.org/packages/net.thunderbird.android"><img src="./docs/assets/get-it-on-fdroid.png" alt="Get it on F-Droid" height="28"></a>
-<a href="https://apps.obtainium.imranr.dev/"><img src="./docs/assets/get-it-on-obtainium.png" alt="Get it on Obtainium" height="28"></a>
-[![Latest release](https://img.shields.io/github/release/thunderbird/thunderbird-android.svg?style=for-the-badge&filter=THUNDERBIRD_*&logo=thunderbird)](https://github.com/thunderbird/thunderbird-android/releases/latest)
-[![Latest beta release](https://img.shields.io/github/release/thunderbird/thunderbird-android.svg?include_prereleases&style=for-the-badge&label=beta&filter=THUNDERBIRD_*b*&logo=thunderbird)](https://github.com/thunderbird/thunderbird-android/releases)
+NovaBird Mail ist ein Fork von [Thunderbird für Android](https://github.com/thunderbird/thunderbird-android)
+(Stand: Thunderbird 25.0b2). Er bringt die Funktionen des NovaBird-Add-ons für Thunderbird am PC aufs Handy und
+ergänzt Thunderbird um einige Punkte, die uns im Alltag gefehlt haben.
 
-Thunderbird for Android is a powerful, privacy-focused email app. Effortlessly manage multiple email accounts from one app, with a Unified Inbox option for maximum productivity. Built on open-source technology and supported by a dedicated team of developers alongside a global community of volunteers, Thunderbird never treats your private data as a product.
+Die Suche, der Phishing-Schutz und die KI-Texte nutzen denselben Kern wie das Add-on am PC. Rechenintensive Aufgaben
+übernimmt auf Wunsch der **NovaBird Helper** auf dem PC: Vektoren für die Suche, Zusammenfassungen und Vorlesen.
+Alles läuft im eigenen Netz, eine Cloud wird nicht verwendet.
 
-Thunderbird for Android is based on K-9 Mail, which comes with a rich history of success and functionality in open source email.
+> **Beta.** NovaBird Mail ist noch in Entwicklung. Es läuft auf Android 14 und neuer (64 Bit).
 
-## Download
+<table>
+  <tr>
+    <td><img src="docs/novabird/screenshots/search.png" width="220" alt="Suche in Alltagssprache mit Chips"></td>
+    <td><img src="docs/novabird/screenshots/phishing.png" width="220" alt="Phishing-Warnung mit Begründung"></td>
+    <td><img src="docs/novabird/screenshots/inbox.png" width="220" alt="Posteingang mit Schnellfiltern"></td>
+  </tr>
+  <tr>
+    <td align="center">Suche in Alltagssprache</td>
+    <td align="center">Phishing-Warnung</td>
+    <td align="center">Posteingang</td>
+  </tr>
+</table>
 
-Thunderbird for Android can be downloaded from a couple of sources:
+## Was NovaBird gegenüber Thunderbird ändert
 
-- Thunderbird on [Google Play](https://play.google.com/store/apps/details?id=net.thunderbird.android&referrer=utm_campaign%3Dandroid_metadata%26utm_medium%3Dweb%26utm_source%3Dgithub.com%26utm_content%3Dlink) or [F-Droid](https://f-droid.org/packages/net.thunderbird.android)
-- Thunderbird Beta on [Google Play](https://play.google.com/store/apps/details?id=net.thunderbird.android.beta&referrer=utm_campaign%3Dandroid_metadata%26utm_medium%3Dweb%26utm_source%3Dgithub.com%26utm_content%3Dlink) or [F-Droid](https://f-droid.org/packages/net.thunderbird.android.beta)
-- [Github Releases](https://github.com/thunderbird/thunderbird-android/releases)
-- [FFUpdater](https://f-droid.org/packages/de.marmaro.krt.ffupdater/) allows installing the latest versions from ftp.mozilla.org
-- [Obtainium](https://obtainium.imranr.dev/): Use "Filter release title by regular expression" under "Additional options" with `Thunderbird`. More info in [Complex Obtainium Apps list](https://apps.obtainium.imranr.dev/).
+Sortiert nach Wichtigkeit.
 
-By using Thunderbird for Android Beta, you have early access to current development and are able to try new features earlier.
+1. **Suche in Alltagssprache.** „von Petra im März mit PDF“ wird zu Chips für Absender, Zeitraum und Anhang.
+   Ein Chip lässt sich mit einem Tipp entfernen, seine Wörter verschwinden dann auch aus dem Suchfeld. Der eigene
+   Suchindex auf dem Handy findet auch Text im Inhalt und in Anhangnamen, ohne Server.
+2. **Semantische Suche.** Findet Mails nach ihrer Bedeutung, auch ohne das genaue Wort, etwa „Kosten“ für
+   Rechnungen. Die Vektoren rechnet der NovaBird Helper auf der Grafikkarte des PCs, rund 50-mal schneller als das
+   Handy, und teilt sie mit allen Handys der Gruppe. Ohne Helper rechnet das Handy selbst, auf Wunsch nur beim Laden.
+   Die Chips filtern auch diese Treffer.
+3. **Phishing-Schutz.** Prüft Absender, Links, Anhänge und Formulierungen neuer und geöffneter Mails nach Regeln.
+   Er liest auch QR-Codes und Text in Bildern, etwa ein gefälschtes Bank-Logo als Link. Das Ergebnis erscheint als
+   Banner mit Begründung in der Mail und als Symbol in der Liste. Links in verdächtigen Mails fragen vor dem Öffnen.
+   Im Graubereich darf das Sprachmodell des Helpers eine Warnung verschärfen, aber nie abschwächen. Die Prüfung
+   läuft auf dem Handy.
+4. **Spam-Erkennung.** Feste Regeln, mit Listen für gesperrte und erlaubte Absender. Kontakte und Leute, denen du
+   geschrieben hast, gelten nie als Spam. „Als Spam markieren“ sperrt den Absender.
+5. **KI über den Helper.** Zusammenfassung einer Mail, „Was gibt's Neues?“ über die neuen Mails und Vorlesen mit
+   der Stimme des Helpers. Ist der Helper nicht erreichbar, liest die Stimme des Handys.
+6. **Ganzes Postfach am Stück laden.** Wahlweise den Posteingang oder alle Ordner, nur im WLAN, mit
+   Fortschrittsanzeige, auch bei ausgeschaltetem Bildschirm. Startet nach dem Einrichten eines Kontos von selbst.
+   Außerdem lädt „Alle Nachrichten“ jetzt wirklich alle Nachrichten. Bei Thunderbird waren es rund 100 pro Ordner.
+7. **Übernahme vom PC.** Konten lassen sich per QR-Code aus Thunderbird am PC übernehmen. Danach stellst du auf
+   einer Seite pro Konto Zeitraum, Anzahl, Benachrichtigungen, Push und Hintergrundaktivität ein.
+8. **Sync-Grenzen.** Eigene Grenzen für die Mailgröße im mobilen Netz und im WLAN, statt einer festen Größe pro
+   Konto.
+9. **Einrichtungsassistent.** Fragt nach Zeitraum (bis zu zwei Jahre oder alles), Anzahl, Push für den Posteingang
+   und Hintergrundaktivität, damit neue Mails auch nach längerer Pause ankommen. Die Anmeldung bei Thundermail ist
+   ausgeblendet.
+10. **Editor mit Formatierung.** Fett, kursiv, Listen, Überschriften, Zitat, Schriftart und Schriftgröße.
+11. **Oberfläche.** NovaBird-Design, Schnellfilter „Alle“ und „Ungelesen“, Konto-Chips über der Liste und
+    Absender-Logos (BIMI) von der Domain des Absenders.
+12. **Kleinere Korrekturen.** Zeichensatz von Mailteilen aus dem Content-Type-Header und Seite „Über“ mit Autoren
+    und Lizenzen. Unterstützt werden nur Android-Versionen, die noch Sicherheitsupdates bekommen.
 
-Check out the [Release Notes](https://github.com/thunderbird/thunderbird-android/releases) to find out what changed in each version of Thunderbird for Android.
+<table>
+  <tr>
+    <td><img src="docs/novabird/screenshots/phishing-settings.png" width="220" alt="Einstellungen Phishing-Schutz"></td>
+    <td><img src="docs/novabird/screenshots/ai-settings.png" width="220" alt="Vektorsuche und KI, Kopplung mit dem Helper"></td>
+    <td><img src="docs/novabird/screenshots/editor.png" width="220" alt="Editor mit Formatierung"></td>
+  </tr>
+  <tr>
+    <td align="center">Phishing-Schutz</td>
+    <td align="center">Helper koppeln</td>
+    <td align="center">Formatierung</td>
+  </tr>
+</table>
 
-The SHA-256 fingerprints for our signing certificates are available in [SECURITY.md](./SECURITY.md#verifying-fingerprints).
+## Zusammenspiel mit dem PC
 
-## Need Help? Found a bug? Have an idea? Want to chat?
+- **NovaBird-Add-on** für Thunderbird am PC: [Novabird-Addons/NovaBird](https://github.com/Novabird-Addons/NovaBird).
+  Suche, Phishing-Schutz und KI-Texte verhalten sich auf dem Handy wie dort.
+- **NovaBird Helper**: läuft auf dem PC, rechnet Vektoren, Zusammenfassungen und Vorlesen und wird im Heimnetz
+  gekoppelt. Die Verbindung ist verschlüsselt.
 
-If the app is not behaving like it should, or you are not sure if you've encountered a bug:
+## Bauen
 
-- Check out our [knowledge base](https://support.mozilla.org/products/thunderbird-android) and [frequently asked questions](https://support.mozilla.org/kb/thunderbird-android-8-faq)
-- Ask a question on our [support forum](https://support.mozilla.org/en-US/questions/new/thunderbird-android)
+Der Code liegt im Zweig `novabird/main`. Die App ist das Modul `app-novabird`, die NovaBird-Funktionen liegen unter
+`feature/novabird/`.
 
-If you are certain you've identified a bug in Thunderbird for Android and would like to help fix it:
+```bash
+./gradlew :app-novabird:assembleFossRelease
+```
 
-- File an issue on [our GitHub issue tracker](https://github.com/thunderbird/thunderbird-android/issues)
+## Lizenz und Dank
 
-If you have an idea how to improve Thunderbird for Android:
-
-- Tell us about and vote on your feature ideas on [connect.mozilla.org](https://connect.mozilla.org/t5/ideas/idb-p/ideas/label-name/thunderbird%20android).
-- Join the discussion about the latest changes in the [Thunderbird Android Beta Topicbox](https://thunderbird.topicbox.com/groups/android-beta).
-
-The Thunderbird Community uses Matrix to communicate:
-
-- General chat about Thunderbird for Android and K-9 Mail: [#tb-android:mozilla.org](https://matrix.to/#/#tb-android:mozilla.org)
-- Development and other ways to contribute: [#tb-android-dev:mozilla.org](https://matrix.to/#/#tb-android-dev:mozilla.org)
-- Reach the broader Thunderbird Community in the [community space](https://matrix.to/#/#thunderbird-community:mozilla.org)
-
-## Roadmap
-
-To learn more about all the wonderful things planned for this year please see our
-[roadmap](https://github.com/orgs/thunderbird/projects/19/views/1). The core team's day to day activities are additionally
-tracked in our [sprint board](https://github.com/orgs/thunderbird/projects/20/views/1).
-
-## Contributing
-
-We welcome contributions from everyone.
-
-- Development: Have you done a little bit of Kotlin? The [CONTRIBUTING](docs/CONTRIBUTING.md) guide will help you get started
-- Translations: Do you speak a language aside from English? [Translating is easy](https://hosted.weblate.org/projects/thunderbird/thunderbird-android/) and just takes a few minutes for your first success.
-- We have [a number of other contribution opportunities](https://blog.thunderbird.net/2024/09/contribute-to-thunderbird-for-android/) available.
-- Thunderbird is supported solely by financial contributions from users like you. [Make a financial contribution today](https://www.thunderbird.net/donate/mobile/?form=tfa)!
-- Make sure to check out the [Mozilla Community Participation Guidelines](https://www.mozilla.org/about/governance/policies/participation/).
-
-### Engineering Process
-
-We use a structured engineering process to propose, decide, and deliver technical changes. This includes:
-- [Requests for Comments (RFCs)](docs/engineering/rfcs/README.md) for technical direction.
-- [Technical Designs](docs/engineering/technical-designs/README.md) for implementation details.
-- [Architecture Decision Records (ADRs)](docs/engineering/adr/README.md) for durable architectural decisions.
-
-You can find more information in the [`docs/engineering`](docs/engineering) directory.
-
-We encourage team members and contributors to read through our engineering documentation to understand the
-processes and decisions that have shaped this project so far.
-
-## K-9 Mail
-
-In June 2022, [K-9 Mail joined the Thunderbird family](https://k9mail.app/2022/06/13/K-9-Mail-and-Thunderbird.html)
-as the foundation for Thunderbird on Android. Since then, we’ve been updating both apps to give
-users the same solid experience, so it’s normal to notice that K-9 Mail and Thunderbird look and
-feel nearly identical. They’re built on the same code, and that’s intentional. You'll notice some
-features are selectively enabled for Thunderbird as opposed to K-9 Mail, usually when they are
-simply a better fit for Thunderbird (like the import from K-9 functionality).
-
-If you prefer the robot dog and would like to keep K-9 Mail around, you can find it here:
-
-- [K-9 Mail on Google Play](https://play.google.com/store/apps/details?id=com.fsck.k9&utm_source=thunderbird-android-github&utm_campaign=download-section)
-- [K-9 Mail on F-Droid](https://f-droid.org/packages/com.fsck.k9/)
-- [K-9 Mail on Obtainium](https://obtainium.imranr.dev/) (use `K-9 Mail` as filter, see [notes](#download) above)
-
-## Forking
-
-If you want to use a fork of this project please ensure that you replace the OAuth client setup in the `app-k9mail/src/{debug,release}/kotlin/app/k9mail/auth/K9OAuthConfigurationFactory.kt` and `app-thunderbird/src/{debug,daily,beta,release}/kotlin/net/thunderbird/android/auth/TbOAuthConfigurationFactory.kt` with your own OAuth client setup and ensure that the `redirectUri` is different to the one used in the main project. This is to prevent conflicts with the main app when both are installed on the same device.
-
-## License
-
-Thunderbird for Android is licensed under the [Apache License, Version 2.0](LICENSE).
+NovaBird Mail steht wie Thunderbird für Android unter der [Apache-Lizenz 2.0](LICENSE). Dank an das Thunderbird-Team
+und alle, die zu K-9 Mail und Thunderbird für Android beigetragen haben. Die Lizenzen der verwendeten Bibliotheken
+stehen in der App unter „Über“.
