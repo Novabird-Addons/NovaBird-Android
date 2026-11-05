@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.0-beta2",
+  "versioncode": 60002,
+  "date": "2026-11-05",
+  "notes": [
+    {
+      "type": "new",
+      "text": "Semantic search: sender, date, attachment and other chips also filter the messages found by meaning"
+    },
+    {
+      "type": "new",
+      "text": "Removing a chip in the search also removes its words from the search field"
+    },
+    {
+      "type": "changed",
+      "text": "Reading aloud starts sooner: a long first sentence is split at a comma"
+    },
+    {
+      "type": "fixed",
+      "text": "Reading aloud switched to the phone's voice while NovaBird Helper was still starting its voice"
+    },
+    {
+      "type": "fixed",
+      "text": "Search waited up to half a minute while the phone was computing vectors"
+    },
+    {
+      "type": "fixed",
+      "text": "Vectors of deleted messages stayed in the index"
+    },
+    {
+      "type": "fixed",
+      "text": "Phishing warning banners are readable in dark mode"
+    }
+  ]
+}
