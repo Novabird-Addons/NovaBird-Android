@@ -52,6 +52,8 @@ class NovaBirdIndexer(
         removed += removeAccountsExcept(accounts.map { it.uuid }.toSet())
         // after all accounts, so a message moved to another folder keeps its vector
         semanticIndex?.removeOrphans()
+        // narrow index for from:name; an existing index gets it here once (the core creates it only for an empty index)
+        engine.call("ensureAuthorIndex")
 
         val total = engine.withMainDatabase { db ->
             db.select("SELECT count(*) FROM messages", JsonArray(emptyList())).single().jsonArray[0].jsonPrimitive.long

@@ -166,11 +166,21 @@ export class Indexer {
     this.mark(L("Liste laden", "loading list"));
     let page = await this.withTimeout(Promise.resolve(list), this.limits.page, "Nachrichtenliste laden");
     let n = 0;
-    while (page) {
-      yield page.messages ?? [];
-      if (!page.id) break;
-      this.mark(L(`Seite ${++n + 1} laden`, `loading page ${n + 1}`));
-      page = await this.withTimeout(this.api.messages.continueList(page.id), this.limits.page, "nächste Seite der Nachrichtenliste");
+    let complete = false;
+    try {
+      while (page) {
+        yield page.messages ?? [];
+        if (!page.id) {
+          complete = true;
+          break;
+        }
+        this.mark(L(`Seite ${++n + 1} laden`, `loading page ${n + 1}`));
+        page = await this.withTimeout(this.api.messages.continueList(page.id), this.limits.page, "nächste Seite der Nachrichtenliste");
+      }
+      complete = true;
+    } finally {
+      // vorzeitig beendet (Anhalten, Zeitgrenze, Ordner hängt): Thunderbird die restlichen Seiten freigeben lassen
+      if (!complete && page?.id) this.api.messages.abortList?.(page.id)?.catch?.(() => {});
     }
   }
 
@@ -278,7 +288,12 @@ export class Indexer {
   // ---------------------------------------------------------------- Erstlauf
 
   /** Vollständiger Lauf über alle Ordner; bereits erledigte werden übersprungen. */
-  async fullRun({ force = false } = {}) {
+  /**
+   * reread: auch Mails mit Text neu einlesen (Zusammensetzungen „beim Indexieren“ eingeschaltet – die Zerlegung muss in alle
+   * vorhandenen Mails; force allein liest nur Unbekanntes).
+   */
+  async fullRun({ force = false, reread = false } = {}) {
+    this.reread = reread;
     this.stopped = false;
     await this.loadTagNames();
     const folders = await this.listFolders();
@@ -296,7 +311,19 @@ export class Indexer {
       if (info) flags[fid] = info.offline;
     }
     if (this.folderInfo?.size) await repo.saveFolderOffline(this.db, flags);
-    const todo = folders.filter((f) => force || changed.has(folderIdOf(f)) || !states.get(folderIdOf(f))?.done);
+    // Ordner, die früher nur wegen fehlender Mailtexte „nicht fertig“ blieben, aber schon vollständig durchgegangen wurden
+    // (Mailzahl gemerkt): nicht erneut durchblättern – die Texte holt fillBodies() gezielt nach (Meldung: 1,8 Mio. Mails, jeder
+    // Start blätterte alle Ordner ~30 min durch)
+    const totals = this.canFillBodies() ? await repo.loadFolderTotals(this.db) : {};
+    const todo = folders.filter((f) => {
+      const fid = folderIdOf(f);
+      if (force || reread || changed.has(fid)) return true;
+      const st = states.get(fid);
+      if (st?.done) return false;
+      // nur Ordner mit Zustandszeile: ein gelöschter/umbenannter und wiederhergestellter Ordner hat keine (deleteFolder) und
+      // muss neu gelesen werden, auch wenn seine alte Mailzahl noch in meta steht
+      return !(st && fid in totals);
+    });
     this.progress = { done: 0, total: await this.countMessages(todo) };
     this.log.info(L(`[novabird-db] Erstlauf: ${todo.length} von ${folders.length} Ordnern, ${this.progress.total ?? "?"} Mails zu lesen`, `[novabird-db] First run: ${todo.length} of ${folders.length} folders, ${this.progress.total ?? "?"} mails to read`));
     for (const folder of todo) {
@@ -307,6 +334,7 @@ export class Indexer {
         this.log.error(L("[novabird-db] Ordner fehlgeschlagen", "[novabird-db] folder failed"), folder.name, e, e?.timeout ? REPAIR_HINT() : ""); // nächster Ordner
       }
     }
+    this.reread = false;
     this.log.info(L(`[novabird-db] Erstlauf ${this.stopped ? "angehalten" : "fertig"}`, `[novabird-db] First run ${this.stopped ? "paused" : "finished"}`));
     this.onProgress({ phase: this.stopped ? "stopped" : "done" });
   }
@@ -340,6 +368,9 @@ export class Indexer {
   }
 
   async indexFolderBody(folder, fid, t0, quiet) {
+    // Größe des lokalen Speichers VOR dem Durchgang: was Thunderbird währenddessen herunterlädt, ist dann für fillBodies()
+    // noch „neu“ (am Ende gemessen wären diese Mails als Kopfdaten liegen geblieben)
+    const sizeBefore = this.canFillBodies() && !this.onlineOnly(fid) ? await this.folderSize(folder) : null;
     let read = 0;
     const seen = new Set();
     let indexed = 0;
@@ -373,19 +404,16 @@ export class Indexer {
       this.mark(L(`Seite mit ${headers.length} Mails prüfen`, `checking page of ${headers.length} mails`));
       const tPage = Date.now();
       const known = await this.withTimeout(repo.knownState(this.db, fid, ids), this.limits.step, "Index abfragen");
-      const offline = await this.withTimeout(this.offlineMap(headers), this.limits.step, "Offline-Flags lesen");
-      const refs = await this.withTimeout(this.refsMap(headers), this.limits.step, "Verweise lesen");
-      const work = [];
-      for (const h of headers) {
-        const isOffline = offline.get(h.id) ?? true;
-        const hasBody = known.get(h.headerMessageId);
-        // überspringen: schon vollständig drin, oder nur Kopfdaten drin und weiter nicht lokal
-        if (!h.headerMessageId || (known.has(h.headerMessageId) && (hasBody || !isOffline))) {
-          skipped++;
-          continue;
-        }
-        work.push({ h, isOffline, refs: refs.get(h.id) });
-      }
+      // Vollständig bekannte Mails sofort überspringen; Offline-Flags und Verweise nur für den Rest holen (bei großen,
+      // längst indizierten Ordnern ist das fast nichts – das Durchblättern wird deutlich billiger)
+      const rest = headers.filter((h) => h.headerMessageId && (this.reread || known.get(h.headerMessageId) !== true));
+      skipped += headers.length - rest.length;
+      const offline = await this.withTimeout(this.offlineMap(rest), this.limits.step, "Offline-Flags lesen");
+      // reread: Mails mit Text nur neu lesen, wenn sie noch lokal liegen – sonst würde der Text durch einen Kopfdaten-Eintrag ersetzt
+      const pending = rest.filter((h) => !known.has(h.headerMessageId) || (offline.get(h.id) ?? true));
+      skipped += rest.length - pending.length; // nur Kopfdaten drin und weiter nicht lokal
+      const refs = await this.withTimeout(this.refsMap(pending), this.limits.step, "Verweise lesen");
+      const work = pending.map((h) => ({ h, isOffline: offline.get(h.id) ?? true, refs: refs.get(h.id) }));
       // Mails parallel lesen (Reihenfolge bleibt erhalten); zwischen den Gruppen auf Anhalten prüfen
       for (let i = 0; i < work.length; i += this.concurrency) {
         if (this.stopped) {
@@ -405,7 +433,7 @@ export class Indexer {
         );
         if (this.timeoutsInRow >= this.limits.stuck) {
           await flush();
-          throw new Error(`Ordner „${folder.name ?? fid}“ hängt: ${this.timeoutsInRow} Mails nacheinander nicht lesbar. ${REPAIR_HINT}`);
+          throw new Error(`Ordner „${folder.name ?? fid}“ hängt: ${this.timeoutsInRow} Mails nacheinander nicht lesbar. ${REPAIR_HINT()}`);
         }
         records.forEach((r, k) => {
           if (!r) return;
@@ -426,10 +454,83 @@ export class Indexer {
     }
     // Ordner ohne Offline-Speicher sind mit den Kopfdaten fertig. Sonst gelten Ordner mit Kopfdaten-Einträgen nicht als fertig:
     // der nächste Lauf holt den Text nach, sobald er lokal ist
-    await repo.setFolderDone(this.db, fid, this.onlineOnly(fid) || (noBody === 0 && !(await repo.hasHeadersOnly(this.db, fid))));
+    // Mit fillBodies() ist ein Ordner nach dem Durchgang fertig: Texte, die Thunderbird später herunterlädt, holt das gezielt nach.
+    // Ohne (Experiment-Funktion fehlt) wie bisher: Ordner mit Kopfdaten-Einträgen bleiben offen und werden erneut gelesen
+    const complete = this.onlineOnly(fid) || this.canFillBodies() || (noBody === 0 && !(await repo.hasHeadersOnly(this.db, fid)));
+    await repo.setFolderDone(this.db, fid, complete);
     await this.noteTotal(folder);
+    await this.noteSize(folder, sizeBefore);
     this.log.info(L(`[novabird-db] Ordner „${folder.name ?? fid}“ fertig: ${read} Mails gesehen, ${indexed} neu, ${skipped} übersprungen, ${stale.length} entfernt, ${((Date.now() - t0) / 1000).toFixed(1)} s`,
       `[novabird-db] Folder "${folder.name ?? fid}" done: ${read} mails seen, ${indexed} new, ${skipped} skipped, ${stale.length} removed, ${((Date.now() - t0) / 1000).toFixed(1)} s`));
+  }
+
+  /** Kann fehlende Mailtexte gezielt nachholen (Message-ID → Nachricht auflösen, ohne den Ordner durchzublättern)? */
+  canFillBodies() {
+    return Boolean(this.api.novabirdDb?.resolveMessages && this.api.novabirdDb?.folderInfo && this.api.messages?.get);
+  }
+
+  /** Aktuelle Größe des lokalen Speichers eines Ordners (Bytes) oder null. */
+  async folderSize(folder) {
+    try {
+      const [info] = await this.api.novabirdDb.folderInfo([{ accountId: folder.accountId, path: folder.path }]);
+      return typeof info?.size === "number" ? info.size : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Nach einem vollständigen Durchgang: Größe (vom Beginn des Durchgangs) merken, damit fillBodies() erst nach einem Download prüft. */
+  async noteSize(folder, size) {
+    if (!this.canFillBodies() || this.onlineOnly(folderIdOf(folder))) return;
+    if (size == null) return;
+    const sizes = await repo.loadFolderSizes(this.db);
+    sizes[folderIdOf(folder)] = size;
+    await repo.saveFolderSizes(this.db, sizes);
+  }
+
+  /**
+   * Mailtexte nachholen, die Thunderbird inzwischen lokal hat (IMAP-Offline-Ordner: Sync „nur die letzten X Tage“,
+   * Größengrenze, Download später). Statt den Ordner durchzublättern, nur die Einträge ohne Text über ihre Message-ID
+   * auflösen – und nur in Ordnern, deren lokaler Speicher seit der letzten Prüfung gewachsen ist. Still, ohne Overlay.
+   */
+  async fillBodies() {
+    if (!this.canFillBodies()) return { checked: 0, filled: 0 };
+    const counts = await repo.headersOnlyCounts(this.db);
+    if (!counts.size) return { checked: 0, filled: 0 };
+    await this.loadTagNames();
+    const folders = (await this.listFolders()).filter((f) => counts.has(folderIdOf(f)));
+    const sizes = await repo.loadFolderSizes(this.db);
+    let checked = 0;
+    let filled = 0;
+    for (const folder of folders) {
+      if (this.stopped) break;
+      const fid = folderIdOf(folder);
+      if (this.onlineOnly(fid)) continue;
+      const size = this.folderInfo?.get(fid)?.size;
+      if (typeof size === "number" && sizes[fid] === size) continue; // nichts heruntergeladen seit der letzten Prüfung
+      checked++;
+      let after = 0;
+      let complete = true;
+      for (;;) {
+        if (this.stopped) {
+          complete = false;
+          break;
+        }
+        const page = await repo.headersOnlyPage(this.db, fid, after, 1000);
+        if (!page.length) break;
+        after = page[page.length - 1].id;
+        const found = await this.api.novabirdDb.resolveMessages(page.map((r) => ({ headerMessageId: r.header_msg_id, folderId: fid })));
+        const ids = (found ?? []).filter((r) => r?.offline).map((r) => r.id);
+        if (!ids.length) continue;
+        const headers = (await Promise.all(ids.map((id) => this.api.messages.get(id).catch(() => null)))).filter(Boolean);
+        await this.enqueue(() => this.processHeaders(headers));
+        filled += headers.length;
+      }
+      if (complete && typeof size === "number") sizes[fid] = size;
+    }
+    await repo.saveFolderSizes(this.db, sizes);
+    if (checked) this.log.info(L(`[novabird-db] Texte nachholen: ${checked} Ordner geprüft, ${filled} Mailtexte ergänzt`, `[novabird-db] Fetching texts: ${checked} folders checked, ${filled} mail texts added`));
+    return { checked, filled };
   }
 
   /** Mailzahl des Ordners nach vollständigem Durchgang merken (dauerhaft in meta), Grundlage für reconcile(). */
@@ -514,7 +615,8 @@ export class Indexer {
     let rescanned = 0;
     let added = 0;
     const baseline = {};
-    for (const folder of await this.listFolders()) {
+    const listed = await this.listFolders();
+    for (const folder of listed) {
       if (this.stopped) break;
       if (this.isExcluded(folder)) continue;
       const fid = folderIdOf(folder);
@@ -529,6 +631,13 @@ export class Indexer {
       if (typeof total !== "number") continue;
       checked++;
       const have = counts.get(fid) ?? 0;
+      // Index und Betterbird stimmen überein (die Ereignisse haben ihn aktuell gehalten): nichts zu lesen, nur die Zahl merken.
+      // Sonst blätterte jeder Start jeden aktiven Ordner (Posteingang, Gesendet …) komplett durch, weil sich seine Zahl seit
+      // dem letzten vollständigen Durchgang geändert hat
+      if (!deep && fid in totals && total === have) {
+        if (totals[fid] !== total) baseline[fid] = total;
+        continue;
+      }
       // bekannter Ordner: nur neu lesen, wenn sich die Mailzahl seit dem letzten Durchgang geändert hat;
       // unbekannter Ordner: wenn Index und Betterbird abweichen
       if (!deep && (fid in totals ? totals[fid] === total : total === have)) continue;
@@ -552,6 +661,16 @@ export class Indexer {
       added += Math.max(0, after - before);
     }
     if (Object.keys(baseline).length) await repo.saveFolderTotals(this.db, { ...(await repo.loadFolderTotals(this.db)), ...baseline });
+    // Tiefenabgleich: Ordner, die es nicht mehr gibt (Konto entfernt, Ordner gelöscht, während Betterbird zu war), aus dem Index
+    // nehmen – sonst blieben ihre Mails Treffer, die sich nicht öffnen lassen. Nur bei vollständiger, nicht leerer Ordnerliste.
+    if (deep && !this.stopped && listed.length) {
+      const known = new Set(listed.map(folderIdOf));
+      for (const fid of counts.keys()) {
+        if (known.has(fid)) continue;
+        await this.enqueue(() => repo.deleteFolder(this.db, this.caps, fid));
+        this.log.info(L(`[novabird-db] Tiefenvergleich: Ordner ${fid} gibt es nicht mehr – aus dem Index entfernt`, `[novabird-db] Deep comparison: folder ${fid} no longer exists – removed from the index`));
+      }
+    }
     this.log.info(L(`[novabird-db] ${deep ? "Tiefenvergleich" : "Abgleich"} fertig: ${checked} Ordner geprüft, ${rescanned} neu gelesen, ${added} neu`, `[novabird-db] ${deep ? "Deep comparison" : "Comparison"} done: ${checked} folders checked, ${rescanned} read again, ${added} new`));
     return { checked, rescanned, added };
   }

@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isLessThan
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
@@ -11,6 +12,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.time.measureTime
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonArray
 import net.thunderbird.core.logging.testing.TestLogger
 import org.novabird.feature.search.K9Account
 import org.novabird.feature.search.MessageLocation
@@ -155,6 +157,33 @@ class NovaBirdIndexerTest {
         assertThat(ids(result).toSet().size).isEqualTo(8)
         // by date: no split
         assertThat(search("Angebot", sort = SearchSort.DATE).bestCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `a cut list says there are more hits, from name uses the sender index`() = runBlocking<Unit> {
+        mailStore.addFolder(1, "INBOX", "inbox")
+        for (i in 1..5) {
+            mailStore.insertMessage(
+                id = i.toLong(), folderId = 1, uid = "u$i", messageId = "<m$i@x.example>", subject = "Protokoll $i",
+                date = day(2026, 9, i), sender = "Jonas Weber <jonas@x.example>", to = "leitung@firma.example",
+                root = text("text/plain", null, "utf-8", "Protokoll der Sitzung."),
+            )
+        }
+        testSubject.indexChanges()
+
+        val cut = search.search("Protokoll", options.copy(limit = 3))
+        assertThat(cut.hits.size).isEqualTo(3)
+        assertThat(cut.hasMore).isTrue()
+        assertThat(search.search("Protokoll", options.copy(limit = 5)).hasMore).isFalse()
+
+        val indexes = core.engine().withMainDatabase { db ->
+            db.select(
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_messages_author_norm'",
+                JsonArray(emptyList()),
+            )
+        }
+        assertThat(indexes.size).isEqualTo(1)
+        assertThat(search("von:weber").hits.size).isEqualTo(5)
     }
 
     @Test

@@ -47,6 +47,7 @@ const searchResult = (r) =>
     suggest: r.suggest,
     bestIds: r.bestIds ?? [],
     relevant: r.relevant ?? [],
+    more: r.more === true,
   });
 
 // textWithoutChip: längere Anfragen und längere Wortstücke werden nicht durchprobiert
@@ -60,6 +61,14 @@ globalThis.NovaBird = {
   async migrate() {
     caps = await core.migrate(db);
     return JSON.stringify(caps);
+  },
+  /**
+   * Schmaler Index der Absendernamen (von:name, Namensauflösung): migrate() legt ihn nur bei leerem Index an, einen
+   * bestehenden Index ergänzt Kotlin nach dem Indexlauf im Hintergrund (wie der Leerlauf am PC). Antwort: true = vorhanden.
+   */
+  async ensureAuthorIndex() {
+    if (!caps.authorIndex) caps = { ...caps, authorIndex: await core.createAuthorIndex(db) };
+    return JSON.stringify(caps.authorIndex);
   },
   async search(input, optionsJson) {
     const o = options(JSON.parse(optionsJson));
@@ -99,7 +108,7 @@ globalThis.NovaBird = {
     const without = (start, end) => [...words.slice(0, start), ...words.slice(end)].join(" ");
     const matches = async (start, end) => {
       const parsed = core.parseQuery(without(start, end), { now: o.now, langs: o.langs, dateOrder: o.dateOrder });
-      return key(await core.resolvePeople(db, parsed, o)) === want;
+      return key(await core.resolvePeople(db, parsed, { ...o, authorIndex: caps.authorIndex })) === want;
     };
     for (let size = 1; size <= Math.min(CHIP_TEXT_MAX_WINDOW, words.length); size++) {
       for (let start = 0; start + size <= words.length; start++) {

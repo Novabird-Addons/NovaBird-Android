@@ -11,4 +11,5 @@
     <string name="novabird_search_similar_label">similar</string>
     <string name="novabird_search_best_count">%1$d best on top, then by date</string>
     <string name="novabird_search_more_by_date">More hits by date</string>
+    <string name="novabird_search_has_more">There are more hits. Narrow the search, for example with a sender or a time span.</string>
 </resources>

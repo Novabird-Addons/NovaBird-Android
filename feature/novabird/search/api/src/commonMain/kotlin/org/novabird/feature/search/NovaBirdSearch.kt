@@ -132,6 +132,8 @@ data class SearchResult(
     val bestCount: Int = 0,
     /** [SearchSort.BEST]: best keyword hits by relevance, opaque. Used by [NovaBirdSearch.addSimilar]. */
     val relevantRows: String = "[]",
+    /** More keyword hits exist than [SearchOptions.limit]; the list is cut. */
+    val hasMore: Boolean = false,
 )
 
 data class SearchChip(

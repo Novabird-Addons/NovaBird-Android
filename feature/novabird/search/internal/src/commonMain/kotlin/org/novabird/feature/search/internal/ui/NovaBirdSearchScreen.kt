@@ -47,6 +47,7 @@ import org.novabird.feature.search.internal.resources.Res
 import org.novabird.feature.search.internal.resources.novabird_search_best_count
 import org.novabird.feature.search.internal.resources.novabird_search_did_you_mean
 import org.novabird.feature.search.internal.resources.novabird_search_error
+import org.novabird.feature.search.internal.resources.novabird_search_has_more
 import org.novabird.feature.search.internal.resources.novabird_search_hint
 import org.novabird.feature.search.internal.resources.novabird_search_more_by_date
 import org.novabird.feature.search.internal.resources.novabird_search_no_results
@@ -172,6 +173,15 @@ internal fun NovaBirdSearchContent(
                         onClick = { hit.location?.let { onEvent(Event.OpenHit(it)) } },
                     )
                     if (index == bestCount - 1) MoreByDate() else DividerHorizontal()
+                }
+                if (result?.hasMore == true && !state.hasError) {
+                    item(key = "more") {
+                        TextBodySmall(
+                            text = stringResource(Res.string.novabird_search_has_more),
+                            color = BoltTheme.colors.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = BoltTheme.spacings.double),
+                        )
+                    }
                 }
             }
         }

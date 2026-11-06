@@ -168,7 +168,9 @@ function parseNumericDate(s, today, order) {
 
 function parseIsoDate(s) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return d.getMonth() === Number(m[2]) - 1 ? d : null; // 2026-02-30, 2026-13-01: kein Datum (statt still umzurechnen)
 }
 
 /**
@@ -543,6 +545,7 @@ function extractTerms(rest, q, ctx) {
     if (!clean) continue;
     const n = norm(clean);
     if (!negative && (ctx.filler.has(n) || ctx.filler.has(n.replace(/\s+/g, "")))) {
+      q.fillerWords = [...(q.fillerWords ?? []), clean]; // gemerkt: besteht die Suche nur daraus, werden sie doch gesucht
       pendingOr = false;
       continue;
     }
@@ -595,6 +598,20 @@ export function parseQuery(input, options = {}) {
   extractTerms(rest, q, ctx);
 
   if (q.attachmentTypes.length) q.hasAttachment = true;
+  // Genau ein Füllwort getippt („E-Mail“, „Mail“, „Nachricht“): ohne es bliebe keine Bedingung, und die Suche zeigte einfach alle
+  // Mails (bei großen Postfächern auch noch sehr langsam). Dann ist es doch der Suchbegriff. Ein ganzer Satz aus Füllwörtern
+  // („ich suche alle mails“) bleibt dagegen „alle Mails“.
+  if (q.fillerWords?.length === 1 && isEmptyQuery(q)) {
+    for (const w of q.fillerWords) {
+      if (w.includes(" ")) {
+        q.phrases.push(w);
+      } else {
+        if (!q.words.includes(w)) q.words.push(w);
+        q.terms.push(ctx.stems(w));
+      }
+    }
+  }
+  delete q.fillerWords;
   return q;
 }
 

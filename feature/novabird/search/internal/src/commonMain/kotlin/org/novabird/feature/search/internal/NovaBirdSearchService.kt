@@ -244,6 +244,7 @@ constructor(
             // core search (sort "best"): the best rows are already on top
             bestCount = (result["bestIds"] as? JsonArray)?.size ?: 0,
             relevantRows = (result["relevant"] as? JsonArray)?.toString() ?: "[]",
+            hasMore = result["more"]?.jsonPrimitive?.booleanOrNull == true,
         )
     }
 

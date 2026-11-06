@@ -11,4 +11,5 @@
     <string name="novabird_search_similar_label">ähnlich</string>
     <string name="novabird_search_best_count">%1$d beste oben, danach nach Datum</string>
     <string name="novabird_search_more_by_date">Weitere Treffer nach Datum</string>
+    <string name="novabird_search_has_more">Es gibt noch mehr Treffer. Grenze die Suche ein, zum Beispiel mit Absender oder Zeitraum.</string>
 </resources>

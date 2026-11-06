@@ -42,6 +42,8 @@ class FakeK9MailStore(private val account: K9Account) : K9MailStore {
                 "display_name TEXT, header TEXT, encoding TEXT, charset TEXT, data_location INTEGER NOT NULL, " +
                 "data BLOB, preamble TEXT, epilogue TEXT, boundary TEXT, content_id TEXT, server_extra TEXT)",
         )
+        // like K-9 (StoreSchemaDefinition): without it the parts lookup per message reads the whole table
+        connection.execSQL("CREATE INDEX message_parts_root ON message_parts (root)")
     }
 
     override fun accounts(): List<K9Account> = listOf(account)
