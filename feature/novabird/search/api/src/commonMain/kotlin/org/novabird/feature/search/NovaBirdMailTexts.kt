@@ -15,6 +15,13 @@ interface NovaBirdMailTexts {
     suspend fun mailForCheck(accountUuid: String, k9Id: Long): MailForCheck? = null
 
     /**
+     * Message-IDs (like [MailForCheck.headerMessageId]) of those of [k9Ids] that are mails in the account right now, or
+     * `null` if the account can't be read. K-9 gives the id of a deleted newest mail to the next mail, so the id alone
+     * doesn't say which mail it is.
+     */
+    suspend fun headerMessageIds(accountUuid: String, k9Ids: Collection<Long>): Map<Long, String>? = null
+
+    /**
      * Decoded content of part [partId] (see [MailPart.partId]) if it is stored locally and at most [maxBytes] long,
      * otherwise `null`. Nothing is downloaded.
      */

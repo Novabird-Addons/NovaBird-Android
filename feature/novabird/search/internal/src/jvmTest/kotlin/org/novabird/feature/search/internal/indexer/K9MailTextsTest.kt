@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import kotlin.test.Test
 import kotlinx.coroutines.runBlocking
 import org.novabird.feature.search.K9Account
@@ -26,6 +27,20 @@ class K9MailTextsTest {
         date = now - hoursAgo * HOUR, sender = "anna@example.com;\u0001Anna", to = "me@example.com",
         root = plain("Text $id"), read = read,
     )
+
+    @Test
+    fun `message ids of the mails that exist, like the index writes them`() = runBlocking {
+        add(1, 1, hoursAgo = 2)
+        store.insertMessage(
+            id = 2, folderId = 1, uid = "u2", messageId = null, subject = "Ohne Message-ID",
+            date = now, sender = "anna@example.com;Anna", to = "me@example.com", root = plain("Text"),
+        )
+
+        val ids = texts.headerMessageIds("acc-1", listOf(1L, 2L, 3L))
+
+        assertThat(ids).isEqualTo(mapOf(1L to "m1@example.com", 2L to "k9-1-u2@novabird.invalid"))
+        assertThat(texts.headerMessageIds("anderes-konto", listOf(1L))).isNull()
+    }
 
     @Test
     fun `recent mails are the newest unread ones of the inboxes`() = runBlocking {

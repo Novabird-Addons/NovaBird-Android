@@ -161,6 +161,7 @@ private fun StateArea(state: FullSyncState) = Column(
                 when (state.reason) {
                     FullSyncScheduler.ERROR_LOGIN -> R.string.novabird_sync_full_failed_login
                     FullSyncScheduler.ERROR_NO_FOLDERS -> R.string.novabird_sync_full_failed_no_folders
+                    FullSyncScheduler.ERROR_FOLDERS -> R.string.novabird_sync_full_failed_folders
                     else -> R.string.novabird_sync_full_failed
                 },
             ),

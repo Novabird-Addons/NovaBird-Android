@@ -13,6 +13,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isGreaterThan
 import assertk.assertions.isLessThan
 import assertk.assertions.isLessThanOrEqualTo
+import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import java.io.ByteArrayOutputStream
@@ -40,6 +41,8 @@ class ProtectionServiceTest {
         override suspend fun mail(location: MessageLocation): MailForAi? = null
         override suspend fun recentMails(hours: Int, unreadOnly: Boolean, max: Int) = RecentMails(emptyList(), 0)
         override suspend fun mailForCheck(accountUuid: String, k9Id: Long) = mails[k9Id]
+        override suspend fun headerMessageIds(accountUuid: String, k9Ids: Collection<Long>) =
+            k9Ids.mapNotNull { id -> mails[id]?.let { id to it.headerMessageId } }.toMap()
         override suspend fun partBytes(accountUuid: String, partId: Long, maxBytes: Int) =
             partData[partId]?.takeIf { it.size <= maxBytes }
     }
@@ -112,15 +115,16 @@ class ProtectionServiceTest {
         extraHeaders: Map<String, String> = emptyMap(),
         extraParts: List<MailPart> = emptyList(),
         arrived: Long = NOW - id,
+        messageId: String = "m$id@example.com",
     ) {
         val address = from.substringAfter('<').substringBefore('>')
         val packedSender = "$address;\u0001${from.substringBefore(" <")}"
-        k9.insert(id, folder, "u$id", "<m$id@example.com>", subject, NOW - id, packedSender, arrived = arrived)
+        k9.insert(id, folder, "u$id", "<$messageId>", subject, NOW - id, packedSender, arrived = arrived)
         mails[id] = MailForCheck(
             accountUuid = account.uuid,
             k9Id = id,
             location = MessageLocation(account.uuid, folder, "u$id"),
-            headerMessageId = "m$id@example.com",
+            headerMessageId = messageId,
             date = NOW - id,
             folderType = if (folder == SPAM) "spam" else "inbox",
             headers = (mapOf("from" to from, "to" to "ich@meine-firma.example", "subject" to subject) + extraHeaders)
@@ -149,13 +153,62 @@ class ProtectionServiceTest {
 
     private val image = ByteArray(5_000) { 7 }
 
-    private fun phishing(id: Long, arrived: Long = NOW - id) = mail(
+    private fun phishing(id: Long, arrived: Long = NOW - id, messageId: String = "m$id@example.com") = mail(
         id,
         "PayPal Service <service@paypal-konto.example.invalid>",
         "Ihr Konto",
         """<p>Konto gesperrt</p><a href="https://paypa1-login.example.invalid/x">www.paypal.de</a>""",
         arrived = arrived,
+        messageId = messageId,
     )
+
+    /** K-9 gives the id of a deleted newest mail to the next mail. */
+    private fun nextMailTakesId(id: Long) {
+        k9.delete(id)
+        phishing(id, messageId = "neu$id@example.com")
+    }
+
+    @Test
+    fun `a mail with the id of a deleted mail gets its own result when opened`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        mail(5, "Anna <anna@partner.example>", "Hallo")
+        assertThat(service.checkNewMails()).isEqualTo(1)
+        assertThat(service.storedVerdict(account.uuid, 5)?.level).isEqualTo(ProtectionLevel.NORMAL)
+
+        nextMailTakesId(5)
+        val verdict = service.verdictOnOpen(account.uuid, 5)
+
+        assertThat(verdict?.headerMessageId).isEqualTo("neu5@example.com")
+        assertThat(verdict?.level).isNotEqualTo(ProtectionLevel.NORMAL)
+    }
+
+    @Test
+    fun `the background check finds a mail with the id of a deleted mail`() = runBlocking<Unit> {
+        service.enable(consentVersion = 1)
+        mail(5, "Anna <anna@partner.example>", "Hallo")
+        assertThat(service.checkNewMails()).isEqualTo(1)
+
+        nextMailTakesId(5)
+
+        assertThat(service.checkNewMails()).isEqualTo(1)
+        assertThat(service.storedVerdict(account.uuid, 5)?.headerMessageId).isEqualTo("neu5@example.com")
+    }
+
+    @Test
+    fun `a flagged sender stays flagged after the mail is gone, and the answer follows new results`() =
+        runBlocking<Unit> {
+            service.enable(consentVersion = 1)
+            assertThat(service.isFlaggedSender("service@paypal-konto.example.invalid")).isEqualTo(false)
+
+            phishing(5)
+            service.checkNewMails()
+            assertThat(service.isFlaggedSender("Service@PayPal-Konto.example.invalid ")).isEqualTo(true)
+
+            k9.delete(5)
+            mails.remove(5)
+            service.checkNewMails()
+            assertThat(service.isFlaggedSender("service@paypal-konto.example.invalid")).isEqualTo(true)
+        }
 
     @Test
     fun `nothing is checked while the protection is off`() = runBlocking<Unit> {
@@ -648,6 +701,8 @@ class ProtectionServiceTest {
                 "sender_list, to_list, cc_list) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '')",
             id, folder, uid, messageId, subject, date, arrived, sender, to,
         )
+
+        fun delete(id: Long) = exec("DELETE FROM messages WHERE id = ?", id)
 
         private fun exec(sql: String, vararg args: Any?) {
             connection.prepare(sql).use { st ->

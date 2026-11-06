@@ -55,6 +55,7 @@
     <string name="novabird_protect_banner_error_text">This mail could not be checked. Please treat it as unchecked.</string>
     <string name="novabird_protect_link_title">Open link?</string>
     <string name="novabird_protect_link_text">This mail is rated dangerous. The link leads to:\n%1$s</string>
+    <string name="novabird_protect_link_unchecked">This mail has not been checked yet. The link leads to:\n%1$s</string>
     <string name="novabird_protect_link_open">Open anyway</string>
     <string name="novabird_settings_logos">Show sender logos</string>
     <string name="novabird_settings_logos_note">Company logos (BIMI), loaded from the sender domain</string>

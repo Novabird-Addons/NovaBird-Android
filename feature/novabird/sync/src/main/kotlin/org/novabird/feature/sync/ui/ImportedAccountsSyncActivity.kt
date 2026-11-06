@@ -10,11 +10,13 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import com.fsck.k9.Preferences
 import com.fsck.k9.controller.MessagingController
@@ -58,7 +60,8 @@ class ImportedAccountsSyncActivity : BaseActivity() {
     private val fullSync: FullSyncScheduler by inject()
     private val appScope: CoroutineScope by inject(named("AppCoroutineScope"))
 
-    private val accounts = MutableStateFlow<List<AccountScope>>(emptyList())
+    private val choices: ImportChoices by viewModels()
+    private val accounts get() = choices.accounts
     private val backgroundAllowed = MutableStateFlow(true)
     private var applied = false
 
@@ -68,6 +71,8 @@ class ImportedAccountsSyncActivity : BaseActivity() {
         setResult(RESULT_OK)
 
         lifecycleScope.launch {
+            // after turning the phone the choices are still there
+            if (accounts.value.isNotEmpty()) return@launch
             withContext(Dispatchers.IO) {
                 // first opening: NovaBird's defaults instead of the imported values
                 if (savedInstanceState == null) uuids.forEach { save(it, period = DEFAULT_PERIOD, count = ALL) }
@@ -309,7 +314,12 @@ class ImportedAccountsSyncActivity : BaseActivity() {
         choice.fullSync?.let { fullSync.start(choice.uuid, it) }
     }
 
-    private data class AccountScope(
+    /** What the user chose so far; outlives the activity when the phone is turned. */
+    internal class ImportChoices : ViewModel() {
+        val accounts = MutableStateFlow<List<AccountScope>>(emptyList())
+    }
+
+    internal data class AccountScope(
         val uuid: String,
         val name: String,
         val period: Int,

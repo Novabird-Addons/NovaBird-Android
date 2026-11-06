@@ -2,17 +2,14 @@ package org.novabird.mail.logo
 
 import android.annotation.SuppressLint
 import android.net.DnsResolver
-import android.os.Build
 import android.os.CancellationSignal
-import androidx.annotation.RequiresApi
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.minidns.dnsmessage.DnsMessage
-import org.minidns.hla.ResolverApi
 import org.minidns.record.TXT
 
-/** TXT lookups for BIMI: the system resolver on Android 10 and later, minidns before. Blocking, for worker threads. */
+/** TXT lookups for BIMI with the system resolver; minidns only reads the answer. Blocking, for worker threads. */
 internal object BimiDns {
     private const val TYPE_TXT = 16
     private const val DNS_TIMEOUT_MS = 2_000L
@@ -20,14 +17,10 @@ internal object BimiDns {
     private const val RCODE_NX_DOMAIN = 3
 
     /** The TXT records of [name]; empty if there are none; throws [IOException] if the lookup failed. */
-    fun txtRecords(name: String): List<String> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) systemTxtRecords(name) else miniDnsTxtRecords(name)
-
-    // the system resolver (uses Private DNS if set); the answer is parsed with minidns
+    // the system resolver uses Private DNS if set
     // the raw query takes any record type; the annotation only lists the types of the parsed query
     @SuppressLint("WrongConstant")
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun systemTxtRecords(name: String): List<String> {
+    fun txtRecords(name: String): List<String> {
         val latch = CountDownLatch(1)
         var answer: ByteArray? = null
         val signal = CancellationSignal()
@@ -57,14 +50,5 @@ internal object BimiDns {
         }
         val bytes = answer ?: throw IOException("DNS error")
         return DnsMessage(bytes).answerSection.mapNotNull { (it.payload as? TXT)?.text }
-    }
-
-    private fun miniDnsTxtRecords(name: String): List<String> {
-        val result = ResolverApi.INSTANCE.resolve(name, TXT::class.java)
-        val code = result.responseCode
-        if (code != DnsMessage.RESPONSE_CODE.NO_ERROR && code != DnsMessage.RESPONSE_CODE.NX_DOMAIN) {
-            throw IOException("DNS $code")
-        }
-        return result.answersOrEmptySet.map { it.text }
     }
 }

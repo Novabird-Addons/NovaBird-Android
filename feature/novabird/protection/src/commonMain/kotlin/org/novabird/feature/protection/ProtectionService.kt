@@ -1,5 +1,6 @@
 package org.novabird.feature.protection
 
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +73,10 @@ class ProtectionService(
     private val mediaRunning = HashSet<Pair<String, Long>>()
     private val _revision = MutableStateFlow(0L)
 
+    /** Senders rated suspicious or dangerous, for [isFlaggedSender]; `null` until read or after results went away. */
+    @Volatile
+    private var flaggedCache: Set<String>? = null
+
     val isEnabled: Boolean get() = settings.enabled
 
     /** Counts up whenever stored results change (new check, trust, untrust); the message list refreshes its badges. */
@@ -101,7 +106,7 @@ class ProtectionService(
         val added = new.allowed - old.allowed.toSet()
         if (added.isNotEmpty()) {
             for (sender in store.spamSenders()) {
-                if (added.any { SpamRules.matches(it, sender) }) store.deleteBySender(sender)
+                if (added.any { SpamRules.matches(it, sender) }) forgetSender(sender)
             }
         }
         _revision.value++
@@ -151,7 +156,7 @@ class ProtectionService(
     suspend fun enable(consentVersion: Int) = locked {
         settings.setEnabled(true, consentVersion, now())
         store.clearWatermarks()
-        for (account in mailStore.accounts()) store.setWatermark(account.uuid, maxMessageId(account.uuid), now())
+        for (account in mailStore.accounts()) store.setWatermark(account.uuid, maxMessageId(account.uuid) ?: 0L, now())
         contextLoadedAt = Long.MIN_VALUE
         _revision.value++
         onEnabled()
@@ -195,15 +200,20 @@ class ProtectionService(
     suspend fun untrust(address: String) = locked {
         val key = address.trim().lowercase()
         settings.updateTrustedSenders(settings.trustedSenders.filter { it.address != key })
-        store.deleteBySender(key)
+        forgetSender(key)
         _revision.value++
+    }
+
+    private fun forgetSender(sender: String) {
+        store.deleteBySender(sender)
+        flaggedCache = null
     }
 
     private fun addTrusted(sender: TrustedSender) {
         val key = sender.address.trim().lowercase()
         val others = settings.trustedSenders.filter { it.address != key }
         settings.updateTrustedSenders(others + sender.copy(address = key))
-        store.deleteBySender(key)
+        forgetSender(key)
         _revision.value++
     }
 
@@ -217,7 +227,7 @@ class ProtectionService(
      */
     suspend fun verdictOnOpen(accountUuid: String, k9Id: Long): StoredVerdict? {
         if (!settings.enabled) return null
-        val verdict = locked { store.get(accountUuid, k9Id)?.takeIf { it.rulesVersion == RULES_VERSION } }
+        val verdict = locked { resultOfMail(accountUuid, k9Id)?.takeIf { it.rulesVersion == RULES_VERSION } }
             ?: run {
                 val mail = locked { texts.mailForCheck(accountUuid, k9Id) } ?: return null
                 val extras = guardedMedia(mail, previous = null, withOcr = false)
@@ -238,6 +248,37 @@ class ProtectionService(
             }
         }
         return verdict
+    }
+
+    /**
+     * The stored result of [k9Id], unless it was made for another mail: K-9 gives the id of a deleted newest mail to the
+     * next mail, and that mail must not show the old mail's rating.
+     */
+    private suspend fun resultOfMail(accountUuid: String, k9Id: Long): StoredVerdict? {
+        val stored = store.get(accountUuid, k9Id) ?: return null
+        val current = texts.headerMessageIds(accountUuid, listOf(k9Id))?.get(k9Id)
+        if (current == null || current == stored.headerMessageId) return stored
+        forget(accountUuid, listOf(k9Id))
+        return null
+    }
+
+    /**
+     * Drops the results whose K-9 id belongs to another mail by now and returns those ids. Results of mails that are
+     * gone stay: they are the history of flagged senders.
+     */
+    private suspend fun dropForeignResults(accountUuid: String): Set<Long> {
+        val stored = store.messageIds(accountUuid)
+        if (stored.isEmpty()) return emptySet()
+        val current = texts.headerMessageIds(accountUuid, stored.keys) ?: return emptySet()
+        val foreign = stored.filter { (id, messageId) -> current[id].let { it != null && it != messageId } }.keys
+        if (foreign.isNotEmpty()) forget(accountUuid, foreign)
+        return foreign
+    }
+
+    private fun forget(accountUuid: String, k9Ids: Collection<Long>) {
+        store.deleteResults(accountUuid, k9Ids)
+        flaggedCache = null
+        _revision.value++
     }
 
     /** Reads the text in the images of a stored result that has not read it yet (OCR) and rates the mail again. */
@@ -358,15 +399,18 @@ class ProtectionService(
     /**
      * Watermark and time of the last run of an account; `null` (nothing to do yet) for an account added after switching
      * on, which starts from now. Data from before the time was stored also starts from now, so a backlog of older mails
-     * is never worked through in the background.
+     * is never worked through in the background. K-9 gives ids of deleted mails to new ones, so the run starts below a
+     * reused id and never above the newest mail.
      */
-    private fun accountProgress(accountUuid: String, now: Long): Pair<Long, Long>? {
+    private suspend fun accountProgress(accountUuid: String, now: Long): Pair<Long, Long>? {
         val watermark = store.watermark(accountUuid)
         if (watermark == null) {
-            store.setWatermark(accountUuid, maxMessageId(accountUuid), now)
+            store.setWatermark(accountUuid, maxMessageId(accountUuid) ?: 0L, now)
             return null
         }
-        return watermark to (store.since(accountUuid) ?: now)
+        val belowReused = dropForeignResults(accountUuid).minOrNull()?.minus(1)
+        val start = listOfNotNull(watermark, maxMessageId(accountUuid), belowReused).min()
+        return start to (store.since(accountUuid) ?: now)
     }
 
     /**
@@ -540,9 +584,15 @@ class ProtectionService(
         null
     }
 
-    /** True if the protection rated a mail of [address] suspicious or dangerous (e.g. no brand logo for it). */
-    suspend fun isFlaggedSender(address: String): Boolean =
-        settings.enabled && locked { store.isFlagged(address.trim().lowercase()) }
+    /**
+     * True if the protection rated a mail of [address] suspicious or dangerous (e.g. no brand logo for it). Asked for
+     * every sender picture, so it answers from memory and doesn't wait for a running check.
+     */
+    suspend fun isFlaggedSender(address: String): Boolean {
+        if (!settings.enabled) return false
+        val senders = flaggedCache ?: locked { store.flaggedSenders().also { flaggedCache = it } }
+        return address.trim().lowercase() in senders
+    }
 
     /**
      * QR codes in images and attachment types of [mail], and with [withOcr] the text in images (only the images the
@@ -605,6 +655,12 @@ class ProtectionService(
 
     private fun save(record: StoredVerdict) {
         store.save(record)
+        val flagged = flaggedCache
+        when {
+            flagged == null -> Unit
+            record.level != ProtectionLevel.NORMAL -> flaggedCache = flagged + record.sender
+            record.sender in flagged -> flaggedCache = null
+        }
         _revision.value++
     }
 
@@ -707,9 +763,10 @@ class ProtectionService(
         return null
     }
 
-    private fun maxMessageId(accountUuid: String): Long = mailStore.open(accountUuid)?.use { db ->
+    /** Highest K-9 id of the account, `null` if it can't be read. */
+    private fun maxMessageId(accountUuid: String): Long? = mailStore.open(accountUuid)?.use { db ->
         db.query("SELECT ifnull(max(id), 0) FROM messages").firstOrNull()?.get(0) as Long?
-    } ?: 0L
+    }
 
     /** Inbox mails above the watermark with the time they reached the server (`internal_date`, else `date`). */
     private fun newInboxMails(accountUuid: String, watermark: Long): List<Pair<Long, Long>> =

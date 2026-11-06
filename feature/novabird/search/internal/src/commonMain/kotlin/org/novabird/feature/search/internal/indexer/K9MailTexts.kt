@@ -27,6 +27,11 @@ internal class K9MailTexts(
             mailStore.open(accountUuid)?.use { db -> K9MessageReader(accountUuid, db).readForCheck(k9Id) }
         }
 
+    override suspend fun headerMessageIds(accountUuid: String, k9Ids: Collection<Long>): Map<Long, String>? =
+        withContext(Dispatchers.Default) {
+            mailStore.open(accountUuid)?.use { db -> K9MessageReader(accountUuid, db).headerMessageIds(k9Ids) }
+        }
+
     override suspend fun partBytes(accountUuid: String, partId: Long, maxBytes: Int): ByteArray? =
         withContext(Dispatchers.Default) {
             mailStore.open(accountUuid)?.use { db -> K9MessageReader(accountUuid, db).readPartBytes(partId, maxBytes) }

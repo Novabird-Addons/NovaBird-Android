@@ -114,14 +114,30 @@ class ProtectionStore(fileName: String) : AutoCloseable {
             buildMap { while (statement.step()) put(statement.getText(0), statement.getLong(1)) }
         }
 
-    /** True if a mail of [sender] (address in lower case) was rated suspicious or dangerous. */
-    fun isFlagged(sender: String): Boolean =
+    /** K-9 id and Message-ID of all results of the account. */
+    fun messageIds(accountUuid: String): Map<Long, String> =
         connection.prepare(
-            "SELECT 1 FROM nb_protection WHERE sender = ? AND level != 'normal' LIMIT 1",
+            "SELECT k9_id, header_message_id FROM nb_protection WHERE account_uuid = ?",
         ).use { statement ->
-            statement.bindText(1, sender)
-            statement.step()
+            statement.bindText(1, accountUuid)
+            buildMap { while (statement.step()) put(statement.getLong(0), statement.getText(1)) }
         }
+
+    /** Removes the results of [k9Ids] and their marks of a media read. */
+    fun deleteResults(accountUuid: String, k9Ids: Collection<Long>) {
+        for (table in listOf("nb_protection", "nb_protection_media")) {
+            for (chunk in k9Ids.distinct().chunked(MAX_PARAMS)) {
+                val placeholders = chunk.joinToString(",") { "?" }
+                connection.prepare(
+                    "DELETE FROM $table WHERE account_uuid = ? AND k9_id IN ($placeholders)",
+                ).use { statement ->
+                    statement.bindText(1, accountUuid)
+                    chunk.forEachIndexed { i, id -> statement.bindLong(i + 2, id) }
+                    statement.step()
+                }
+            }
+        }
+    }
 
     fun save(record: StoredVerdict) {
         connection.prepare(

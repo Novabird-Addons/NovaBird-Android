@@ -187,6 +187,19 @@ class NovaBirdIndexerTest {
     }
 
     @Test
+    fun `a UID that K-9 replaces later reaches the hit`() = runBlocking<Unit> {
+        fillMailbox()
+        testSubject.indexChanges()
+
+        // a moved or sent mail first has a local UID; K-9 writes the server's UID into the same row later
+        mailStore.exec("UPDATE messages SET uid = 'u11-server' WHERE uid = 'u11'")
+        testSubject.indexChanges()
+
+        assertThat(search("Rechnung").hits.single().location)
+            .isEqualTo(MessageLocation(ACCOUNT, folderId = 1, uid = "u11-server"))
+    }
+
+    @Test
     fun `hits carry the K-9 location for opening the message`() = runBlocking<Unit> {
         fillMailbox()
         testSubject.indexChanges()

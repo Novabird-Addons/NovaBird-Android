@@ -15,6 +15,7 @@ import com.fsck.k9.controller.MessagingController
 import com.fsck.k9.mailstore.LocalStoreProvider
 import com.fsck.k9.notification.NotificationChannelManager
 import com.fsck.k9.notification.NotificationResourceProvider
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -31,7 +32,8 @@ import org.novabird.feature.sync.backfill.PartialMessageBackfillScheduler
  *
  * Runs as a foreground service (notification with progress), so Android doesn't put it to sleep with the screen off
  * like the normal background sync. If Wi-Fi goes away WorkManager stops it and starts it again later; the sync is
- * incremental, so folders already loaded go quickly. Android allows such a service about 6 hours a day.
+ * incremental, so folders already loaded go quickly. Android allows such a service about 6 hours a day. A folder that
+ * didn't load (server trouble) makes it try again a few times, then it ends with an error instead of "done".
  *
  * Created by WorkManager's default factory (`K9WorkerFactory` only handles classes in `com.fsck.k9`).
  */
@@ -89,6 +91,17 @@ class FullSyncWorker(
             }
         } finally {
             controller.removeListener(listener)
+        }
+
+        // a sync problem only reaches listeners (or nobody): a folder without "finished" did not load
+        val failed = folders.size - listener.finishedFolders
+        if (failed > 0) {
+            logger.info(TAG) { "Full sync: $failed of ${folders.size} folders did not load" }
+            return@withContext if (runAttemptCount < MAX_RETRIES) {
+                Result.retry()
+            } else {
+                Result.failure(workDataOf(FullSyncScheduler.KEY_ERROR to FullSyncScheduler.ERROR_FOLDERS))
+            }
         }
 
         // then the messages that only came partially (size limit) are completed, also only on Wi-Fi
@@ -188,6 +201,14 @@ class FullSyncWorker(
     // headers first, then the messages: both counted against the messages of the folder
     private inner class ProgressListener(private val account: LegacyAccountDto) : SimpleMessagingListener() {
         private var lastUpdate = 0L
+        private val finished = ConcurrentHashMap.newKeySet<Long>()
+
+        /** Folders that loaded to the end. */
+        val finishedFolders: Int get() = finished.size
+
+        override fun synchronizeMailboxFinished(account: LegacyAccountDto, folderId: Long) {
+            if (account.uuid == this.account.uuid) finished += folderId
+        }
 
         override fun synchronizeMailboxHeadersProgress(
             account: LegacyAccountDto,
@@ -216,6 +237,7 @@ class FullSyncWorker(
         const val TAG = "NovaBirdFullSync"
         const val NOTIFICATION_ID = 7_310_000
         const val UPDATE_INTERVAL_MS = 1_000L
+        const val MAX_RETRIES = 3
     }
 }
 

@@ -2,6 +2,7 @@ package org.novabird.feature.ai.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -174,6 +175,8 @@ internal class AiSettingsViewModel(
                 mutableState.update { it.copy(autoPair = AutoPair.Compare(started.helperName, started.number)) }
                 waitForApproval(pairing, started)
             }
+            // "cancel" stops this job: that is no failed pairing, and a new one may already be running
+            (outcome.exceptionOrNull() as? CancellationException)?.let { throw it }
             when (val result = outcome.getOrElse { e -> AutoPair.Failed(e.message ?: e::class.simpleName.orEmpty()) }) {
                 is HelperPairing.PollResult.Ok -> {
                     mutableState.update { it.copy(autoPair = null, search = HelperSearch.Idle) }

@@ -62,7 +62,12 @@ class NovaBirdIndexer(
         return IndexStats(indexed = indexed, removed = removed, total = total.toInt())
     }
 
-    private data class Known(val folderId: Long, val headerMessageId: String, val fingerprint: String)
+    private data class Known(
+        val folderId: Long,
+        val headerMessageId: String,
+        val fingerprint: String,
+        val uid: String,
+    )
 
     private data class IndexKey(val folderId: Long, val headerMessageId: String)
 
@@ -74,10 +79,11 @@ class NovaBirdIndexer(
         val known = engine.withMainDatabase { db -> db.knownMessages(accountUuid) }
 
         val current = entries.associateBy { it.k9Id }
+        // the UID counts too: K-9 replaces the local UID of a moved or sent mail later, in the same row
         val changed = entries.filter { entry ->
             val old = known[entry.k9Id]
             old == null || old.fingerprint != entry.fingerprint || old.folderId != entry.folderId ||
-                old.headerMessageId != entry.headerMessageId
+                old.headerMessageId != entry.headerMessageId || old.uid != entry.uid
         }
         val newKeys = entries.mapTo(HashSet()) { IndexKey(it.folderId, it.headerMessageId) }
         val staleKeys = known.filter { (k9Id, old) ->
@@ -148,12 +154,16 @@ class NovaBirdIndexer(
 
     private fun SearchIndexDatabase.knownMessages(accountUuid: String): Map<Long, Known> =
         select(
-            "SELECT k9_id, folder_id, header_msg_id, fingerprint FROM nb_android_messages WHERE account_uuid = ?",
+            "SELECT k9_id, folder_id, header_msg_id, fingerprint, uid FROM nb_android_messages WHERE account_uuid = ?",
             JsonArray(listOf(JsonPrimitive(accountUuid))),
         ).associate { row ->
             val r = row.jsonArray
-            r[0].jsonPrimitive.long to
-                Known(r[1].jsonPrimitive.long, r[2].jsonPrimitive.content, r[3].jsonPrimitive.content)
+            r[0].jsonPrimitive.long to Known(
+                folderId = r[1].jsonPrimitive.long,
+                headerMessageId = r[2].jsonPrimitive.content,
+                fingerprint = r[3].jsonPrimitive.content,
+                uid = r[4].jsonPrimitive.content,
+            )
         }
 
     private fun SearchIndexDatabase.saveKnown(accountUuid: String, entries: List<K9MessageEntry>) {

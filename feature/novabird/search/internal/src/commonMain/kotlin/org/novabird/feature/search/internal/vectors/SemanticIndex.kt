@@ -3,8 +3,10 @@ package org.novabird.feature.search.internal.vectors
 import kotlin.io.encoding.Base64
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
@@ -166,16 +168,19 @@ class SemanticIndex(
         val mem = memory(b.modelId) ?: return null
         val qv = b.embedQuery(query) ?: return null
         if (qv.size != mem.dims) return null
-        val hits = ArrayList<Pair<String, Double>>()
-        for (i in mem.ids.indices) {
-            val base = i * mem.dims
-            var dot = 0.0
-            for (k in 0 until mem.dims) dot += mem.q[base + k] * qv[k]
-            dot *= mem.scale[i]
-            if (dot >= threshold) hits += mem.ids[i] to dot
+        // about 30 million steps at 30 000 mails, and the search screen calls this on the main thread
+        return withContext(Dispatchers.Default) {
+            val hits = ArrayList<Pair<String, Double>>()
+            for (i in mem.ids.indices) {
+                val base = i * mem.dims
+                var dot = 0.0
+                for (k in 0 until mem.dims) dot += mem.q[base + k] * qv[k]
+                dot *= mem.scale[i]
+                if (dot >= threshold) hits += mem.ids[i] to dot
+            }
+            hits.sortByDescending { it.second }
+            hits.take(limit)
         }
-        hits.sortByDescending { it.second }
-        return hits.take(limit)
     }
 
     private suspend fun memory(model: String): Memory? = memoryLock.withLock {
@@ -187,18 +192,20 @@ class SemanticIndex(
             )
         }
         if (rows.isEmpty()) return@withLock null
-        val first = Base64.decode(rows[0].jsonArray[2].jsonPrimitive.content)
-        val dims = first.size
-        val ids = Array(rows.size) { "" }
-        val q = ByteArray(rows.size * dims)
-        val scale = FloatArray(rows.size)
-        rows.forEachIndexed { i, row ->
-            val r = row.jsonArray
-            ids[i] = r[0].jsonPrimitive.content
-            scale[i] = r[1].jsonPrimitive.double.toFloat()
-            Base64.decode(r[2].jsonPrimitive.content).copyInto(q, i * dims, 0, dims)
-        }
-        Memory(model, ids, q, scale, dims).also { memory = it }
+        withContext(Dispatchers.Default) {
+            val first = Base64.decode(rows[0].jsonArray[2].jsonPrimitive.content)
+            val dims = first.size
+            val ids = Array(rows.size) { "" }
+            val q = ByteArray(rows.size * dims)
+            val scale = FloatArray(rows.size)
+            rows.forEachIndexed { i, row ->
+                val r = row.jsonArray
+                ids[i] = r[0].jsonPrimitive.content
+                scale[i] = r[1].jsonPrimitive.double.toFloat()
+                Base64.decode(r[2].jsonPrimitive.content).copyInto(q, i * dims, 0, dims)
+            }
+            Memory(model, ids, q, scale, dims)
+        }.also { memory = it }
     }
 
     private fun SearchIndexDatabase.pending(limit: Int): List<VectorItem> =

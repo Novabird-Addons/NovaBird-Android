@@ -52,6 +52,7 @@
     <string name="novabird_protect_banner_error_text">Diese Mail konnte nicht geprüft werden. Bitte behandle sie wie eine ungeprüfte Mail.</string>
     <string name="novabird_protect_link_title">Link öffnen?</string>
     <string name="novabird_protect_link_text">Diese Mail ist als gefährlich eingestuft. Der Link führt zu:\n%1$s</string>
+    <string name="novabird_protect_link_unchecked">Diese Mail ist noch nicht geprüft. Der Link führt zu:\n%1$s</string>
     <string name="novabird_protect_link_open">Trotzdem öffnen</string>
     <string name="novabird_settings_logos">Absender-Logos anzeigen</string>
     <string name="novabird_settings_logos_note">Firmenlogos (BIMI), geladen von der Domain des Absenders</string>

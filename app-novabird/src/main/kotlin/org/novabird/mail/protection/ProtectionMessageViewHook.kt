@@ -33,9 +33,13 @@ import org.novabird.mail.R
 import com.google.android.material.R as MaterialR
 
 /** What the message view knows about the shown message; the link gate reads it from the [MessageTopView]'s tag. */
-class ProtectionViewState(val accountUuid: String, val k9Id: Long) {
+class ProtectionViewState(val accountUuid: String, val k9Id: Long, isChecked: Boolean) {
     @Volatile
     var level: ProtectionLevel = ProtectionLevel.NORMAL
+
+    /** False until the check has a result: while it runs and after a failed check links ask first. */
+    @Volatile
+    var isChecked: Boolean = isChecked
 
     /** Check and refresh of this message; cancelled when the view shows the next one. */
     var job: Job? = null
@@ -59,7 +63,7 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
         container.removeAllViews()
         container.isVisible = false
         (messageTopView.getTag(R.id.nb_protection_state) as? ProtectionViewState)?.job?.cancel()
-        val state = ProtectionViewState(account.uuid, message.databaseId)
+        val state = ProtectionViewState(account.uuid, message.databaseId, isChecked = !service.isEnabled)
         messageTopView.setTag(R.id.nb_protection_state, state)
         val owner = messageTopView.findViewTreeLifecycleOwner()
         if (!service.isEnabled || owner == null) return
@@ -68,7 +72,10 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
             // another message is shown meanwhile
             if (messageTopView.getTag(R.id.nb_protection_state) !== state) return@launch
             result.fold(
-                onSuccess = { verdict -> verdict?.let { showFor(container, messageTopView, state, it) } },
+                onSuccess = { verdict ->
+                    state.isChecked = true
+                    verdict?.let { showFor(container, messageTopView, state, it) }
+                },
                 // a failed check must not look like "no warning"
                 onFailure = { showErrorBanner(container) },
             )
@@ -82,7 +89,10 @@ class ProtectionMessageViewHook(private val service: ProtectionService) : Messag
                 container.removeAllViews()
                 container.isVisible = false
                 state.level = ProtectionLevel.NORMAL
-                latest?.let { showFor(container, messageTopView, state, it) }
+                latest?.let {
+                    state.isChecked = true
+                    showFor(container, messageTopView, state, it)
+                }
             }
         }
     }

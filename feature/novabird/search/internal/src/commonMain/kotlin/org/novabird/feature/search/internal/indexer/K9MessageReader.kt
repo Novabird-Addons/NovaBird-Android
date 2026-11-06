@@ -16,6 +16,8 @@ import org.novabird.feature.search.MailPart
 import org.novabird.feature.search.MessageLocation
 import org.novabird.feature.search.unpackK9Addresses
 
+private const val MAX_QUERY_IDS = 500
+
 /** A message as listed in the K-9 database, with a fingerprint of everything the index depends on. */
 internal data class K9MessageEntry(
     val k9Id: Long,
@@ -58,6 +60,18 @@ internal class K9MessageReader(
             )
         }
     }
+
+    /** Message-IDs of those of [k9Ids] that are mails right now (same value as in [listMessages]). */
+    fun headerMessageIds(k9Ids: Collection<Long>): Map<Long, String> = k9Ids.chunked(MAX_QUERY_IDS).flatMap { chunk ->
+        val placeholders = chunk.joinToString(",") { "?" }
+        database.query(
+            """
+            SELECT id, folder_id, uid, message_id FROM messages
+            WHERE deleted = 0 AND empty = 0 AND uid IS NOT NULL AND id IN ($placeholders)
+            """.trimIndent(),
+            chunk.map { it.toString() },
+        ).map { r -> (r[0] as Long) to headerMessageIdOf(r[3] as String?, r[1] as Long, r[2] as String) }
+    }.toMap()
 
     /** `{ header, part, refs }` for the given message, or `null` if it is gone. */
     fun readItem(k9Id: Long): JsonObject? {

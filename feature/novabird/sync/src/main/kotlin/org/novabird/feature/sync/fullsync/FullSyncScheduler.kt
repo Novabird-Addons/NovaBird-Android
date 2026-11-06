@@ -19,7 +19,7 @@ sealed interface FullSyncState {
     data class Running(val progress: FullSyncProgress) : FullSyncState
     data object Finished : FullSyncState
 
-    /** [reason]: [FullSyncScheduler.ERROR_LOGIN], [FullSyncScheduler.ERROR_NO_FOLDERS] or null. */
+    /** [reason]: one of the `ERROR_` values of [FullSyncScheduler], or null. */
     data class Failed(val reason: String?) : FullSyncState
 }
 
@@ -77,6 +77,7 @@ class FullSyncScheduler(private val workManager: WorkManager) {
     companion object {
         const val ERROR_LOGIN = "login"
         const val ERROR_NO_FOLDERS = "noFolders"
+        const val ERROR_FOLDERS = "folders"
 
         internal const val KEY_ERROR = "error"
         internal const val ARG_ACCOUNT_UUID = "accountUuid"
