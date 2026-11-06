@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="novabird_sync_settings_title">Sync limits</string>
-    <string name="novabird_sync_settings_metered_limit_title">Download messages up to (mobile data)</string>
+    <string name="novabird_sync_settings_section">Download messages up to</string>
+    <string name="novabird_sync_settings_metered_limit_title">Mobile data</string>
     <string name="novabird_sync_settings_metered_limit_description">Per message including attachments. Larger messages are downloaded partially and completed on Wi-Fi.</string>
-    <string name="novabird_sync_settings_unmetered_limit_title">Download messages up to (Wi-Fi)</string>
+    <string name="novabird_sync_settings_unmetered_limit_title">Wi-Fi</string>
     <string name="novabird_sync_settings_unmetered_limit_description">Per message including attachments. Also used to complete partially downloaded messages of the sync period.</string>
     <string name="novabird_sync_settings_no_limit">No limit</string>
     <string name="novabird_sync_settings_size_kib">%d KB</string>
@@ -50,8 +51,9 @@
     <string name="novabird_sync_full_preparing">Getting the folder list …</string>
     <string name="novabird_sync_full_folder">Folder %1$d of %2$d: %3$s</string>
     <string name="novabird_sync_full_messages">%1$d of %2$d messages</string>
-    <string name="novabird_sync_full_finished">Done: all folders are loaded. Large messages are completed on Wi-Fi in the background.</string>
+    <string name="novabird_sync_full_finished">Done: the messages are loaded. Large messages are completed on Wi-Fi in the background.</string>
     <string name="novabird_sync_full_failed">Loading stopped with an error. Please try again.</string>
+    <string name="novabird_sync_full_failed_folders">Not all folders could be loaded. Please try again.</string>
     <string name="novabird_sync_full_failed_login">The account has no password yet (e.g. after an import). Enter it in the account settings under the incoming server, then start again.</string>
     <string name="novabird_sync_full_failed_no_folders">No folders to load: the server could not be reached or no folder is synchronized.</string>
     <string name="novabird_sync_full_notification_title">Loading all messages: %s</string>

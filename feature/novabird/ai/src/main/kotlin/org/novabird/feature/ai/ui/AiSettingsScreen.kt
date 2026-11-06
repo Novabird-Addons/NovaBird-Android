@@ -79,11 +79,11 @@ private fun HelperSection(state: AiSettingsUiState, actions: AiSettingsActions) 
             text = stringResource(R.string.novabird_ai_helper_description),
             color = BoltTheme.colors.onSurfaceVariant,
         )
-        DeviceNameInput(state, actions)
+        HelperStatusView(state.helper)
+        DeviceNameRow(state, actions)
         if (state.helper is HelperStatus.NotPaired) {
             PairingForm(state, actions)
         } else {
-            TextBodyMedium(text = helperStatusText(state))
             Row(horizontalArrangement = Arrangement.spacedBy(BoltTheme.spacings.default)) {
                 ButtonOutlined(
                     text = stringResource(R.string.novabird_ai_helper_check),
@@ -283,21 +283,7 @@ internal fun SwitchRow(
 }
 
 @Composable
-private fun helperStatusText(state: AiSettingsUiState): String = when (val h = state.helper) {
-    is HelperStatus.Connected -> {
-        val group = h.info.group?.let { stringResource(R.string.novabird_ai_helper_group, it) }.orEmpty()
-        stringResource(R.string.novabird_ai_helper_connected, h.info.deviceName) + group
-    }
-
-    is HelperStatus.Unreachable -> errorText(h.reason)
-
-    HelperStatus.Checking -> stringResource(R.string.novabird_ai_helper_checking)
-
-    HelperStatus.NotPaired -> ""
-}
-
-@Composable
-private fun errorText(reason: String): String = when (reason) {
+internal fun errorText(reason: String): String = when (reason) {
     "code" -> stringResource(R.string.novabird_ai_error_code)
     "model" -> stringResource(R.string.novabird_ai_error_model)
     "clock" -> stringResource(R.string.novabird_ai_error_clock)

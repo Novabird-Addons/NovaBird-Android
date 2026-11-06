@@ -2,6 +2,8 @@
 <resources>
     <string name="novabird_ai_settings_title">Semantic search and AI</string>
     <string name="novabird_ai_cancel">Cancel</string>
+    <string name="novabird_ai_change">Change</string>
+    <string name="novabird_ai_save">Save</string>
     <string name="novabird_ai_later">Coming later</string>
 
     <string name="novabird_ai_helper_title">NovaBird Helper (recommended)</string>
@@ -13,8 +15,9 @@
     <string name="novabird_ai_helper_check">Check status</string>
     <string name="novabird_ai_helper_unpair">Unpair</string>
     <string name="novabird_ai_helper_checking">Checking connection …</string>
-    <string name="novabird_ai_helper_connected">Connected: %1$s</string>
-    <string name="novabird_ai_helper_group">, group “%1$s”</string>
+    <string name="novabird_ai_helper_connected">Connected</string>
+    <string name="novabird_ai_helper_device">Device</string>
+    <string name="novabird_ai_helper_group">Group</string>
     <string name="novabird_ai_helper_search">Search via the Helper</string>
     <string name="novabird_ai_helper_tts">Read aloud</string>
     <string name="novabird_ai_helper_summary">AI summary</string>

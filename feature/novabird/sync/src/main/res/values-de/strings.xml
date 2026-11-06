@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="novabird_sync_settings_title">Sync-Grenzen</string>
-    <string name="novabird_sync_settings_metered_limit_title">Mails laden bis (mobile Daten)</string>
+    <string name="novabird_sync_settings_section">Mails laden bis</string>
+    <string name="novabird_sync_settings_metered_limit_title">Mobile Daten</string>
     <string name="novabird_sync_settings_metered_limit_description">Je Mail samt Anhängen. Größere Mails werden teilweise geladen und im WLAN vervollständigt.</string>
-    <string name="novabird_sync_settings_unmetered_limit_title">Mails laden bis (WLAN)</string>
+    <string name="novabird_sync_settings_unmetered_limit_title">WLAN</string>
     <string name="novabird_sync_settings_unmetered_limit_description">Je Mail samt Anhängen. Gilt auch für das Nachladen teilweise geladener Mails im Sync-Zeitraum.</string>
     <string name="novabird_sync_settings_no_limit">Unbegrenzt</string>
     <string name="novabird_sync_settings_size_kib">%d KB</string>
@@ -50,8 +51,9 @@
     <string name="novabird_sync_full_preparing">Ordnerliste wird geholt …</string>
     <string name="novabird_sync_full_folder">Ordner %1$d von %2$d: %3$s</string>
     <string name="novabird_sync_full_messages">%1$d von %2$d Mails</string>
-    <string name="novabird_sync_full_finished">Fertig: Alle Ordner sind geladen. Große Mails werden im WLAN im Hintergrund vervollständigt.</string>
+    <string name="novabird_sync_full_finished">Fertig: Die Mails sind geladen. Große Mails werden im WLAN im Hintergrund vervollständigt.</string>
     <string name="novabird_sync_full_failed">Das Laden ist mit einem Fehler abgebrochen. Bitte noch einmal starten.</string>
+    <string name="novabird_sync_full_failed_folders">Nicht alle Ordner ließen sich laden. Bitte noch einmal starten.</string>
     <string name="novabird_sync_full_failed_login">Für das Konto fehlt noch das Passwort (z. B. nach einem Import). Bitte in den Kontoeinstellungen beim Posteingangsserver eintragen und dann neu starten.</string>
     <string name="novabird_sync_full_failed_no_folders">Keine Ordner zum Laden: Der Server war nicht erreichbar oder kein Ordner wird synchronisiert.</string>
     <string name="novabird_sync_full_notification_title">Alle Mails abrufen: %s</string>

@@ -2,6 +2,8 @@
 <resources>
     <string name="novabird_ai_settings_title">Vektorsuche und KI</string>
     <string name="novabird_ai_cancel">Abbrechen</string>
+    <string name="novabird_ai_change">Ändern</string>
+    <string name="novabird_ai_save">Speichern</string>
     <string name="novabird_ai_later">Kommt später</string>
 
     <string name="novabird_ai_helper_title">NovaBird Helper (empfohlen)</string>
@@ -13,8 +15,9 @@
     <string name="novabird_ai_helper_check">Status prüfen</string>
     <string name="novabird_ai_helper_unpair">Trennen</string>
     <string name="novabird_ai_helper_checking">Prüfe Verbindung …</string>
-    <string name="novabird_ai_helper_connected">Verbunden: %1$s</string>
-    <string name="novabird_ai_helper_group">, Gruppe „%1$s“</string>
+    <string name="novabird_ai_helper_connected">Verbunden</string>
+    <string name="novabird_ai_helper_device">Gerät</string>
+    <string name="novabird_ai_helper_group">Gruppe</string>
     <string name="novabird_ai_helper_search">Suche über den Helper</string>
     <string name="novabird_ai_helper_tts">Vorlesen</string>
     <string name="novabird_ai_helper_summary">KI-Zusammenfassung</string>
