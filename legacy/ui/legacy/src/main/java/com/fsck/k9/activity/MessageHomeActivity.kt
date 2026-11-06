@@ -358,6 +358,7 @@ open class MessageHomeActivity :
                     .inboxSettings
                     .isThreadedViewEnabled &&
                     !noThreading,
+                keepThreading = noThreading,
             )
             fragmentTransaction.add(R.id.message_list_container, messageListFragment as Fragment)
             fragmentTransaction.commitNow()
@@ -600,10 +601,15 @@ open class MessageHomeActivity :
                     messageReference.toLocalSearch()
                 }
 
+                val messageViewOnly = intent.getBooleanExtra(EXTRA_MESSAGE_VIEW_ONLY, false)
+
                 return LaunchData(
                     search = search,
                     messageReference = messageReference,
-                    messageViewOnly = intent.getBooleanExtra(EXTRA_MESSAGE_VIEW_ONLY, false),
+                    messageViewOnly = messageViewOnly,
+                    // NovaBird: a threaded list holds only the newest mail of each thread, and the message view closes
+                    // itself when its mail is not in the list. An older mail opened from the search fell straight back.
+                    noThreading = messageViewOnly,
                 )
             }
         } else if (intent.hasByteArrayExtra(EXTRA_SEARCH)) {

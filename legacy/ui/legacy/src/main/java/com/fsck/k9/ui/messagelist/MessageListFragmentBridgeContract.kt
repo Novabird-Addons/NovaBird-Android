@@ -86,6 +86,8 @@ interface MessageListFragmentBridgeContract {
          * @param search The search query that defines which messages to display.
          * @param isThreadDisplay `true` if the fragment is used to display a single thread, `false` otherwise.
          * @param threadedList `true` to display the message list in a threaded conversation view, `false` otherwise.
+         * @param keepThreading NovaBird: `true` keeps [threadedList] when the threaded view setting changes. The list
+         *  of a single opened message must stay without threads, or an older mail of a thread falls out and closes.
          *
          * @return An instance of [MessageListFragment] if the new state feature flag is enabled;
          *  otherwise, an instance of [LegacyMessageListFragment].
@@ -94,12 +96,14 @@ interface MessageListFragmentBridgeContract {
             search: LocalMessageSearch,
             isThreadDisplay: Boolean,
             threadedList: Boolean,
+            keepThreading: Boolean = false,
         ): MessageListFragmentBridgeContract
     }
 
     companion object {
         const val ARG_SEARCH = "searchObject"
         const val ARG_THREADED_LIST = "showingThreadedList"
+        const val ARG_KEEP_THREADING = "keepThreading"
         const val ARG_IS_THREAD_DISPLAY = "isThreadedDisplay"
 
         const val STATE_SELECTED_MESSAGES = "selectedMessages"

@@ -238,6 +238,7 @@ class LegacyMessageListFragment :
      */
     private var activeMessages: List<MessageReference>? = null
     private var showingThreadedList = false
+    private var keepThreading = false
     private var isThreadDisplay = false
     private var activeMessage: MessageReference? = null
     private var rememberedSelected: Set<Long>? = null
@@ -330,7 +331,7 @@ class LegacyMessageListFragment :
             .drop(1)
             .onEach { generalSettings ->
                 val isThreadedViewEnabled = generalSettings.display.inboxSettings.isThreadedViewEnabled
-                if (showingThreadedList != isThreadedViewEnabled) {
+                if (!keepThreading && showingThreadedList != isThreadedViewEnabled) {
                     showingThreadedList = isThreadedViewEnabled
                     loadMessageList(forceUpdate = true)
                 }
@@ -366,6 +367,7 @@ class LegacyMessageListFragment :
     private fun decodeArguments(): Error? {
         val arguments = requireArguments()
         showingThreadedList = arguments.getBoolean(ARG_THREADED_LIST, false)
+        keepThreading = arguments.getBoolean(ARG_KEEP_THREADING, false)
         isThreadDisplay = arguments.getBoolean(ARG_IS_THREAD_DISPLAY, false)
 
         localSearch = arguments.getByteArray(ARG_SEARCH)?.let {
@@ -2713,6 +2715,7 @@ class LegacyMessageListFragment :
             search: LocalMessageSearch,
             isThreadDisplay: Boolean,
             threadedList: Boolean,
+            keepThreading: Boolean,
         ): LegacyMessageListFragment {
             val searchBytes = LocalMessageSearchSerializer.serialize(search)
 
@@ -2721,6 +2724,7 @@ class LegacyMessageListFragment :
                     ARG_SEARCH to searchBytes,
                     ARG_IS_THREAD_DISPLAY to isThreadDisplay,
                     ARG_THREADED_LIST to threadedList,
+                    ARG_KEEP_THREADING to keepThreading,
                 )
             }
         }
@@ -2729,6 +2733,7 @@ class LegacyMessageListFragment :
     companion object {
         protected const val ARG_SEARCH = "searchObject"
         protected const val ARG_THREADED_LIST = "showingThreadedList"
+        protected const val ARG_KEEP_THREADING = "keepThreading"
         protected const val ARG_IS_THREAD_DISPLAY = "isThreadedDisplay"
 
         protected const val STATE_SELECTED_MESSAGES = "selectedMessages"
