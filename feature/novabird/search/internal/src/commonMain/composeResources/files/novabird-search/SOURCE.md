@@ -1,7 +1,7 @@
 # Herkunft
 
 Unveränderte Kopie (ohne `indexer/indexer.js`, siehe unten) von `novabird-search/db/src` aus dem NovaBird-Repository
-(Branch `novabird-2.0`, Commit `368031814536d24588aef16f8a7be2214a0c66d3`, Stand 05.11.2026: Tempo in großen Postfächern, Füllwort, „es gibt mehr“).
+(Branch `novabird-2.0`, Commit `bb604215ccb1cb85f1ea41a5b44baa25bc3feef1`, Stand 06.11.2026: Tempo in großen Postfächern, Füllwort, „es gibt mehr“, Review-Korrekturen).
 
 Nicht hier ändern: Änderungen gehören in NovaBird-Search und werden dann neu kopiert
 (Ordner `src` ersetzen, `src/indexer/indexer.js` stattdessen nach

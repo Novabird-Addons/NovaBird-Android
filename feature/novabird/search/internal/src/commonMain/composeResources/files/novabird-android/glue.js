@@ -31,6 +31,7 @@ export function createAndroidAdapter(handle = 0) {
 
 const db = createAndroidAdapter();
 let caps = null;
+let authorIndexTried = false; // ensureAuthorIndex: nach einem Fehlschlag nicht bei jedem Indexlauf erneut
 
 const options = (o) => ({ ...o, now: o.now == null ? undefined : new Date(o.now) });
 
@@ -64,10 +65,14 @@ globalThis.NovaBird = {
   },
   /**
    * Schmaler Index der Absendernamen (von:name, Namensauflösung): migrate() legt ihn nur bei leerem Index an, einen
-   * bestehenden Index ergänzt Kotlin nach dem Indexlauf im Hintergrund (wie der Leerlauf am PC). Antwort: true = vorhanden.
+   * bestehenden Index ergänzt Kotlin nach dem Indexlauf im Hintergrund (wie der Leerlauf am PC). Ein Versuch je Start
+   * der Engine: scheitert er, sucht die Suche wie bisher über die Tabelle. Antwort: true = vorhanden.
    */
   async ensureAuthorIndex() {
-    if (!caps.authorIndex) caps = { ...caps, authorIndex: await core.createAuthorIndex(db) };
+    if (!caps.authorIndex && !authorIndexTried) {
+      authorIndexTried = true;
+      caps = { ...caps, authorIndex: await core.createAuthorIndex(db) };
+    }
     return JSON.stringify(caps.authorIndex);
   },
   async search(input, optionsJson) {
