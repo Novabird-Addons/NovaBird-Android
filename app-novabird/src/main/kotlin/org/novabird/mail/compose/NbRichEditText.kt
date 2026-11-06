@@ -165,8 +165,13 @@ class NbRichEditText @JvmOverloads constructor(
 
     fun toggle(format: CharFormat) {
         val on = format !in typingFormats.chars
-        changeChars(typingFormats.copy(chars = if (on) typingFormats.chars + format else typingFormats.chars - format)) {
-            text, start, end ->
+        changeChars(
+            typingFormats.copy(chars = if (on) typingFormats.chars + format else typingFormats.chars - format),
+        ) {
+                text,
+                start,
+                end,
+            ->
             removeChar(text, start, end, format)
             if (on) addSpan(text, format.newSpan(), start, end)
         }

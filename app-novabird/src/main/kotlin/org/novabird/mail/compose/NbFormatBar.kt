@@ -18,8 +18,8 @@ import androidx.annotation.AttrRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.core.view.isVisible
-import com.google.android.material.R as MaterialR
 import org.novabird.mail.R
+import com.google.android.material.R as MaterialR
 
 /**
  * Format bar above the keyboard while the message text has the focus: bold, italic, underline, the two lists, and

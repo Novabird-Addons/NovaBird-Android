@@ -2,7 +2,6 @@ package org.novabird.mail.compose
 
 import android.app.Application
 import android.view.ContextThemeWrapper
-import org.robolectric.RuntimeEnvironment
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
@@ -10,6 +9,7 @@ import assertk.assertions.isTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)

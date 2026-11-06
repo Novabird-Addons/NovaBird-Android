@@ -77,17 +77,20 @@ object RichTextHtml {
                     openListItem(html, lists, span)
                     appendInline(html, text, start, end)
                 }
+
                 block == NbBlock.QUOTE -> {
                     html.append(if (inQuote) "<br>" else "<blockquote>")
                     inQuote = true
                     appendInline(html, text, start, end)
                 }
+
                 block == NbBlock.HEADING || block == NbBlock.SUBHEADING -> {
                     val tag = if (block == NbBlock.HEADING) "h2" else "h3"
                     html.append("<$tag>")
                     appendInline(html, text, start, end)
                     html.append("</$tag>")
                 }
+
                 else -> {
                     appendInline(html, text, start, end)
                     val next = paragraphs.getOrNull(index + 1)
@@ -257,22 +260,35 @@ private class HtmlReader(private val text: SpannableStringBuilder) {
     private fun readElement(element: Element) {
         when (element.normalName()) {
             "br" -> text.append('\n')
+
             "b", "strong" -> inline(element, CharFormat.BOLD.newSpan())
+
             "i", "em" -> inline(element, CharFormat.ITALIC.newSpan())
+
             "u", "ins" -> inline(element, CharFormat.UNDERLINE.newSpan())
+
             "s", "strike", "del" -> inline(element, CharFormat.STRIKE.newSpan())
+
             "span", "font" -> styled(element)
+
             "h1", "h2" -> block(element, NbBlock.HEADING)
+
             "h3", "h4", "h5", "h6" -> block(element, NbBlock.SUBHEADING)
+
             "blockquote" -> block(element, NbBlock.QUOTE)
+
             "ul", "ol" -> list(element, if (element.normalName() == "ol") NbBlock.NUMBER else NbBlock.BULLET)
+
             "li" -> block(element, listKinds.lastOrNull() ?: NbBlock.BULLET, listLevel.coerceIn(1, MAX_LEVEL))
+
             "div", "p" -> {
                 startParagraph()
                 readChildren(element)
                 startParagraph()
             }
+
             "head", "style", "script", "title" -> Unit
+
             else -> readChildren(element)
         }
     }
@@ -342,7 +358,12 @@ private class HtmlReader(private val text: SpannableStringBuilder) {
         for (paragraph in paragraphs) {
             val end = minOf(paragraph.end, text.length)
             if (paragraph.start >= end) continue
-            text.setSpan(NbParagraphSpan(paragraph.block, paragraph.level), paragraph.start, end, Spanned.SPAN_PARAGRAPH)
+            text.setSpan(
+                NbParagraphSpan(paragraph.block, paragraph.level),
+                paragraph.start,
+                end,
+                Spanned.SPAN_PARAGRAPH,
+            )
         }
     }
 

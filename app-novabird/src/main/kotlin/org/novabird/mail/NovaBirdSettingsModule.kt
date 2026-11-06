@@ -1,7 +1,6 @@
 package org.novabird.mail
 
 import app.k9mail.feature.onboarding.permissions.domain.PermissionsDomainContract.UseCase.CheckBackgroundActivity
-import app.k9mail.feature.onboarding.permissions.domain.usecase.CheckBackgroundActivity as AndroidCheckBackgroundActivity
 import app.k9mail.feature.settings.import.SettingsImportExternalContract.ImportedAccountsReview
 import net.thunderbird.feature.account.settings.api.AccountFullSync
 import net.thunderbird.feature.account.settings.api.ReplacedAccountSettings
@@ -9,6 +8,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 import org.novabird.feature.sync.fullsync.FullSyncActivity
 import org.novabird.feature.sync.ui.ImportedAccountsSyncActivity
+import app.k9mail.feature.onboarding.permissions.domain.usecase.CheckBackgroundActivity as AndroidCheckBackgroundActivity
 
 internal val novaBirdSettingsModule = module {
     // The message size per account is replaced by NovaBird's sync limits (mobile data / Wi-Fi).

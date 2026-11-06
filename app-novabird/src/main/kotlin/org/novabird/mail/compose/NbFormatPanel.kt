@@ -14,12 +14,12 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import com.google.android.material.R as MaterialR
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import org.novabird.mail.R
+import com.google.android.material.R as MaterialR
 
 /**
  * The rarer formats behind "Aa": strikethrough, indent, clear formatting, paragraph kind, font and size. Shown as a
@@ -65,7 +65,9 @@ class NbFormatPanel(private val context: Context, private val editor: NbRichEdit
                     Choice(R.string.novabird_format_subheading, NbBlock.SUBHEADING, bold = true),
                     Choice(R.string.novabird_format_quote, NbBlock.QUOTE, italic = true),
                 ),
-                current = { editor.paragraphAtCursor()?.block?.takeUnless { it == NbBlock.BULLET || it == NbBlock.NUMBER } },
+                current = {
+                    editor.paragraphAtCursor()?.block?.takeUnless { it == NbBlock.BULLET || it == NbBlock.NUMBER }
+                },
                 apply = editor::setBlock,
             ),
         )
