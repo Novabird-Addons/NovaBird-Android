@@ -7,9 +7,9 @@
     <string name="novabird_ai_later">Kommt später</string>
 
     <string name="novabird_ai_helper_title">NovaBird Helper (empfohlen)</string>
-    <string name="novabird_ai_helper_description">Der Helper rechnet auf der Grafikkarte deines PCs, rund 50-mal schneller als das Handy. Die Vektoren teilt er mit allen Handys deiner Gruppe. Lege im Helper eine eigene Gruppe für die Handys an.</string>
+    <string name="novabird_ai_helper_description">Der Helper rechnet auf der Grafikkarte deines PCs, rund 50-mal schneller als das Handy. Die Vektoren teilt er mit allen Handys deiner Gruppe. Ab Helper 0.5.0 können die Handys in dieselbe Gruppe wie die PCs; ältere Helper brauchen eine eigene Gruppe für die Handys.</string>
     <string name="novabird_ai_helper_address">Adresse des PCs (z. B. 192.168.1.20)</string>
-    <string name="novabird_ai_helper_code">Kopplungscode der Handy-Gruppe (20 Zeichen)</string>
+    <string name="novabird_ai_helper_code">Kopplungscode der Gruppe (20 Zeichen)</string>
     <string name="novabird_ai_helper_pair">Koppeln</string>
     <string name="novabird_ai_helper_pairing">Kopple …</string>
     <string name="novabird_ai_helper_check">Status prüfen</string>

@@ -134,6 +134,8 @@ data class SearchResult(
     val relevantRows: String = "[]",
     /** More keyword hits exist than [SearchOptions.limit]; the list is cut. */
     val hasMore: Boolean = false,
+    /** How older mails count less in this query (core `ageOptions`), opaque. Used by [NovaBirdSearch.addSimilar]. */
+    val age: String = "{}",
 )
 
 data class SearchChip(

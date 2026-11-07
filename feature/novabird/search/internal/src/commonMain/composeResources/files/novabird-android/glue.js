@@ -49,6 +49,7 @@ const searchResult = (r) =>
     bestIds: r.bestIds ?? [],
     relevant: r.relevant ?? [],
     more: r.more === true,
+    age: r.age ?? {},
   });
 
 // textWithoutChip: längere Anfragen und längere Wortstücke werden nicht durchprobiert
@@ -88,13 +89,24 @@ globalThis.NovaBird = {
   /**
    * „Beste zuerst“ mit Bedeutungstreffern wie semanticAugment am PC: fuseBest(relevant, sem), dann bestThenDate mit
    * allen angezeigten Treffern. relevant: aus der Suche; sem: [{ header_msg_id, score (Kosinus) }]; all: angezeigte
-   * Treffer [{ header_msg_id, date, i }]. Antwort: { rows, bestIds } (rows: Zeilen aus relevant/sem/all).
+   * Treffer [{ header_msg_id, date, i }]; age: aus der Suche (Abwertung älterer Mails, auch für sem, daher mit date).
+   * Antwort: { rows, bestIds } (rows: Zeilen aus relevant/sem/all).
    */
-  async fuseBestThenDate(relevantJson, semJson, allJson, optionsJson) {
+  async fuseBestThenDate(relevantJson, semJson, allJson, optionsJson, ageJson) {
     const o = options(JSON.parse(optionsJson));
     const now = o.now ? +o.now : Date.now();
-    const best = core.fuseBest(JSON.parse(relevantJson), JSON.parse(semJson), { now });
+    const best = core.fuseBest(JSON.parse(relevantJson), JSON.parse(semJson), { now, age: JSON.parse(ageJson ?? "{}") });
     return JSON.stringify(core.bestThenDate(best, JSON.parse(allJson)));
+  },
+  /**
+   * Sortierung „Relevanz“: Bedeutungstreffer [{ header_msg_id, score (Kosinus), date }] nach Ähnlichkeit mit derselben
+   * Abwertung älterer Mails wie die Worttreffer (wie die Suchleiste am PC vor der Fusion). Antwort: Message-IDs.
+   */
+  async sortSemByAge(semJson, optionsJson, ageJson) {
+    const o = options(JSON.parse(optionsJson));
+    const now = o.now ? +o.now : Date.now();
+    const sorted = core.sortSemByAge(JSON.parse(semJson), { now, age: JSON.parse(ageJson ?? "{}") });
+    return JSON.stringify(sorted.map((r) => r.header_msg_id));
   },
   /**
    * Suchtext ohne die Wörter, aus denen der Chip chipId entstand (nur Android; der Kern merkt sich keine Textstellen):

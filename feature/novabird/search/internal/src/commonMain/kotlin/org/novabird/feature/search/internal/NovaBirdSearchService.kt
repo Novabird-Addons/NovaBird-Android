@@ -104,7 +104,10 @@ constructor(
         }
         return when (options.sort) {
             SearchSort.RELEVANCE -> {
-                val semanticRank = similar.withIndex().associate { (i, s) -> s.first to i }
+                // meaning hits ranked with the same weight for older mails as the keyword hits (core sortSemByAge)
+                val semanticRank = semanticByAge(result, extras, similar, options).withIndex().associate { (i, id) ->
+                    id to i
+                }
                 val lexicalRank = result.hits.withIndex().associate { (i, h) -> h.headerMessageId to i }
                 fun fused(
                     id: String,
@@ -126,6 +129,38 @@ constructor(
         }
     }
 
+    /** Message-IDs of the shown meaning hits, best first, older mails counting less (core `sortSemByAge`). */
+    private suspend fun semanticByAge(
+        result: SearchResult,
+        extras: List<SearchHit>,
+        similar: List<Pair<String, Double>>,
+        options: SearchOptions,
+    ): List<String> {
+        val json = core.engine().call(
+            "sortSemByAge",
+            semanticRows(result.hits + extras, similar).toString(),
+            optionsJson(options),
+            result.age,
+        )
+        return Json.parseToJsonElement(checkNotNull(json)).jsonArray.map { it.jsonPrimitive.content }
+    }
+
+    /** Meaning hits among [shown] with their cosine and date, for the core's ranking. */
+    private fun semanticRows(shown: List<SearchHit>, similar: List<Pair<String, Double>>): JsonArray {
+        val dates = HashMap<String, Long>()
+        shown.forEach { dates.putIfAbsent(it.headerMessageId, it.date) }
+        return JsonArray(
+            similar.mapNotNull { (id, score) ->
+                val date = dates[id] ?: return@mapNotNull null
+                buildJsonObject {
+                    put("header_msg_id", id)
+                    put("score", score)
+                    put("date", date)
+                }
+            },
+        )
+    }
+
     /**
      * Best keyword and meaning hits on top, the rest by date (core `fuseBest` and `bestThenDate`, like the desktop).
      * Returns the hits and how many of them are the best ones.
@@ -137,15 +172,7 @@ constructor(
         options: SearchOptions,
     ): Pair<List<SearchHit>, Int> {
         val all = result.hits + extras
-        val shown = all.mapTo(HashSet()) { it.headerMessageId }
-        val semJson = JsonArray(
-            similar.filter { it.first in shown }.map { (id, score) ->
-                buildJsonObject {
-                    put("header_msg_id", id)
-                    put("score", score)
-                }
-            },
-        )
+        val semJson = semanticRows(all, similar)
         val allJson = JsonArray(
             all.mapIndexed { i, hit ->
                 buildJsonObject {
@@ -161,6 +188,7 @@ constructor(
             semJson.toString(),
             allJson.toString(),
             optionsJson(options),
+            result.age,
         )
         val out = Json.parseToJsonElement(checkNotNull(json)).jsonObject
         val rows = out["rows"]!!.jsonArray.map { it.jsonObject }
@@ -245,6 +273,7 @@ constructor(
             bestCount = (result["bestIds"] as? JsonArray)?.size ?: 0,
             relevantRows = (result["relevant"] as? JsonArray)?.toString() ?: "[]",
             hasMore = result["more"]?.jsonPrimitive?.booleanOrNull == true,
+            age = (result["age"] as? JsonObject)?.toString() ?: "{}",
         )
     }
 

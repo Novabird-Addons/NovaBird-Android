@@ -56,6 +56,26 @@ class SemanticSearchTest {
     }
 
     @Test
+    fun `an old meaning hit counts less, unless the query asks for older mail`() = runBlocking<Unit> {
+        fill()
+        // a bill from ten years ago (similarity 1) and a recent statement that fits less well (similarity 0.7)
+        mail(20, "Rechnung Garage", "vermieter@haus.example", "Miete fuer die Garage", day(10, 1, year = 2016))
+        mail(21, "Abrechnung Keller", "vermieter@haus.example", "Strom im Keller", DAY_OCT_1)
+        indexer.indexChanges()
+        semanticIndex.indexVectors { false }
+        val relevance = options.copy(sort = SearchSort.RELEVANCE)
+
+        fun order(result: SearchResult) = similarIds(result).filter { it == "m20@x.example" || it == "m21@x.example" }
+
+        assertThat(order(search.addSimilar("Kosten", search.search("Kosten", relevance), relevance)))
+            .containsExactly("m21@x.example", "m20@x.example")
+        val past = search.search("Kosten damals", relevance)
+        assertThat(past.chips.map { it.id }).containsExactly("past", "term:0")
+        assertThat(order(search.addSimilar("Kosten damals", past, relevance)))
+            .containsExactly("m20@x.example", "m21@x.example")
+    }
+
+    @Test
     fun `best first rates keyword and meaning hits together, the rest by date`() = runBlocking<Unit> {
         fill()
         // keyword hits for "Kosten" with another topic: one in the subject (strong), five only in a long text
@@ -178,6 +198,7 @@ class SemanticSearchTest {
             val t = text.lowercase()
             return when {
                 "termin" in t -> floatArrayOf(0f, 0f, 1f)
+                "abrechnung" in t -> floatArrayOf(0.7f, 0.7141428f, 0f)
                 "rechnung" in t || "kosten" in t -> floatArrayOf(1f, 0f, 0f)
                 "urlaub" in t -> floatArrayOf(0f, 1f, 0f)
                 else -> floatArrayOf(0f, 0f, 1f)
@@ -188,8 +209,8 @@ class SemanticSearchTest {
     private companion object {
         const val ACCOUNT = "3c1a5f7e-0000-4000-8000-00000000a002"
 
-        fun day(month: Int, day: Int) =
-            java.time.ZonedDateTime.of(2026, month, day, 9, 0, 0, 0, java.time.ZoneId.of("Europe/Berlin"))
+        fun day(month: Int, day: Int, year: Int = 2026) =
+            java.time.ZonedDateTime.of(year, month, day, 9, 0, 0, 0, java.time.ZoneId.of("Europe/Berlin"))
                 .toInstant().toEpochMilli()
 
         val NOW = day(10, 5)

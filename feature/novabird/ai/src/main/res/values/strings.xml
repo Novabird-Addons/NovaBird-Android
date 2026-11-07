@@ -7,9 +7,9 @@
     <string name="novabird_ai_later">Coming later</string>
 
     <string name="novabird_ai_helper_title">NovaBird Helper (recommended)</string>
-    <string name="novabird_ai_helper_description">The Helper computes on your PC\'s graphics card, about 50 times faster than the phone, and shares the vectors with all phones of your group. Create a separate group for the phones in the Helper.</string>
+    <string name="novabird_ai_helper_description">The Helper computes on your PC\'s graphics card, about 50 times faster than the phone, and shares the vectors with all phones of your group. From Helper 0.5.0 on, phones can join the same group as the PCs; older Helpers need a separate group for the phones.</string>
     <string name="novabird_ai_helper_address">PC address (e.g. 192.168.1.20)</string>
-    <string name="novabird_ai_helper_code">Pairing code of the phone group (20 characters)</string>
+    <string name="novabird_ai_helper_code">Pairing code of the group (20 characters)</string>
     <string name="novabird_ai_helper_pair">Pair</string>
     <string name="novabird_ai_helper_pairing">Pairing …</string>
     <string name="novabird_ai_helper_check">Check status</string>
