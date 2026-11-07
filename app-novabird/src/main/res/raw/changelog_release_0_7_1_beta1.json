@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "version": "0.7.1-beta1",
+  "versioncode": 70101,
+  "date": "2026-11-07",
+  "notes": [
+    {
+      "type": "fixed",
+      "text": "Vectors shared through NovaBird Helper: phones keep their own store in the Helper, so phones and PCs in the same Helper group no longer replace each other's vectors (needs Helper 0.5.0)"
+    }
+  ]
+}
