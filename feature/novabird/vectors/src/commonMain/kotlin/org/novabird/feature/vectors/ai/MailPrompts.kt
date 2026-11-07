@@ -29,9 +29,13 @@ data class Day(val year: Int, val month: Int, val day: Int) {
 
     companion object {
         private val ISO = Regex("^(\\d{4})-(\\d{2})-(\\d{2})$")
-        fun parse(
-            iso: String,
-        ): Day? = ISO.find(iso)?.groupValues?.let { Day(it[1].toInt(), it[2].toInt(), it[3].toInt()) }
+        private const val MONTHS = 12
+        private const val MAX_DAY = 31
+
+        /** The day of a text like 2026-11-07; null for anything else, also for a date the model made up. */
+        fun parse(iso: String): Day? = ISO.find(iso)?.groupValues
+            ?.let { Day(it[1].toInt(), it[2].toInt(), it[3].toInt()) }
+            ?.takeIf { it.month in 1..MONTHS && it.day in 1..MAX_DAY }
     }
 }
 

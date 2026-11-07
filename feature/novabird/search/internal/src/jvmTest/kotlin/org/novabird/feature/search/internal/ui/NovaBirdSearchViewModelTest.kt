@@ -10,6 +10,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -44,6 +45,19 @@ class NovaBirdSearchViewModelTest {
 
         assertThat(search.queries).containsExactly("speiseplan")
         assertThat(testSubject.state.value.result?.parsedQuery).isEqualTo("q:speiseplan")
+    }
+
+    @Test
+    fun `emptying the field ends the search for similar mails`() = runTest(dispatcher) {
+        search.similarHangs = true
+        testSubject.event(Event.QueryChanged("rechnung"))
+        advanceUntilIdle()
+        assertThat(testSubject.state.value.isAddingSimilar).isTrue()
+
+        testSubject.event(Event.QueryChanged(""))
+        advanceUntilIdle()
+
+        assertThat(testSubject.state.value.isAddingSimilar).isEqualTo(false)
     }
 
     @Test
@@ -94,6 +108,12 @@ class NovaBirdSearchViewModelTest {
         val queries = mutableListOf<String>()
         val removedChips = mutableListOf<Pair<String, String>>()
         var fail = false
+        var similarHangs = false
+
+        override suspend fun addSimilar(text: String, result: SearchResult, options: SearchOptions): SearchResult {
+            if (similarHangs) awaitCancellation()
+            return result
+        }
 
         override suspend fun search(text: String, options: SearchOptions): SearchResult {
             if (fail) error("kaputt")

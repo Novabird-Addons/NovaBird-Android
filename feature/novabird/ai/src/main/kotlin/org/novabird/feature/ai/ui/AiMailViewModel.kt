@@ -33,10 +33,13 @@ internal class AiMailViewModel(
     val state: StateFlow<AiMailUiState> = mutableState.asStateFlow()
     private var summaryJob: Job? = null
     private var stopSummary = false
+    private var started = false
 
     /** Loads the mail and starts [AiMailActivity.MODE_SUMMARY] or [AiMailActivity.MODE_READ]. */
     fun start(mode: String) {
-        if (mutableState.value.mail != null) return
+        // turning the phone creates the screen again; the same view model goes on
+        if (started) return
+        started = true
         viewModelScope.launch {
             val mail = assistant.mail(location)
             mutableState.update { it.copy(mail = mail, missing = mail == null) }

@@ -61,7 +61,8 @@ internal class NovaBirdSearchViewModel(
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(delayMillis)
-            updateState { it.copy(isSearching = true) }
+            // a cancelled search for similar mails can't end its own "busy" note
+            updateState { it.copy(isSearching = true, isAddingSimilar = false) }
             val result = runCatching { block() }
             result.exceptionOrNull()?.let { e ->
                 if (e is kotlinx.coroutines.CancellationException) throw e

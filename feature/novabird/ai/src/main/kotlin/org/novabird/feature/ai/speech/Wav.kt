@@ -9,11 +9,14 @@ import java.nio.ByteOrder
 internal class Wav(val sampleRate: Int, val channels: Int, val encoding: Int, private val data: ByteArray) {
     private val frameBytes = channels * SHORT_BYTES
 
-    /** Writes all samples (blocks while the track plays); returns the number of frames. */
-    fun writeTo(track: AudioTrack): Long {
+    /**
+     * Writes the samples in small pieces (blocks while the track plays), so "stop" is heard at once and not at the end
+     * of the sentence; returns the number of frames.
+     */
+    fun writeTo(track: AudioTrack, keepGoing: () -> Boolean = { true }): Long {
         var off = 0
-        while (off < data.size) {
-            val n = track.write(data, off, data.size - off)
+        while (off < data.size && keepGoing()) {
+            val n = track.write(data, off, minOf(data.size - off, WRITE_BYTES))
             if (n <= 0) break
             off += n
         }
@@ -29,6 +32,7 @@ internal class Wav(val sampleRate: Int, val channels: Int, val encoding: Int, pr
     }
 
     companion object {
+        private const val WRITE_BYTES = 8192
         private const val SHORT_BYTES = 2
         private const val FLOAT_BYTES = 4
         private const val FORMAT_PCM = 1
@@ -69,6 +73,7 @@ internal class Wav(val sampleRate: Int, val channels: Int, val encoding: Int, pr
                         return Wav(rate, channels, AudioFormat.ENCODING_PCM_16BIT, pcm)
                     }
                 }
+                require(size >= 0) { "wav" }
                 pos = body + size + (size and 1)
             }
             throw IllegalArgumentException("wav")

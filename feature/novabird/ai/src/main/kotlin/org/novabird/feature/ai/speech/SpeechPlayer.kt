@@ -59,76 +59,90 @@ class SpeechPlayer(
     val state: StateFlow<State> = mutableState.asStateFlow()
     private var job: Job? = null
 
+    // the Helper's calls block, so a stopped run can still be busy while the next one reads; only the latest may show
+    @Volatile
+    private var run = 0
+
     /** Starts reading [text] (language code [lang], e.g. "de"); [key] names what is read (shown by the screens). */
     fun speak(key: String, text: String, lang: String) {
         stop()
         val sentences = SpeechChunks.quickStart(AiText.sentences(text))
         if (sentences.isEmpty()) return
+        val current = run
         mutableState.value = State(key, Status.LOADING)
         job = scope.launch {
             val rate = settings.settings.value.speechRate
             val useHelper = backend.isHelperPaired() && settings.settings.value.helperSpeech
             val result = runCatching {
-                val viaHelper = useHelper && runCatching { speakWithHelper(key, sentences, lang, rate) }
-                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
-                    .onFailure { logger.warn(TAG, it) { "Helper voice failed, using the phone's voice" } }
-                    .getOrDefault(false)
-                if (!viaHelper) speakWithPhone(key, sentences, lang, rate)
+                val read = if (useHelper) helperPart(current, key, sentences, lang, rate) else 0
+                if (read < sentences.size) speakWithPhone(current, key, sentences.drop(read), lang, rate)
             }
-            if (mutableState.value.key == key) {
-                val error = result.exceptionOrNull()?.takeUnless { it is kotlinx.coroutines.CancellationException }
-                mutableState.value = State(error = error?.let { it.message ?: it.javaClass.simpleName })
-            }
+            val error = result.exceptionOrNull()?.takeUnless { it is kotlinx.coroutines.CancellationException }
+            show(current, State(error = error?.let { it.message ?: it.javaClass.simpleName }))
         }
     }
 
     fun stop() {
+        run++
         job?.cancel()
         job = null
         mutableState.value = State()
     }
 
-    // true when everything was read; false when the Helper could not read the first sentence (then the phone reads)
-    private suspend fun speakWithHelper(
+    private fun show(current: Int, state: State) {
+        if (run == current) mutableState.value = state
+    }
+
+    private suspend fun helperPart(
+        current: Int,
         key: String,
         sentences: List<String>,
         lang: String,
         rate: Float,
-    ): Boolean = coroutineScope {
-        val client = backend.helper(TTS_TIMEOUT_MS) ?: return@coroutineScope false
+    ): Int = runCatching { speakWithHelper(current, key, sentences, lang, rate) }
+        .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+        .onFailure { logger.warn(TAG, it) { "Helper voice failed, using the phone's voice" } }
+        .getOrDefault(0)
+
+    // the number of sentences read; the phone reads the rest (all of them if the Helper could not read the first one)
+    private suspend fun speakWithHelper(
+        current: Int,
+        key: String,
+        sentences: List<String>,
+        lang: String,
+        rate: Float,
+    ): Int = coroutineScope {
+        val client = backend.helper(TTS_TIMEOUT_MS) ?: return@coroutineScope 0
         // a Helper that cannot be reached (e.g. away from home) would only be noticed after the long wait below
-        if (backend.helperStatus().isFailure) return@coroutineScope false
+        if (backend.helperStatus().isFailure) return@coroutineScope 0
         val voiceLang = AiText.TTS_LANG[lang] ?: "english"
-        val first = Wav.parse(
-            client.tts(SpokenText.text(sentences.first(), lang).take(HelperClient.MAX_TTS_CHARS), voiceLang),
-        )
+        fun fetch(sentence: String) =
+            Wav.parse(client.tts(SpokenText.text(sentence, lang).take(HelperClient.MAX_TTS_CHARS), voiceLang))
+        val first = fetch(sentences.first())
         // the next sentences are fetched ahead (a few, the Helper also serves other devices)
         val queue = Channel<Wav>(capacity = AHEAD)
         launch(Dispatchers.IO) {
-            for (s in sentences.drop(
-                1,
-            )) {
-                queue.send(
-                    Wav.parse(client.tts(SpokenText.text(s, lang).take(HelperClient.MAX_TTS_CHARS), voiceLang)),
-                )
-            }
-            queue.close()
+            // a failure only ends the queue: what was fetched is still read, then the phone goes on from there
+            val failure = runCatching { for (s in sentences.drop(1)) queue.send(fetch(s)) }.exceptionOrNull()
+            queue.close(failure?.takeUnless { it is kotlinx.coroutines.CancellationException })
         }
         val track = first.newTrack(rate)
         try {
             track.play()
-            mutableState.value = State(key, Status.PLAYING, Engine.HELPER)
+            show(current, State(key, Status.PLAYING, Engine.HELPER))
             var frames = 0L
+            var read = 0
             var wav: Wav? = first
             while (wav != null) {
                 ensureActive()
-                frames += wav.writeTo(track)
+                frames += wav.writeTo(track) { isActive }
                 frames += first.writeSilence(track, PAUSE_S / rate)
+                read++
                 wav = queue.receiveCatching().getOrNull()
             }
             // until the last sentence has been played
             while (isActive && track.playbackHeadPosition.toLong() and UINT_MASK < frames) delay(POLL_MS)
-            true
+            read
         } finally {
             track.pause()
             track.flush()
@@ -136,7 +150,7 @@ class SpeechPlayer(
         }
     }
 
-    private suspend fun speakWithPhone(key: String, sentences: List<String>, lang: String, rate: Float) {
+    private suspend fun speakWithPhone(current: Int, key: String, sentences: List<String>, lang: String, rate: Float) {
         val tts = suspendCancellableCoroutine<TextToSpeech> { cont ->
             var engine: TextToSpeech? = null
             engine = TextToSpeech(context) { status ->
@@ -159,7 +173,7 @@ class SpeechPlayer(
                 tts.setOnUtteranceProgressListener(
                     object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {
-                            mutableState.value = State(key, Status.PLAYING, Engine.PHONE)
+                            show(current, State(key, Status.PLAYING, Engine.PHONE))
                         }
 
                         override fun onDone(utteranceId: String?) {
@@ -172,7 +186,11 @@ class SpeechPlayer(
                         }
                     },
                 )
-                sentences.forEachIndexed { i, s -> tts.speak(s, TextToSpeech.QUEUE_ADD, null, "s$i") }
+                sentences.forEachIndexed { i, s ->
+                    if (tts.speak(s, TextToSpeech.QUEUE_ADD, null, "s$i") == TextToSpeech.ERROR && cont.isActive) {
+                        cont.resumeWith(Result.failure(IllegalStateException("tts")))
+                    }
+                }
                 cont.invokeOnCancellation { tts.stop() }
             }
         } finally {
