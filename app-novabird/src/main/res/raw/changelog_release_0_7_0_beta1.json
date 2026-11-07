@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "version": "0.7.0-beta1",
+  "versioncode": 70001,
+  "date": "2026-11-07",
+  "notes": [
+    {
+      "type": "new",
+      "text": "Large mailboxes: the message list loads in parts while you scroll and opens much faster (45,000 mails: 2.5 s instead of 16 s)"
+    },
+    {
+      "type": "new",
+      "text": "Loading all mails shows its progress in a thin bar above the message list"
+    },
+    {
+      "type": "new",
+      "text": "Setup also asks for 'Alarms & reminders', which push needs for new mail right away; for further accounts too, and once after an update if it is missing"
+    },
+    {
+      "type": "new",
+      "text": "Search: best matches on top, then all hits by date; faster search by sender; word forms for French, Spanish and English"
+    },
+    {
+      "type": "new",
+      "text": "Gmail: setup explains that an app password is needed and opens Google's page for it"
+    },
+    {
+      "type": "changed",
+      "text": "At most 100,000 mails per account stay on the phone, the newest ones"
+    },
+    {
+      "type": "changed",
+      "text": "In a mail rated dangerous only web links open after a question; other kinds of links stay blocked"
+    },
+    {
+      "type": "changed",
+      "text": "Clearer settings pages for vector search and sync limits"
+    },
+    {
+      "type": "fixed",
+      "text": "Out-of-memory crashes while loading very large mailboxes"
+    },
+    {
+      "type": "fixed",
+      "text": "A mail being sent waited until a large folder had finished syncing"
+    },
+    {
+      "type": "fixed",
+      "text": "Crash after removing an account"
+    },
+    {
+      "type": "fixed",
+      "text": "Opening an older mail of a conversation from the search went back to the previous screen"
+    },
+    {
+      "type": "fixed",
+      "text": "Reading aloud stops at once and continues with the phone's voice if NovaBird Helper fails"
+    },
+    {
+      "type": "fixed",
+      "text": "'What's new?' failed when the AI returned an invalid date"
+    }
+  ]
+}
