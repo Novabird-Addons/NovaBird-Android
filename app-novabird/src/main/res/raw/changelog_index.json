@@ -2,6 +2,12 @@
   "schemaVersion": 1,
   "releases": [
     {
+      "version": "0.7.1-beta2",
+      "versioncode": 70102,
+      "date": "2026-11-08",
+      "resourceName": "changelog_release_0_7_1_beta2"
+    },
+    {
       "version": "0.7.1-beta1",
       "versioncode": 70101,
       "date": "2026-11-07",
