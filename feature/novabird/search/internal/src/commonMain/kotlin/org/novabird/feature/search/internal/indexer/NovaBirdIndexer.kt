@@ -32,6 +32,7 @@ class NovaBirdIndexer(
     private val logger: Logger,
     private val semanticIndex: SemanticIndex? = null,
     private val batchSize: Int = DEFAULT_BATCH_SIZE,
+    private val pageSize: Int = DEFAULT_PAGE_SIZE,
 ) : NovaBirdSearchIndexer {
 
     override suspend fun indexChanges(): IndexStats {
@@ -44,7 +45,7 @@ class NovaBirdIndexer(
         for (account in accounts) {
             val database = mailStore.open(account.uuid) ?: continue
             database.use {
-                val result = syncAccount(account.uuid, K9MessageReader(account.uuid, database))
+                val result = syncAccount(account.uuid, K9MessageReader(account.uuid, database, pageSize))
                 indexed += result.first
                 removed += result.second
             }
@@ -76,7 +77,7 @@ class NovaBirdIndexer(
     private suspend fun syncAccount(accountUuid: String, reader: K9MessageReader): Pair<Int, Int> {
         val engine = core.engine()
         val entries = reader.listMessages()
-        val known = engine.withMainDatabase { db -> db.knownMessages(accountUuid) }
+        val known = knownMessages(accountUuid)
 
         val current = entries.associateBy { it.k9Id }
         // the UID counts too: K-9 replaces the local UID of a moved or sent mail later, in the same row
@@ -91,21 +92,8 @@ class NovaBirdIndexer(
             now == null || now.folderId != old.folderId || now.headerMessageId != old.headerMessageId
         }.values.map { IndexKey(it.folderId, it.headerMessageId) }.filterNot { it in newKeys }.toSet()
 
-        if (staleKeys.isNotEmpty()) {
-            val keys = buildJsonArray {
-                for (key in staleKeys) {
-                    add(
-                        buildJsonObject {
-                            put("headerMessageId", key.headerMessageId)
-                            put("folderId", K9MessageReader.indexFolderId(accountUuid, key.folderId))
-                        },
-                    )
-                }
-            }
-            engine.call("remove", keys.toString())
-        }
-        val goneIds = known.keys - current.keys
-        if (goneIds.isNotEmpty()) {
+        removeFromIndex(accountUuid, staleKeys)
+        for (goneIds in (known.keys - current.keys).chunked(pageSize)) {
             engine.withMainDatabase { db -> db.deleteKnown(accountUuid, goneIds) }
         }
 
@@ -133,10 +121,25 @@ class NovaBirdIndexer(
         }
         var removed = 0
         for (accountUuid in stale) {
-            val known = engine.withMainDatabase { db -> db.knownMessages(accountUuid) }
-            val keys = known.values.map { IndexKey(it.folderId, it.headerMessageId) }.toSet()
+            // a page at a time: the account can have 100,000 mails, and this runs next to a sync
+            while (true) {
+                val known = engine.withMainDatabase { db -> db.knownPage(accountUuid, Long.MIN_VALUE) }
+                if (known.isEmpty()) break
+                val keys = known.values.map { IndexKey(it.folderId, it.headerMessageId) }.toSet()
+                removeFromIndex(accountUuid, keys)
+                engine.withMainDatabase { db -> db.deleteKnown(accountUuid, known.keys) }
+                removed += keys.size
+                yield()
+            }
+        }
+        return removed
+    }
+
+    private suspend fun removeFromIndex(accountUuid: String, keys: Collection<IndexKey>) {
+        val engine = core.engine()
+        for (page in keys.chunked(pageSize)) {
             val json = buildJsonArray {
-                keys.forEach { key ->
+                for (key in page) {
                     add(
                         buildJsonObject {
                             put("headerMessageId", key.headerMessageId)
@@ -146,16 +149,28 @@ class NovaBirdIndexer(
                 }
             }
             engine.call("remove", json.toString())
-            engine.withMainDatabase { db -> db.deleteKnown(accountUuid, known.keys) }
-            removed += keys.size
         }
-        return removed
     }
 
-    private fun SearchIndexDatabase.knownMessages(accountUuid: String): Map<Long, Known> =
+    /** Page by page: as one result the JSON rows would take many times the memory of the map. */
+    private suspend fun knownMessages(accountUuid: String): Map<Long, Known> {
+        val engine = core.engine()
+        val known = HashMap<Long, Known>()
+        var last = Long.MIN_VALUE
+        while (true) {
+            val after = last
+            val page = engine.withMainDatabase { db -> db.knownPage(accountUuid, after) }
+            known += page
+            if (page.size < pageSize) return known
+            last = page.keys.last()
+        }
+    }
+
+    private fun SearchIndexDatabase.knownPage(accountUuid: String, after: Long): Map<Long, Known> =
         select(
-            "SELECT k9_id, folder_id, header_msg_id, fingerprint, uid FROM nb_android_messages WHERE account_uuid = ?",
-            JsonArray(listOf(JsonPrimitive(accountUuid))),
+            "SELECT k9_id, folder_id, header_msg_id, fingerprint, uid FROM nb_android_messages " +
+                "WHERE account_uuid = ? AND k9_id > ? ORDER BY k9_id LIMIT ?",
+            JsonArray(listOf(JsonPrimitive(accountUuid), JsonPrimitive(after), JsonPrimitive(pageSize))),
         ).associate { row ->
             val r = row.jsonArray
             r[0].jsonPrimitive.long to Known(
@@ -210,5 +225,6 @@ class NovaBirdIndexer(
 
     private companion object {
         const val DEFAULT_BATCH_SIZE = 100
+        const val DEFAULT_PAGE_SIZE = 2000
     }
 }

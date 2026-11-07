@@ -330,8 +330,6 @@ internal class ImapSync(
         Log.d("SYNC: Have %d unsynced messages", unsyncedMessages.size)
 
         messages.clear()
-        val largeMessages = mutableListOf<ImapMessage>()
-        val smallMessages = mutableListOf<ImapMessage>()
         if (unsyncedMessages.isNotEmpty()) {
             Collections.sort(unsyncedMessages, UidReverseComparator())
             val visibleLimit = backendFolder.visibleLimit
@@ -342,11 +340,19 @@ internal class ImapSync(
             }
 
             Log.d("SYNC: About to fetch %d unsynced messages for folder %s", unsyncedMessages.size, folder)
+        }
 
+        // A batch at a time, each with new message objects: fetched headers stay on the object, and the caller
+        // keeps the objects of the whole folder, which runs the app out of memory with some 50,000 new messages
+        // (NovaBird).
+        val maxDownloadSize = syncConfig.maximumAutoDownloadMessageSize
+        for (batch in unsyncedMessages.chunked(DOWNLOAD_BATCH_SIZE)) {
+            val largeMessages = mutableListOf<ImapMessage>()
+            val smallMessages = mutableListOf<ImapMessage>()
             fetchUnsyncedMessages(
                 syncConfig = syncConfig,
                 remoteFolder = remoteFolder,
-                unsyncedMessages = unsyncedMessages,
+                unsyncedMessages = batch.map { remoteFolder.getMessage(it.uid) },
                 smallMessages = smallMessages,
                 largeMessages = largeMessages,
                 progress = progress,
@@ -354,52 +360,49 @@ internal class ImapSync(
                 listener = listener,
             )
 
-            Log.d("SYNC: Synced unsynced messages for folder %s", folder)
+            Log.d(
+                "SYNC: Have %d large messages and %d small messages out of %d unsynced messages",
+                largeMessages.size,
+                smallMessages.size,
+                batch.size,
+            )
+
+            /*
+             * Grab the content of the small messages first. This is going to
+             * be very fast and at very worst will be a single up of a few bytes and a single
+             * download of 625k.
+             */
+            // TODO: Only fetch small and large messages if we have some
+            downloadSmallMessages(
+                remoteFolder = remoteFolder,
+                backendFolder = backendFolder,
+                smallMessages = smallMessages,
+                progress = progress,
+                downloadedMessageCount = downloadedMessageCount,
+                todo = todo,
+                highestKnownUid = highestKnownUid,
+                listener = listener,
+            )
+
+            /*
+             * Now do the large messages that require more round trips.
+             */
+            downloadLargeMessages(
+                remoteFolder = remoteFolder,
+                backendFolder = backendFolder,
+                largeMessages = largeMessages,
+                progress = progress,
+                downloadedMessageCount = downloadedMessageCount,
+                todo = todo,
+                highestKnownUid = highestKnownUid,
+                listener = listener,
+                maxDownloadSize = maxDownloadSize,
+            )
         }
 
-        Log.d(
-            "SYNC: Have %d large messages and %d small messages out of %d unsynced messages",
-            largeMessages.size,
-            smallMessages.size,
-            unsyncedMessages.size,
-        )
+        Log.d("SYNC: Synced unsynced messages for folder %s", folder)
 
         unsyncedMessages.clear()
-
-        /*
-         * Grab the content of the small messages first. This is going to
-         * be very fast and at very worst will be a single up of a few bytes and a single
-         * download of 625k.
-         */
-        val maxDownloadSize = syncConfig.maximumAutoDownloadMessageSize
-        // TODO: Only fetch small and large messages if we have some
-        downloadSmallMessages(
-            remoteFolder = remoteFolder,
-            backendFolder = backendFolder,
-            smallMessages = smallMessages,
-            progress = progress,
-            downloadedMessageCount = downloadedMessageCount,
-            todo = todo,
-            highestKnownUid = highestKnownUid,
-            listener = listener,
-        )
-        smallMessages.clear()
-
-        /*
-         * Now do the large messages that require more round trips.
-         */
-        downloadLargeMessages(
-            remoteFolder = remoteFolder,
-            backendFolder = backendFolder,
-            largeMessages = largeMessages,
-            progress = progress,
-            downloadedMessageCount = downloadedMessageCount,
-            todo = todo,
-            highestKnownUid = highestKnownUid,
-            listener = listener,
-            maxDownloadSize = maxDownloadSize,
-        )
-        largeMessages.clear()
 
         /*
          * Refresh the flags for any messages in the local store that we didn't just
@@ -774,5 +777,6 @@ internal class ImapSync(
     companion object {
         private const val EXTRA_UID_VALIDITY = "imapUidValidity"
         private const val EXTRA_HIGHEST_KNOWN_UID = "imapHighestKnownUid"
+        private const val DOWNLOAD_BATCH_SIZE = 500
     }
 }

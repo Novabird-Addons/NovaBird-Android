@@ -90,6 +90,42 @@ class SemanticSearchTest {
     }
 
     @Test
+    fun `a full store keeps the newest mails`() = runBlocking<Unit> {
+        val small = SemanticIndex(core, { TopicBackend }, TestLogger(), maxVectors = 2)
+        val smallIndexer = NovaBirdIndexer(core, mailStore, TestLogger(), small)
+        mailStore.addFolder(1, "INBOX", "inbox")
+        mail(1, "Rechnung Oktober", "kanzlei@steuer.example", "Heizung", DAY_OCT_1)
+        mail(2, "Rechnung Strom", "info@stadtwerke.example", "Strom", DAY_SEP_1)
+        mail(3, "Urlaubsplanung", "petra@firma.example", "Bitte eintragen", DAY_OCT_1 + 1000)
+        smallIndexer.indexChanges()
+        small.indexVectors { false }
+        assertThat(vectorIds()).containsExactlyInAnyOrder("m1@x.example", "m3@x.example")
+        assertThat(queueCount()).isEqualTo(0L)
+
+        mail(4, "Rechnung Gas", "info@stadtwerke.example", "Gas", DAY_OCT_1 + 2000)
+        smallIndexer.indexChanges()
+        small.indexVectors { false }
+
+        assertThat(vectorIds()).containsExactlyInAnyOrder("m3@x.example", "m4@x.example")
+    }
+
+    @Test
+    fun `the vectors in memory come from all pages`() = runBlocking<Unit> {
+        fill()
+        core.engine().withMainDatabase { db ->
+            db.execute(
+                "INSERT INTO nb_vectors SELECT 'kopie' || rowid, model, h, scale, q FROM nb_vectors",
+                JsonArray(emptyList()),
+            )
+        }
+
+        val hits = semanticIndex.similar("Kosten", limit = 10).orEmpty().map { it.first }
+
+        // both bills and their copies; the holiday mail is not similar
+        assertThat(hits.size).isEqualTo(4)
+    }
+
+    @Test
     fun `vectors of deleted messages are removed after the next index run`() = runBlocking<Unit> {
         fill()
         mailStore.exec("UPDATE messages SET deleted = 1 WHERE id = 2")
@@ -104,6 +140,16 @@ class SemanticSearchTest {
         search.addSimilar(text, search.search(text, options), options)
 
     private fun similarIds(result: SearchResult) = result.hits.filter { it.isSimilar }.map { it.headerMessageId }
+
+    private suspend fun vectorIds(): List<String> = core.engine().withMainDatabase { db ->
+        db.select("SELECT header_msg_id FROM nb_vectors", JsonArray(emptyList())).map {
+            it.jsonArray[0].jsonPrimitive.content
+        }
+    }
+
+    private suspend fun queueCount(): Long = core.engine().withMainDatabase { db ->
+        db.select("SELECT count(*) FROM nb_vec_queue", JsonArray(emptyList())).single().jsonArray[0].jsonPrimitive.long
+    }
 
     private suspend fun vectorCount(): Long = core.engine().withMainDatabase { db ->
         db.select("SELECT count(*) FROM nb_vectors", JsonArray(emptyList())).single().jsonArray[0].jsonPrimitive.long

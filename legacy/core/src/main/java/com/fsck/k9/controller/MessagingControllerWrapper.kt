@@ -210,7 +210,8 @@ class MessagingControllerWrapper(
     }
 
     fun checkAuthenticationProblem(id: AccountId) {
-        val account = getAccountDtoOrThrow(id)
+        // a message list can still hold mails of an account that was just removed (NovaBird)
+        val account = getAccountDtoOrNull(id) ?: return
         messagingController.checkAuthenticationProblem(account)
     }
 

@@ -66,6 +66,10 @@ class FullSyncWorker(
             return@withContext Result.failure(workDataOf(FullSyncScheduler.KEY_ERROR to FullSyncScheduler.ERROR_LOGIN))
         }
 
+        // now, not after the folder list: that waits behind a running sync, and Android stops a worker that isn't in
+        // the foreground after 10 minutes
+        showProgress(account)
+
         // the account may have been set up a moment ago: get the folder list first
         controller.refreshFolderListBlocking(account)
         // the folder list may have set the special folders (inbox, trash, spam)

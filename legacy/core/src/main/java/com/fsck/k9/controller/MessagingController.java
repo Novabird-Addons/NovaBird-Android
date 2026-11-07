@@ -140,6 +140,10 @@ public class MessagingController implements MessagingControllerRegistry, Messagi
     private final BlockingQueue<Command> queuedCommands = new PriorityBlockingQueue<>();
     private final Set<MessagingListener> listeners = new CopyOnWriteArraySet<>();
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
+    // NovaBird: sending has a thread of its own. In the command queue it waited behind the sync of a whole folder, in the
+    // stress test 38 minutes behind a folder of 24,000 mails.
+    private final ExecutorService sendExecutor =
+        Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "MessagingController-send"));
     private final MemorizingMessagingListener memorizingMessagingListener = new MemorizingMessagingListener();
     private final DraftOperations draftOperations;
     private final NotificationOperations notificationOperations;
@@ -700,11 +704,23 @@ public class MessagingController implements MessagingControllerRegistry, Messagi
     private SyncConfig createSyncConfig(LegacyAccountDto account) {
         return new SyncConfig(
             account.getExpungePolicy().toBackendExpungePolicy(),
-            account.getEarliestPollDate(),
+            MessageCountCap.earliestDate(account.getEarliestPollDate(), capDate(account)),
             account.isSyncRemoteDeletions(),
             SyncDownloadLimits.getMaximumAutoDownloadMessageSize(account),
             DEFAULT_VISIBLE_LIMIT,
             SYNC_FLAGS);
+    }
+
+    // NovaBird: see MessageCountCap
+    @Nullable
+    private java.util.Date capDate(LegacyAccountDto account) {
+        try {
+            return localStoreProvider.getInstance(account).getDatabase()
+                .execute(false, db -> MessageCountCap.capDate(db, MessageCountCap.MAX_MESSAGES));
+        } catch (Exception e) {
+            Log.w(e, "Couldn't count the messages of the account");
+            return null;
+        }
     }
 
     private void updateFolderStatus(LegacyAccountDto account, long folderId, String status) {
@@ -1502,18 +1518,22 @@ public class MessagingController implements MessagingControllerRegistry, Messagi
      */
     public void sendPendingMessages(final LegacyAccountDto account,
         MessagingListener listener) {
-        putBackground("sendPendingMessages", listener, new Runnable() {
+        sendExecutor.execute(new Runnable() {
             @Override
             public void run() {
-                if (OutboxFolderManagerKt.hasPendingMessagesSync(outboxFolderManager, account.getUuid())) {
+                try {
+                    if (OutboxFolderManagerKt.hasPendingMessagesSync(outboxFolderManager, account.getUuid())) {
 
-                    showSendingNotificationIfNecessary(account);
+                        showSendingNotificationIfNecessary(account);
 
-                    try {
-                        sendPendingMessagesSynchronous(account);
-                    } finally {
-                        clearSendingNotificationIfNecessary(account);
+                        try {
+                            sendPendingMessagesSynchronous(account);
+                        } finally {
+                            clearSendingNotificationIfNecessary(account);
+                        }
                     }
+                } catch (Exception e) {
+                    Log.e(e, "Error sending pending messages");
                 }
             }
         });

@@ -27,7 +27,7 @@ class NovaBirdIndexerTest {
     private val account = K9Account(uuid = ACCOUNT, emails = listOf("leitung@firma.example"))
     private val mailStore = FakeK9MailStore(account)
     private val core = NovaBirdSearchCore(":memory:")
-    private val testSubject = NovaBirdIndexer(core, mailStore, TestLogger(), batchSize = 2)
+    private val testSubject = NovaBirdIndexer(core, mailStore, TestLogger(), batchSize = 2, pageSize = 2)
     private val search = NovaBirdSearchService(core, ownEmails = { account.emails }, now = { NOW })
 
     @AfterTest
@@ -269,6 +269,30 @@ class NovaBirdIndexerTest {
         assertThat(ids(search("ignorieren", includeTrash = true))).containsExactly()
         assertThat(search("Urlaubsplanung im Papierkorb").hits.single().location)
             .isEqualTo(MessageLocation(ACCOUNT, folderId = 2, uid = "u12"))
+    }
+
+    @Test
+    fun `an account that is gone leaves the index completely`() = runBlocking<Unit> {
+        fillMailbox()
+        testSubject.indexChanges()
+        core.engine().withMainDatabase { db ->
+            for (id in 1..5) {
+                db.execute(
+                    "INSERT INTO nb_android_messages VALUES ('gone', $id, 1, 'u$id', 'gone$id@x.example', 'f')",
+                    JsonArray(emptyList()),
+                )
+            }
+        }
+
+        val result = testSubject.indexChanges()
+
+        val left = core.engine().withMainDatabase { db ->
+            db.select("SELECT count(*) FROM nb_android_messages WHERE account_uuid = 'gone'", JsonArray(emptyList()))
+                .single().toString()
+        }
+        assertThat(left).isEqualTo("[0]")
+        assertThat(result.removed).isEqualTo(5)
+        assertThat(result.indexed).isEqualTo(0)
     }
 
     @Test

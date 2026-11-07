@@ -51,13 +51,15 @@ class MessageListLoader(
 
         val hasMoreMessages = loadHasMoreMessages(accounts, config.search.folderIds)
 
-        return MessageListInfo(messageListItems, hasMoreMessages)
+        val shownItems = if (config.limit > 0) messageListItems.take(config.limit) else messageListItems
+        return MessageListInfo(shownItems, hasMoreMessages, isCut = shownItems.size < messageListItems.size)
     }
 
     private fun loadMessageListForAccount(account: LegacyAccount, config: MessageListConfig): List<MessageListItem> {
         val accountUuid = account.uuid
         val threadId = getThreadId(config.search)
-        val sortOrder = buildSortOrder(config)
+        // one more than asked for, so an exact fit doesn't count as cut; ends the ORDER BY of all three queries
+        val sortOrder = buildSortOrder(config) + if (config.limit > 0) " LIMIT ${config.limit + 1}" else ""
         val mapper = MessageListItemMapper(
             messageHelper,
             account,
@@ -225,4 +227,9 @@ private fun Comparator<MessageListItem>.thenByDate(config: MessageListConfig): C
     }
 }
 
-data class MessageListInfo(val messageListItems: List<MessageListItem>, val hasMoreMessages: Boolean)
+data class MessageListInfo(
+    val messageListItems: List<MessageListItem>,
+    val hasMoreMessages: Boolean,
+    /** [MessageListConfig.limit] left out messages. */
+    val isCut: Boolean = false,
+)

@@ -171,6 +171,17 @@ class ImapSyncTest {
     }
 
     @Test
+    fun `fetched headers should not stay on the messages of the folder listing`() = runTest {
+        addMessageToImapFolder(uid = 9)
+        addMessageToImapFolder(uid = 13)
+
+        imapSync.sync(FOLDER_SERVER_ID, defaultSyncConfig, syncListener)
+
+        assertThat(backendFolder.getMessageServerIds()).containsExactlyInAnyOrder("9", "13")
+        assertThat(imapFolder.listedMessages.flatMap { it.headers }).isEmpty()
+    }
+
+    @Test
     fun `sync downloading old messages should notify listener with isOldMessage=true`() = runTest {
         addMessageToBackendFolder(uid = 42)
         addMessageToImapFolder(uid = 23)

@@ -17,6 +17,7 @@ import org.novabird.feature.search.MessageLocation
 import org.novabird.feature.search.unpackK9Addresses
 
 private const val MAX_QUERY_IDS = 500
+private const val LIST_PAGE_SIZE = 2000
 
 /** A message as listed in the K-9 database, with a fingerprint of everything the index depends on. */
 internal data class K9MessageEntry(
@@ -34,30 +35,40 @@ internal data class K9MessageEntry(
 internal class K9MessageReader(
     private val accountUuid: String,
     private val database: K9MailDatabase,
+    private val pageSize: Int = LIST_PAGE_SIZE,
 ) {
     /** All messages that belong in the index (not deleted, not placeholders). */
     fun listMessages(): List<K9MessageEntry> {
-        val rows = database.query(
-            """
-            SELECT m.id, m.folder_id, m.uid, m.message_id, m.read, m.flagged, m.date, m.subject,
-              f.name, f.type, m.sender_list, m.to_list, m.cc_list,
-              (SELECT count(*) || ':' || total(p.data_location) || ':' || total(ifnull(p.decoded_body_size, 0))
-                 FROM message_parts p WHERE p.root = m.message_part_id)
-            FROM messages m JOIN folders f ON f.id = m.folder_id
-            WHERE m.deleted = 0 AND m.empty = 0 AND m.uid IS NOT NULL
-            """.trimIndent(),
-        )
-        return rows.map { r ->
-            val k9Id = r[0] as Long
-            val folderId = r[1] as Long
-            val uid = r[2] as String
-            K9MessageEntry(
-                k9Id = k9Id,
-                folderId = folderId,
-                uid = uid,
-                headerMessageId = headerMessageIdOf(r[3] as String?, folderId, uid),
-                fingerprint = fingerprint(r.drop(4)),
+        val entries = ArrayList<K9MessageEntry>()
+        var last = Long.MIN_VALUE
+        while (true) {
+            // page by page: the rows with their address lists take far more memory than the entries
+            val rows = database.query(
+                """
+                SELECT m.id, m.folder_id, m.uid, m.message_id, m.read, m.flagged, m.date, m.subject,
+                  f.name, f.type, m.sender_list, m.to_list, m.cc_list,
+                  (SELECT count(*) || ':' || total(p.data_location) || ':' || total(ifnull(p.decoded_body_size, 0))
+                     FROM message_parts p WHERE p.root = m.message_part_id)
+                FROM messages m JOIN folders f ON f.id = m.folder_id
+                WHERE m.deleted = 0 AND m.empty = 0 AND m.uid IS NOT NULL AND m.id > ?
+                ORDER BY m.id LIMIT $pageSize
+                """.trimIndent(),
+                listOf(last.toString()),
             )
+            rows.mapTo(entries) { r ->
+                val k9Id = r[0] as Long
+                val folderId = r[1] as Long
+                val uid = r[2] as String
+                K9MessageEntry(
+                    k9Id = k9Id,
+                    folderId = folderId,
+                    uid = uid,
+                    headerMessageId = headerMessageIdOf(r[3] as String?, folderId, uid),
+                    fingerprint = fingerprint(r.drop(4)),
+                )
+            }
+            if (rows.size < pageSize) return entries
+            last = rows.last()[0] as Long
         }
     }
 

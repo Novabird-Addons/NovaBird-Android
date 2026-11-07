@@ -133,6 +133,9 @@ const val RECENT_CHANGES_SNACKBAR_DURATION = 10 * 1000
 
 private const val TAG = "BaseMessageListFragment"
 
+/** Loads more of a cut list this many rows before its end. */
+private const val LOAD_AHEAD = 100
+
 @Suppress(
     "LargeClass",
     "TooManyFunctions",
@@ -242,6 +245,8 @@ class LegacyMessageListFragment :
     private var isThreadDisplay = false
     private var activeMessage: MessageReference? = null
     private var rememberedSelected: Set<Long>? = null
+    private var isListCut = false
+    private var selectAllWhenLoaded = false
     private var lastMessageClick = 0L
 
     final override lateinit var localSearch: LocalMessageSearch
@@ -594,6 +599,18 @@ class LegacyMessageListFragment :
         itemTouchHelper.attachToRecyclerView(recyclerView)
 
         recyclerView.adapter = adapter
+        recyclerView.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+                    if (isListCut && layoutManager.findLastVisibleItemPosition() >= adapter.itemCount - LOAD_AHEAD) {
+                        isListCut = false
+                        legacyViewModel.listLimit *= 2
+                        loadMessageList()
+                    }
+                }
+            },
+        )
 
         val isDisplayInAppNotificationEnabled = featureFlagProvider
             .provide(GeneratedFeatureFlagKey.DISPLAY_IN_APP_NOTIFICATIONS) == FeatureFlagResult.Enabled
@@ -713,6 +730,7 @@ class LegacyMessageListFragment :
             sortDateAscending,
             activeMessage,
             legacyViewModel.messageSortOverrides.toMap(),
+            limit = if (isThreadDisplay) 0 else legacyViewModel.listLimit,
         )
 
         if (forceUpdate) {
@@ -1447,6 +1465,15 @@ class LegacyMessageListFragment :
             return
         }
 
+        if (isListCut) {
+            // "all" means all, not the part of the list that is loaded
+            selectAllWhenLoaded = true
+            isListCut = false
+            legacyViewModel.listLimit = 0
+            loadMessageList()
+            return
+        }
+
         adapter.selectAll()
 
         if (actionMode == null) {
@@ -2025,6 +2052,7 @@ class LegacyMessageListFragment :
 
     private fun setMessageList(messageListInfo: MessageListInfo) {
         val messageListItems = messageListInfo.messageListItems
+        isListCut = messageListInfo.isCut
         if (isThreadDisplay && messageListItems.isEmpty()) {
             goBack()
             return
@@ -2061,6 +2089,11 @@ class LegacyMessageListFragment :
             adapter.restoreSelected(it)
         }
 
+        if (selectAllWhenLoaded && !isListCut) {
+            selectAllWhenLoaded = false
+            selectAll()
+        }
+
         messageListItems
             .map { it.account }
             .toSet()
@@ -2074,7 +2107,8 @@ class LegacyMessageListFragment :
         initialMessageListLoad = false
 
         currentFolder?.let { currentFolder ->
-            currentFolder.moreMessages = messageListInfo.hasMoreMessages
+            // the footer belongs behind the last message, not behind the part that is loaded
+            currentFolder.moreMessages = messageListInfo.hasMoreMessages && !messageListInfo.isCut
             updateFooterText()
         }
     }

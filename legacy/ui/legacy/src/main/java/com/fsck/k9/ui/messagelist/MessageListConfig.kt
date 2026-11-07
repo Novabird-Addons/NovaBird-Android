@@ -12,6 +12,8 @@ data class MessageListConfig(
     val sortDateAscending: Boolean,
     val activeMessage: MessageReference?,
     val sortOverrides: Map<MessageReference, MessageSortOverride>,
+    /** The first messages to load, 0 for all (NovaBird): rows cost time and memory, 45,000 mails 16 s and 60 MB. */
+    val limit: Int = 0,
 )
 
 data class MessageSortOverride(

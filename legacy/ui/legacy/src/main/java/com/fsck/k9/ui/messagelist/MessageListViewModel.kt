@@ -10,12 +10,17 @@ import net.thunderbird.core.logging.Logger
 
 private const val TAG = "LegacyMessageListViewModel"
 
+private const val FIRST_LIST_LIMIT = 500
+
 class MessageListViewModel(
     private val messageListLiveDataFactory: MessageListLiveDataFactory,
     private val logger: Logger,
 ) : ViewModel() {
     private var currentMessageListLiveData: MessageListLiveData? = null
     private val messageListLiveData = MediatorLiveData<MessageListInfo>()
+
+    /** See [MessageListConfig.limit]; here so that it survives turning the phone. */
+    var listLimit = FIRST_LIST_LIMIT
 
     val messageSortOverrides = LinkedList<Pair<MessageReference, MessageSortOverride>>()
 

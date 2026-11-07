@@ -33,19 +33,22 @@ private const val TAG = "NovaBirdSemanticIndex"
  * - `nb_vec_queue`: texts the keyword indexer collected (subject + cleaned body, [VectorText]) that still need a vector,
  * - `nb_vectors`: one vector per Message-ID (int8 with scale, like the desktop store), with the text hash and model.
  *
- * Scoring is a dot product over all vectors in memory (as `scoreAll` in NovaBird-Search `semantic/main.js`).
+ * Scoring is a dot product over all vectors in memory (as `scoreAll` in NovaBird-Search `semantic/main.js`). They stay in
+ * the Java heap (about 900 bytes per mail, 256 MB is all the app gets), so only the newest [maxVectors] mails have a
+ * vector; they are computed newest first, so the mails that matter most are searchable first.
  */
 class SemanticIndex(
     private val core: NovaBirdSearchCore,
     private val backend: () -> NovaBirdVectorBackend?,
     private val logger: Logger,
+    private val maxVectors: Int = MAX_VECTORS,
 ) : NovaBirdVectorIndexer {
     private val memoryLock = Mutex()
     private var memory: Memory? = null
 
     private class Memory(
         val model: String,
-        val ids: Array<String>,
+        val ids: List<String>,
         val q: ByteArray,
         val scale: FloatArray,
         val dims: Int,
@@ -107,12 +110,15 @@ class SemanticIndex(
         val b = backend()
         if (b != null && b.isEnabled()) {
             var stored = 0
+            var before = Long.MAX_VALUE
             while (!shouldStop()) {
-                val pending = core.engine().withMainDatabase { db -> db.pending(NovaBirdVectorBackend.MAX_INDEX_BATCH) }
+                val pending = core.engine().withMainDatabase { db -> db.nextBatch(before) }
                 if (pending.isEmpty()) break
-                val vectors = b.embedForIndex(pending) ?: break
-                core.engine().withMainDatabase { db -> db.store(pending, vectors, b.modelId) }
-                stored += pending.size
+                val items = pending.map { it.item }
+                val vectors = b.embedForIndex(items) ?: break
+                core.engine().withMainDatabase { db -> db.store(items, vectors, b.modelId) }
+                stored += items.size
+                before = pending.last().date
             }
             if (stored > 0) {
                 memoryLock.withLock { memory = null }
@@ -185,34 +191,98 @@ class SemanticIndex(
 
     private suspend fun memory(model: String): Memory? = memoryLock.withLock {
         memory?.takeIf { it.model == model }?.let { return@withLock it }
-        val rows = core.engine().withMainDatabase { db ->
-            db.select(
-                "SELECT header_msg_id, scale, q FROM nb_vectors WHERE model = ?",
-                JsonArray(listOf(JsonPrimitive(model))),
-            )
-        }
-        if (rows.isEmpty()) return@withLock null
-        withContext(Dispatchers.Default) {
-            val first = Base64.decode(rows[0].jsonArray[2].jsonPrimitive.content)
-            val dims = first.size
-            val ids = Array(rows.size) { "" }
-            val q = ByteArray(rows.size * dims)
-            val scale = FloatArray(rows.size)
-            rows.forEachIndexed { i, row ->
-                val r = row.jsonArray
-                ids[i] = r[0].jsonPrimitive.content
-                scale[i] = r[1].jsonPrimitive.double.toFloat()
-                Base64.decode(r[2].jsonPrimitive.content).copyInto(q, i * dims, 0, dims)
-            }
-            Memory(model, ids, q, scale, dims)
-        }.also { memory = it }
+        load(model).also { memory = it }
     }
 
-    private fun SearchIndexDatabase.pending(limit: Int): List<VectorItem> =
-        select("SELECT header_msg_id, h, text FROM nb_vec_queue LIMIT ?", JsonArray(listOf(JsonPrimitive(limit)))).map {
-            val r = it.jsonArray
-            VectorItem(r[0].jsonPrimitive.content, r[1].jsonPrimitive.content, r[2].jsonPrimitive.content)
+    /** Page by page: all rows at once as JSON would take far more than the vectors themselves (about 1.5 KB per mail). */
+    private suspend fun load(model: String): Memory? {
+        val count = core.engine().withMainDatabase { db -> db.count("SELECT count(*) FROM nb_vectors") }
+        if (count == 0) return null
+        val ids = ArrayList<String>(count)
+        val scale = FloatArray(count)
+        var q = ByteArray(0)
+        var dims = 0
+        var last = 0L
+        while (ids.size < count) {
+            val after = last
+            val page = core.engine().withMainDatabase { db ->
+                db.select(
+                    "SELECT rowid, header_msg_id, scale, q FROM nb_vectors WHERE model = ? AND rowid > ? ORDER BY rowid LIMIT ?",
+                    JsonArray(listOf(JsonPrimitive(model), JsonPrimitive(after), JsonPrimitive(LOAD_PAGE))),
+                )
+            }
+            if (page.isEmpty()) break
+            last = page.last().jsonArray[0].jsonPrimitive.long
+            withContext(Dispatchers.Default) {
+                for (row in page.take(count - ids.size)) {
+                    val r = row.jsonArray
+                    val vector = Base64.decode(r[3].jsonPrimitive.content)
+                    if (dims == 0) {
+                        dims = vector.size
+                        q = ByteArray(count * dims)
+                    }
+                    vector.copyInto(q, ids.size * dims, 0, dims)
+                    scale[ids.size] = r[2].jsonPrimitive.double.toFloat()
+                    ids += r[1].jsonPrimitive.content
+                }
+            }
         }
+        return if (ids.isEmpty()) null else Memory(model, ids, q, scale, dims)
+    }
+
+    private class Pending(val item: VectorItem, val date: Long)
+
+    /**
+     * The next texts to compute, newest mails first and not newer than [before]. With a full store, older vectors make
+     * room; once only mails older than all stored ones are left, they are dropped from the queue.
+     */
+    private fun SearchIndexDatabase.nextBatch(before: Long): List<Pending> {
+        val free = maxVectors - count("SELECT count(*) FROM nb_vectors")
+        val limit = if (free >
+            0
+        ) {
+            minOf(free, NovaBirdVectorBackend.MAX_INDEX_BATCH)
+        } else {
+            NovaBirdVectorBackend.MAX_INDEX_BATCH
+        }
+        val batch = pending(limit, before)
+        return if (free > 0 || batch.isEmpty() || makeRoom(batch.size, batch.first().date)) batch else emptyList()
+    }
+
+    // CROSS JOIN keeps the order of the tables: down the date index instead of sorting the whole queue
+    private fun SearchIndexDatabase.pending(limit: Int, before: Long): List<Pending> = select(
+        "SELECT q.header_msg_id, q.h, q.text, m.date FROM messages m CROSS JOIN nb_vec_queue q " +
+            "ON q.header_msg_id = m.header_msg_id WHERE m.date <= ? ORDER BY m.date DESC LIMIT ?",
+        JsonArray(listOf(JsonPrimitive(before), JsonPrimitive(limit))),
+    ).map {
+        val r = it.jsonArray
+        Pending(
+            VectorItem(r[0].jsonPrimitive.content, r[1].jsonPrimitive.content, r[2].jsonPrimitive.content),
+            r[3].jsonPrimitive.long,
+        )
+    }.distinctBy { it.item.messageId }
+
+    /** Removes up to [needed] vectors of mails older than [newest]; false (and the queue is cleared) if there are none. */
+    private fun SearchIndexDatabase.makeRoom(needed: Int, newest: Long): Boolean {
+        val oldest = select(
+            "SELECT v.header_msg_id FROM messages m CROSS JOIN nb_vectors v " +
+                "ON v.header_msg_id = m.header_msg_id WHERE m.date < ? ORDER BY m.date LIMIT ?",
+            JsonArray(listOf(JsonPrimitive(newest), JsonPrimitive(needed))),
+        ).map { it.jsonArray[0].jsonPrimitive.content }.distinct()
+        if (oldest.isEmpty()) {
+            execute(
+                "DELETE FROM nb_vec_queue WHERE header_msg_id IN (SELECT header_msg_id FROM messages WHERE date <= ?)",
+                JsonArray(listOf(JsonPrimitive(newest))),
+            )
+            return false
+        }
+        batch(
+            buildJsonArray {
+                oldest.forEach { add(statement("DELETE FROM nb_vectors WHERE header_msg_id = ?", it)) }
+            },
+        )
+        return true
+    }
 
     private fun SearchIndexDatabase.store(items: List<VectorItem>, vectors: List<FloatArray>, model: String) {
         batch(
@@ -288,6 +358,10 @@ class SemanticIndex(
         private const val TEXT_VERSION = "1"
         private const val META_TEXT_VERSION = "vectorTextVersion"
         private const val SQL_CHUNK = 500
+
+        /** The newest mails with a vector: about 90 MB in the Java heap. */
+        private const val MAX_VECTORS = 100_000
+        private const val LOAD_PAGE = 2000
         private const val INT8_MAX = 127f
         private val NONE = JsonArray(emptyList())
         private val ORPHAN_TABLES = listOf("nb_vectors", "nb_vec_queue")

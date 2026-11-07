@@ -33,6 +33,9 @@ open class TestImapFolder(override val serverId: String) : ImapFolder {
     private val messageFlags = mutableMapOf<Long, MutableSet<Flag>>()
     private var uidValidity: Long? = null
 
+    /** The message objects handed out by [getMessages]. */
+    val listedMessages = mutableListOf<ImapMessage>()
+
     fun addMessage(uid: Long, message: Message) {
         require(!messages.containsKey(uid)) {
             "Folder '$serverId' already contains a message with the UID $uid"
@@ -88,6 +91,7 @@ open class TestImapFolder(override val serverId: String) : ImapFolder {
         return messages.keys.sortedDescending()
             .slice((start - 1) until end)
             .map { createImapMessage(uid = it.toString()) }
+            .also { listedMessages += it }
     }
 
     override fun areMoreMessagesAvailable(indexOfOldestMessage: Int, earliestDate: Date?): Boolean {
