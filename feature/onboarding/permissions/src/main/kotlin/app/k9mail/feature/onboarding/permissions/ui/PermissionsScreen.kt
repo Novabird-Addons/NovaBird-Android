@@ -40,6 +40,10 @@ fun PermissionsScreen(
     val backgroundActivityLauncher = rememberLauncherForActivityResult(StartActivityForResult()) {
         viewModel.event(Event.BackgroundActivityResult)
     }
+
+    val exactAlarmsLauncher = rememberLauncherForActivityResult(StartActivityForResult()) {
+        viewModel.event(Event.ExactAlarmsResult)
+    }
     val packageName = LocalContext.current.packageName
 
     val (state, dispatch) = viewModel.observe { effect ->
@@ -47,6 +51,7 @@ fun PermissionsScreen(
             Effect.RequestContactsPermission -> contactsPermissionLauncher.requestContactsPermission()
             Effect.RequestNotificationsPermission -> notificationsPermissionLauncher.requestNotificationsPermission()
             Effect.RequestBackgroundActivity -> backgroundActivityLauncher.requestBackgroundActivity(packageName)
+            Effect.RequestExactAlarms -> exactAlarmsLauncher.requestExactAlarms(packageName)
             Effect.OpenAppSettings -> backgroundActivityLauncher.openAppSettings(packageName)
             Effect.NavigateNext -> onNext()
         }
@@ -78,6 +83,15 @@ private fun ManagedActivityResultLauncher<Intent, ActivityResult>.requestBackgro
         launch(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
     } catch (_: ActivityNotFoundException) {
         launch(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+    }
+}
+
+// the system page "Alarms & reminders" of the app; a phone without it gets the app info
+private fun ManagedActivityResultLauncher<Intent, ActivityResult>.requestExactAlarms(packageName: String) {
+    try {
+        launch(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
+    } catch (_: ActivityNotFoundException) {
+        launch(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
     }
 }
 

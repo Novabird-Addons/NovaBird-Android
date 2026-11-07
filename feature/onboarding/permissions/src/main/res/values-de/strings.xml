@@ -11,4 +11,6 @@
     <string name="onboarding_permissions_background_description">Erlaube die uneingeschränkte Akkunutzung. Sonst kommen nach einer längeren Pause neue Mails erst, wenn du die App wieder öffnest.</string>
     <string name="onboarding_permissions_background_vendor_note">Manche Handys (z. B. OPPO, OnePlus, Xiaomi) haben in den App-Infos zusätzlich einen Schalter „Hintergrundaktivität zulassen“.</string>
     <string name="onboarding_permissions_background_app_settings">App-Infos öffnen</string>
+    <string name="onboarding_permissions_exact_alarms_title">Neue Mails sofort</string>
+    <string name="onboarding_permissions_exact_alarms_description">Erlaube „Alarme &amp; Erinnerungen“. Die App braucht das, um die Push-Verbindung offen zu halten; sonst kommen neue Mails erst mit der nächsten Abfrage.</string>
 </resources>

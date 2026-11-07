@@ -57,6 +57,7 @@
     <string name="novabird_protect_link_text">This mail is rated dangerous. The link leads to:\n%1$s</string>
     <string name="novabird_protect_link_unchecked">This mail has not been checked yet. The link leads to:\n%1$s</string>
     <string name="novabird_protect_link_open">Open anyway</string>
+    <string name="novabird_protect_link_blocked">This mail is rated dangerous. NovaBird doesn\'t open links of the type \"%1$s:\" from it, they can start other apps or reach files.</string>
     <string name="novabird_settings_logos">Show sender logos</string>
     <string name="novabird_settings_logos_note">Company logos (BIMI), loaded from the sender domain</string>
     <!-- NovaBird: formatting in the compose screen -->

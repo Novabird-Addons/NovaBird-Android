@@ -19,6 +19,7 @@ class PermissionsViewModel(
     private val checkPermission: UseCase.CheckPermission,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val checkBackgroundActivity: UseCase.CheckBackgroundActivity? = null,
+    private val checkExactAlarms: UseCase.CheckExactAlarms? = null,
 ) : BaseViewModel<State, Event, Effect>(initialState = State(isLoading = true)), ViewModel {
 
     override fun event(event: Event) {
@@ -31,6 +32,8 @@ class PermissionsViewModel(
             Event.AllowBackgroundActivityClicked -> emitEffect(Effect.RequestBackgroundActivity)
             Event.OpenAppSettingsClicked -> emitEffect(Effect.OpenAppSettings)
             Event.BackgroundActivityResult -> handleBackgroundActivityResult()
+            Event.AllowExactAlarmsClicked -> emitEffect(Effect.RequestExactAlarms)
+            Event.ExactAlarmsResult -> handleExactAlarmsResult()
             Event.NextClicked -> handleNextClicked()
         }
     }
@@ -58,6 +61,9 @@ class PermissionsViewModel(
             val backgroundActivity = checkBackgroundActivity?.let { check ->
                 withContext(backgroundDispatcher) { check() }
             }
+            val exactAlarms = checkExactAlarms?.let { check ->
+                withContext(backgroundDispatcher) { check() }
+            }
 
             updateState { state ->
                 state.copy(
@@ -71,6 +77,14 @@ class PermissionsViewModel(
                         UiPermissionState.Unknown
                     },
                     isBackgroundActivityVisible = backgroundActivity != null,
+                    exactAlarmsState = if (exactAlarms ==
+                        true
+                    ) {
+                        UiPermissionState.Granted
+                    } else {
+                        UiPermissionState.Unknown
+                    },
+                    isExactAlarmsVisible = exactAlarms != null,
                 )
             }
             updateNextButtonState()
@@ -116,7 +130,18 @@ class PermissionsViewModel(
         }
     }
 
-    // background activity is optional: it doesn't decide between "Next" and "Skip"
+    // the user comes back from the alarm settings: check again
+    private fun handleExactAlarmsResult() {
+        val check = checkExactAlarms ?: return
+        viewModelScope.launch {
+            val allowed = withContext(backgroundDispatcher) { check() }
+            updateState { state ->
+                state.copy(exactAlarmsState = if (allowed) UiPermissionState.Granted else UiPermissionState.Denied)
+            }
+        }
+    }
+
+    // background activity and exact alarms are optional: they don't decide between "Next" and "Skip"
     private fun updateNextButtonState() {
         updateState { state ->
             val isContactsPermissionGranted = state.contactsPermissionState == UiPermissionState.Granted

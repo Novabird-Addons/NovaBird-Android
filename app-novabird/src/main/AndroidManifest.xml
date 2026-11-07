@@ -48,6 +48,11 @@
             />
 
         <activity
+            android:name="org.novabird.mail.account.PushPermissionsActivity"
+            android:exported="false"
+            />
+
+        <activity
             android:name="org.novabird.mail.protection.ProtectionSettingsActivity"
             android:exported="false"
             android:label="@string/novabird_settings_protect"

@@ -11,6 +11,7 @@ dependencies {
     api(projects.feature.changelog.api)
     implementation(projects.legacy.ui.base)
     implementation(projects.feature.onboarding.main)
+    implementation(projects.feature.onboarding.permissions)
     implementation(projects.feature.thundermail.api)
     implementation(projects.feature.settings.import)
 

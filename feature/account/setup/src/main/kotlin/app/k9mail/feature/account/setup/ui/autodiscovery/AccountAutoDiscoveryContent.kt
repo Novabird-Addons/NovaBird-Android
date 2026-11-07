@@ -27,6 +27,8 @@ import app.k9mail.feature.account.setup.ui.autodiscovery.AccountAutoDiscoveryCon
 import app.k9mail.feature.account.setup.ui.autodiscovery.AccountAutoDiscoveryContract.State
 import app.k9mail.feature.account.setup.ui.autodiscovery.view.AutoDiscoveryResultApprovalView
 import app.k9mail.feature.account.setup.ui.autodiscovery.view.AutoDiscoveryResultView
+import app.k9mail.feature.account.setup.ui.autodiscovery.view.GmailAppPasswordHint
+import app.k9mail.feature.account.setup.ui.autodiscovery.view.needsGmailAppPassword
 import net.thunderbird.components.ui.bolt.molecule.ContentLoadingErrorView
 import net.thunderbird.components.ui.bolt.molecule.ErrorView
 import net.thunderbird.components.ui.bolt.molecule.LoadingView
@@ -191,6 +193,7 @@ internal fun ContentView(
                 contentPadding = PaddingValues(),
                 modifier = Modifier.testTag("account_setup_password_input"),
             )
+            if (state.needsGmailAppPassword()) GmailAppPasswordHint(Modifier.padding(top = BoltTheme.spacings.default))
         } else if (state.configStep == AccountAutoDiscoveryContract.ConfigStep.OAUTH) {
             val isAutoDiscoverySettingsTrusted = state.autoDiscoverySettings?.isTrusted ?: false
             val isConfigurationApproved = state.configurationApproved.value ?: false

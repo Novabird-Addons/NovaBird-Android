@@ -3,16 +3,23 @@ package app.k9mail.feature.launcher.navigation
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import app.k9mail.feature.account.edit.navigation.AccountEditNavigation
 import app.k9mail.feature.account.setup.navigation.AccountSetupNavigation
 import app.k9mail.feature.account.setup.navigation.AccountSetupRoute
 import app.k9mail.feature.launcher.FeatureLauncherExternalContract.MessageListLauncher
 import app.k9mail.feature.onboarding.main.navigation.OnboardingNavigation
 import app.k9mail.feature.onboarding.main.navigation.OnboardingRoute
+import app.k9mail.feature.onboarding.permissions.domain.PermissionsDomainContract.UseCase.CheckPushPermissionsMissing
+import app.k9mail.feature.onboarding.permissions.ui.PermissionsScreen
 import net.thunderbird.feature.account.settings.api.AccountSettingsNavigation
 import net.thunderbird.feature.debug.settings.navigation.SecretDebugSettingsNavigation
 import net.thunderbird.feature.debug.settings.navigation.SecretDebugSettingsRoute
@@ -37,8 +44,11 @@ fun FeatureLauncherNavHost(
     secretDebugSettingsNavigation: SecretDebugSettingsNavigation = koinInject(),
     thundermailNavigation: ThundermailNavigation = koinInject(),
     changelogNavigation: ChangelogNavigation = koinInject(),
+    pushPermissionsMissing: CheckPushPermissionsMissing = koinInject(),
 ) {
     val activity = LocalActivity.current as ComponentActivity
+    // NovaBird: the account that waits for the permissions page
+    var accountAfterPermissions by rememberSaveable { mutableStateOf<String?>(null) }
 
     NavHost(
         navController = navController,
@@ -84,7 +94,12 @@ fun FeatureLauncherNavHost(
             onBack = onBack,
             onFinish = {
                 when (it) {
-                    is AccountSetupRoute.AccountSetup -> {
+                    // NovaBird: a further account also asks for what push needs, if it's missing (only the first
+                    // account went through onboarding's permissions page)
+                    is AccountSetupRoute.AccountSetup -> if (pushPermissionsMissing()) {
+                        accountAfterPermissions = it.accountId
+                        navController.navigate(NOVABIRD_PERMISSIONS_ROUTE)
+                    } else {
                         messageListLauncher.launch(it.accountId)
                     }
 
@@ -96,6 +111,10 @@ fun FeatureLauncherNavHost(
                 }
             },
         )
+
+        composable(route = NOVABIRD_PERMISSIONS_ROUTE) {
+            PermissionsScreen(onNext = { messageListLauncher.launch(accountAfterPermissions) })
+        }
 
         accountEditNavigation.registerRoutes(
             navGraphBuilder = this,
@@ -129,6 +148,8 @@ fun FeatureLauncherNavHost(
         )
     }
 }
+
+private const val NOVABIRD_PERMISSIONS_ROUTE = "novabird_permissions"
 
 private fun NavGraphBuilder.registerThundermailNavigation(
     thundermailNavigation: ThundermailNavigation,

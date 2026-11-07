@@ -75,4 +75,8 @@
     <string name="account_setup_create_account_creating">Creating account…</string>
     <string name="account_setup_create_account_error">An error occurred while trying to create the account</string>
     <string name="account_setup_create_account_created">Account successfully created</string>
+    <!-- NovaBird: hint below the password field for Gmail accounts -->
+    <string name="account_setup_gmail_app_password_hint">Gmail doesn\'t accept your normal Google password here. Create an app password in your Google account (2-Step Verification must be on) and enter it above.</string>
+    <!-- NovaBird: button that opens Google's page for app passwords -->
+    <string name="account_setup_gmail_app_password_button">Create app password</string>
 </resources>

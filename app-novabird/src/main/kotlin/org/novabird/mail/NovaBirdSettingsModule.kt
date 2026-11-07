@@ -1,6 +1,7 @@
 package org.novabird.mail
 
 import app.k9mail.feature.onboarding.permissions.domain.PermissionsDomainContract.UseCase.CheckBackgroundActivity
+import app.k9mail.feature.onboarding.permissions.domain.PermissionsDomainContract.UseCase.CheckExactAlarms
 import app.k9mail.feature.settings.import.SettingsImportExternalContract.ImportedAccountsReview
 import net.thunderbird.feature.account.settings.api.AccountFullSync
 import net.thunderbird.feature.account.settings.api.ReplacedAccountSettings
@@ -9,6 +10,7 @@ import org.koin.dsl.module
 import org.novabird.feature.sync.fullsync.FullSyncActivity
 import org.novabird.feature.sync.ui.ImportedAccountsSyncActivity
 import app.k9mail.feature.onboarding.permissions.domain.usecase.CheckBackgroundActivity as AndroidCheckBackgroundActivity
+import app.k9mail.feature.onboarding.permissions.domain.usecase.CheckExactAlarms as AndroidCheckExactAlarms
 
 internal val novaBirdSettingsModule = module {
     // The message size per account is replaced by NovaBird's sync limits (mobile data / Wi-Fi).
@@ -22,4 +24,7 @@ internal val novaBirdSettingsModule = module {
 
     // The setup wizard asks to run in the background without battery optimization (otherwise mail comes late).
     single<CheckBackgroundActivity> { AndroidCheckBackgroundActivity(androidContext()) }
+
+    // ... and for exact alarms, without them push stays off (Android 14 doesn't grant them by itself)
+    single<CheckExactAlarms> { AndroidCheckExactAlarms(androidContext()) }
 }

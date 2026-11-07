@@ -16,33 +16,45 @@ import org.novabird.mail.R
 import com.fsck.k9.ui.R as LegacyR
 
 /**
- * Links of a mail rated "gefährlich" are not opened directly: a dialog names the destination and asks first (like the
- * add-on's "Links in dieser Mail sind gesperrt, bis du sie bestätigst"). The same while the check of the mail has no
- * result yet, or failed: an unknown mail must not count as harmless. Only mail and phone links stay open. Finds the
- * message's state in the tag the [ProtectionMessageViewHook] set on the message view.
+ * Links of a mail rated "gefährlich" are not opened directly: a dialog names the destination and asks first (like
+ * the add-on's "Links in dieser Mail sind gesperrt, bis du sie bestätigst"). The same while the check of the mail has
+ * no result yet, or failed: an unknown mail must not count as harmless. Only mail and phone links stay open. In a
+ * dangerous mail only web links can be opened after the question; other schemes (`intent:`, `file:`, `smb:` …) start
+ * apps or reach files and stay blocked, like `linkpolicy.js` of the add-on. Finds the message's state in the tag the
+ * [ProtectionMessageViewHook] set on the message view.
  */
 class ProtectionLinkGate : MessageLinkGate {
 
     override fun shouldIntercept(view: View, uri: Uri): Boolean {
-        val warning = warningFor(view, uri) ?: return false
+        val scheme = uri.scheme?.lowercase(Locale.ROOT)
+        val state = if (scheme in OPEN_SCHEMES) null else findState(view)
         val context = view.context
-        MaterialAlertDialogBuilder(context)
-            .setTitle(R.string.novabird_protect_link_title)
-            .setMessage(context.getString(warning, uri.host ?: uri.toString()))
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.novabird_protect_link_open) { _, _ -> openUrl(context, uri) }
-            .show()
-        return true
-    }
-
-    private fun warningFor(view: View, uri: Uri): Int? {
-        val state = if (uri.scheme?.lowercase(Locale.ROOT) in OPEN_SCHEMES) null else findState(view)
-        return when {
+        val target = uri.host ?: uri.toString()
+        val dialog = MaterialAlertDialogBuilder(context).setTitle(R.string.novabird_protect_link_title)
+        val shown = when {
             state == null -> null
-            state.level == ProtectionLevel.DANGEROUS -> R.string.novabird_protect_link_text
-            !state.isChecked -> R.string.novabird_protect_link_unchecked
+
+            state.level == ProtectionLevel.DANGEROUS && scheme !in WEB_SCHEMES ->
+                dialog
+                    .setMessage(context.getString(R.string.novabird_protect_link_blocked, scheme.orEmpty()))
+                    .setPositiveButton(android.R.string.ok, null)
+
+            state.level == ProtectionLevel.DANGEROUS ->
+                dialog
+                    .setMessage(context.getString(R.string.novabird_protect_link_text, target))
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.novabird_protect_link_open) { _, _ -> openUrl(context, uri) }
+
+            !state.isChecked ->
+                dialog
+                    .setMessage(context.getString(R.string.novabird_protect_link_unchecked, target))
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.novabird_protect_link_open) { _, _ -> openUrl(context, uri) }
+
             else -> null
         }
+        shown?.show()
+        return shown != null
     }
 
     private fun findState(view: View): ProtectionViewState? {
@@ -71,5 +83,6 @@ class ProtectionLinkGate : MessageLinkGate {
 
     private companion object {
         val OPEN_SCHEMES = setOf("mailto", "tel")
+        val WEB_SCHEMES = setOf("http", "https")
     }
 }

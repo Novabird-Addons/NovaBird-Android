@@ -129,7 +129,7 @@ private fun ContentArea(state: State, onEvent: (Event) -> Unit) {
 private fun PermissionBoxes(
     state: State,
     onEvent: (Event) -> Unit,
-) {
+) = Column {
     PermissionBox(
         icon = Icons.Filled.Person,
         permissionState = state.contactsPermissionState,
@@ -147,6 +147,19 @@ private fun PermissionBoxes(
             title = stringResource(R.string.onboarding_permissions_notifications_title),
             description = stringResource(R.string.onboarding_permissions_notifications_description),
             onAllowClick = { onEvent(Event.AllowNotificationsPermissionClicked) },
+        )
+    }
+
+    // NovaBird: push needs exact alarms
+    if (state.isExactAlarmsVisible) {
+        Spacer(modifier = Modifier.height(BoltTheme.spacings.quadruple))
+
+        PermissionBox(
+            icon = Icons.Outlined.Inbox,
+            permissionState = state.exactAlarmsState,
+            title = stringResource(R.string.onboarding_permissions_exact_alarms_title),
+            description = stringResource(R.string.onboarding_permissions_exact_alarms_description),
+            onAllowClick = { onEvent(Event.AllowExactAlarmsClicked) },
         )
     }
 

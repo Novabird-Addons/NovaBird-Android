@@ -18,6 +18,10 @@
     <string name="onboarding_permissions_background_vendor_note">Some phones (e.g. OPPO, OnePlus, Xiaomi) also have a switch "Allow background activity" in the app info.</string>
     <!-- NovaBird: button that opens the app info in the system settings -->
     <string name="onboarding_permissions_background_app_settings">Open app info</string>
+    <!-- NovaBird: title of the section asking for exact alarms ("Alarms & reminders"), which push needs -->
+    <string name="onboarding_permissions_exact_alarms_title">New emails right away</string>
+    <!-- NovaBird: why we ask for exact alarms -->
+    <string name="onboarding_permissions_exact_alarms_description">Allow "Alarms &amp; reminders". The app needs it to keep the connection for push open; without it, new emails only come with the next check.</string>
     <!-- Text of the button that will trigger the system dialog to ask for an Android permission -->
     <string name="onboarding_permissions_allow_button">Allow</string>
     <!-- Text of the button to skip the onboarding screen to ask for Android permissions -->

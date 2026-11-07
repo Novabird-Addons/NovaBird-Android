@@ -69,4 +69,6 @@
     <string name="account_setup_options_email_display_count_all">Alle Nachrichten</string>
     <string name="account_setup_options_your_name_label">Dein Name</string>
     <string name="account_setup_options_your_name_error_required">Dein Name ist erforderlich.</string>
+    <string name="account_setup_gmail_app_password_hint">Gmail nimmt hier nicht dein normales Google-Passwort an. Lege in deinem Google-Konto ein App-Passwort an (dafür muss die Bestätigung in zwei Schritten an sein) und gib es oben ein.</string>
+    <string name="account_setup_gmail_app_password_button">App-Passwort anlegen</string>
 </resources>
