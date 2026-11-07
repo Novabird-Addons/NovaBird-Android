@@ -159,7 +159,10 @@ class HelperClient(
                 put("model", modelJson())
                 put("texts", buildJsonArray { texts.forEach { add(JsonPrimitive(it)) } })
                 put("prio", if (query) "query" else "index")
-                keys?.let { put("keys", keysJson(it)) }
+                keys?.let {
+                    put("keys", keysJson(it))
+                    put("space", VECTOR_SPACE)
+                }
             },
         )
         return decodeVectors(msg.getValue("vectors").jsonPrimitive.content, texts.size)
@@ -172,6 +175,7 @@ class HelperClient(
             buildJsonObject {
                 put("model", modelJson())
                 put("items", keysJson(items))
+                put("space", VECTOR_SPACE)
             },
         )
         val found = msg["found"]?.jsonArray?.map { it.jsonPrimitive.int }.orEmpty()
@@ -273,6 +277,13 @@ class HelperClient(
         const val MAX_TEXTS = 64
         const val MAX_CHARS = 20_000
         const val MAX_LOOKUP = 1000
+
+        /**
+         * Shared vectors of phones are kept apart from those of the PCs in the same group: both use the same model
+         * but build the mail text differently, so their records for the same Message-ID would keep replacing each
+         * other in the Helper (it keeps the newest per Message-ID). Helpers without spaces ignore the field.
+         */
+        const val VECTOR_SPACE = "phone"
         private const val ITERATIONS = 300_000
         private const val KEY_BYTES = 32
         private const val CODE_LENGTH = 20
