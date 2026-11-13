@@ -36,6 +36,8 @@ import org.novabird.feature.search.internal.vectors.SemanticIndex
  * @param ownEmails own addresses of all accounts, for "von mir" / "an mich" (merged with [SearchOptions.myEmails]).
  * @param now current time in ms; relative dates ("letzte Woche") are resolved against it.
  * @param defaultLanguages query languages when [SearchOptions.languages] is empty.
+ * @param ageLevel how much older mails count less with "best first" and relevance ("off", "normal", "strong"; like the
+ *   desktop setting "Neuere Mails bevorzugen", see rank.js).
  */
 class NovaBirdSearchService
 @OptIn(ExperimentalTime::class)
@@ -45,6 +47,7 @@ constructor(
     private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     private val semanticIndex: SemanticIndex? = null,
     private val defaultLanguages: () -> List<String> = { listOf("de") },
+    private val ageLevel: () -> String = { "normal" },
 ) : NovaBirdSearch {
 
     override suspend fun search(text: String, options: SearchOptions): SearchResult {
@@ -249,6 +252,7 @@ constructor(
         put("now", now())
         putJsonArray("myEmails") { (options.myEmails + ownEmails()).distinct().forEach { add(it.lowercase()) } }
         putJsonArray("langs") { options.languages.ifEmpty { defaultLanguages() }.forEach { add(it) } }
+        put("ageLevel", ageLevel())
     }.toString()
 
     private suspend fun toResult(json: String?): SearchResult {

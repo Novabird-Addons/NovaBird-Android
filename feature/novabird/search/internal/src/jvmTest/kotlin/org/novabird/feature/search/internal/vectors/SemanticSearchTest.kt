@@ -30,7 +30,14 @@ class SemanticSearchTest {
     private val core = NovaBirdSearchCore(":memory:")
     private val semanticIndex = SemanticIndex(core, { TopicBackend }, TestLogger())
     private val indexer = NovaBirdIndexer(core, mailStore, TestLogger(), semanticIndex)
-    private val search = NovaBirdSearchService(core, ownEmails = { account.emails }, now = { NOW }, semanticIndex)
+    private var ageLevel = "normal"
+    private val search = NovaBirdSearchService(
+        core,
+        ownEmails = { account.emails },
+        now = { NOW },
+        semanticIndex = semanticIndex,
+        ageLevel = { ageLevel },
+    )
     private val options = SearchOptions(sort = SearchSort.DATE)
 
     @AfterTest
@@ -72,6 +79,22 @@ class SemanticSearchTest {
         val past = search.search("Kosten damals", relevance)
         assertThat(past.chips.map { it.id }).containsExactly("past", "term:0")
         assertThat(order(search.addSimilar("Kosten damals", past, relevance)))
+            .containsExactly("m20@x.example", "m21@x.example")
+    }
+
+    @Test
+    fun `with the setting off an old meaning hit keeps its place`() = runBlocking<Unit> {
+        fill()
+        mail(20, "Rechnung Garage", "vermieter@haus.example", "Miete fuer die Garage", day(10, 1, year = 2016))
+        mail(21, "Abrechnung Keller", "vermieter@haus.example", "Strom im Keller", DAY_OCT_1)
+        indexer.indexChanges()
+        semanticIndex.indexVectors { false }
+        val relevance = options.copy(sort = SearchSort.RELEVANCE)
+        ageLevel = "off"
+
+        val result = search.addSimilar("Kosten", search.search("Kosten", relevance), relevance)
+
+        assertThat(similarIds(result).filter { it == "m20@x.example" || it == "m21@x.example" })
             .containsExactly("m20@x.example", "m21@x.example")
     }
 

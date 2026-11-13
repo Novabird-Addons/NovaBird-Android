@@ -22,7 +22,7 @@
     <string name="novabird_settings_search_checking">Prüfe Helper …</string>
     <string name="novabird_settings_search_phone">Rechnet auf dem Handy (kein Helper)</string>
     <string name="novabird_settings_search_off">Aus</string>
-    <string name="novabird_settings_protect">Phishing-Schutz</string>
+    <string name="novabird_settings_protect">Phishing- und Spam-Schutz</string>
     <string name="novabird_settings_protect_on">Ein: neue und geöffnete Mails werden geprüft</string>
     <string name="novabird_settings_protect_off">Aus</string>
     <!-- NovaBird: Phishing-Banner in der Mailansicht und Link-Dialog -->
@@ -37,7 +37,7 @@
     <string name="novabird_protect_trust_title">Diesem Absender vertrauen?</string>
     <string name="novabird_protect_trust_text">Warnungen zu dieser Adresse entfallen künftig (Hinweise auf Fälschung bleiben). Du kannst das in den Einstellungen unter „Vertraute Absender“ rückgängig machen.</string>
     <string name="novabird_protect_trust_yes">Vertrauen</string>
-    <string name="novabird_protect_trust_done">Absender wird vertraut. Rückgängig: Einstellungen › Phishing-Schutz.</string>
+    <string name="novabird_protect_trust_done">Absender wird vertraut. Rückgängig: Einstellungen › Phishing- und Spam-Schutz.</string>
     <string name="novabird_protect_trust_blocked">Vertrauen hier nicht möglich</string>
     <string name="novabird_protect_trust_blocked_hint">Bei „gefährlich“ lässt sich der Absender nicht per Tipp freigeben. Wenn du sicher bist, trage die Adresse in den Einstellungen ein.</string>
     <string name="novabird_protect_banner_spam">Als Spam erkannt.</string>
@@ -47,7 +47,7 @@
     <string name="novabird_protect_spam_reason_phishing">Von der Phishing-Prüfung als gefährlich bewertet.</string>
     <string name="novabird_protect_spam_reason_money">Typische Zeichen von Geld-Spam.</string>
     <string name="novabird_protect_banner_not_spam">Kein Spam</string>
-    <string name="novabird_protect_not_spam_done">Absender erlaubt. Rückgängig: Einstellungen › Phishing-Schutz › Erlaubte Absender.</string>
+    <string name="novabird_protect_not_spam_done">Absender erlaubt. Rückgängig: Einstellungen › Phishing- und Spam-Schutz › Erlaubte Absender.</string>
     <string name="novabird_protect_banner_error_title">Prüfung nicht möglich.</string>
     <string name="novabird_protect_banner_error_text">Diese Mail konnte nicht geprüft werden. Bitte behandle sie wie eine ungeprüfte Mail.</string>
     <string name="novabird_protect_link_title">Link öffnen?</string>
@@ -82,4 +82,16 @@
     <string name="novabird_format_size_normal">Normal</string>
     <string name="novabird_format_size_large">Groß</string>
     <string name="novabird_format_size_huge">Riesig</string>
+    <!-- NovaBird: Sucheinstellung wie am Desktop „Neuere Mails bevorzugen“ -->
+    <string name="novabird_settings_age">Neuere Mails bevorzugen</string>
+    <string name="novabird_settings_age_normal">Normal</string>
+    <string name="novabird_settings_age_strong">Stark</string>
+    <string name="novabird_settings_age_off">Aus</string>
+    <string name="novabird_settings_age_normal_long" formatted="false">Normal: ältere Mails zählen weniger (nach 3 Jahren gut die Hälfte, nie unter 40 %)</string>
+    <string name="novabird_settings_age_strong_long" formatted="false">Stark: nie unter 20 %</string>
+    <string name="novabird_settings_age_off_long">Aus: das Alter spielt keine Rolle</string>
+    <!-- NovaBird: Push-Benachrichtigung „Warte auf neue Nachrichten“ -->
+    <string name="novabird_settings_push">Push-Hinweis anzeigen</string>
+    <string name="novabird_settings_push_note">„Warte auf neue Nachrichten“. Ausschalten in den Android-Einstellungen, Push läuft weiter.</string>
+    <string name="novabird_settings_search_helper_old">Helper älter als 0.5.0: bitte aktualisieren (Details in der Vektorsuche)</string>
 </resources>

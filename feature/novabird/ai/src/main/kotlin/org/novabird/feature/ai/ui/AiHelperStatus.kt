@@ -3,6 +3,7 @@ package org.novabird.feature.ai.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,6 +41,15 @@ private fun HelperConnected(info: HelperInfo) {
         }
         info.group?.takeIf { it.isNotBlank() }?.let { group ->
             StatusLine(stringResource(R.string.novabird_ai_helper_group)) { TextBodyMedium(text = group) }
+        }
+        if (!info.separatesPhoneVectors) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(imageVector = Icons.Filled.Warning, tint = BoltTheme.colors.warning)
+                TextBodyMedium(
+                    text = stringResource(R.string.novabird_ai_helper_old),
+                    modifier = Modifier.padding(start = BoltTheme.spacings.default),
+                )
+            }
         }
     }
 }

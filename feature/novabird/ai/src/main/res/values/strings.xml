@@ -92,4 +92,6 @@
     <string name="novabird_ai_helper_tts_note">With the Helper\'s voice when it is reachable, otherwise the phone\'s voice</string>
     <string name="novabird_ai_helper_summary_note">Summary and “What\'s new?” with the Helper\'s language model</string>
     <string name="novabird_ai_speech_rate">Reading speed</string>
+    <!-- NovaBird: Helper before 0.5.0 (no "phone" vector space) -->
+    <string name="novabird_ai_helper_old">This Helper is older than 0.5.0: phones and PCs in the same group push each other\'s vectors out. Update the Helper, or give the phones a group of their own.</string>
 </resources>

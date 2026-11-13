@@ -45,6 +45,7 @@ class AddonTestSuiteTest {
     private companion object {
         const val TEST_ROOT = "novabird-phishing/tests"
         const val SHIM_ROOT = "novabird-protection-test"
+        const val SUITE_TIMEOUT_MILLIS = 120_000L
 
         val testSources: Map<String, String> by lazy {
             listOf(TEST_ROOT, SHIM_ROOT).flatMap { root ->
@@ -67,6 +68,8 @@ class AddonTestSuiteTest {
                 dispatcher = Dispatchers.Default.limitedParallelism(1),
                 aliases = aliases,
                 entryModules = listOf(ProtectionEngine.ENTRY_MODULE, "$SHIM_ROOT/setup.js", module),
+                // the whole suite of a file runs in one call; under load (parallel Gradle tasks) 15 s were too short
+                evaluationTimeoutMillis = SUITE_TIMEOUT_MILLIS,
             ).use { engine ->
                 val json = checkNotNull(engine.evaluate("__nodeTestRun()"))
                 Json.parseToJsonElement(json).jsonArray.map {

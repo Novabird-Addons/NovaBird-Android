@@ -3,6 +3,7 @@ package org.novabird.feature.vectors
 import kotlin.concurrent.Volatile
 import kotlin.io.encoding.Base64
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
@@ -49,6 +50,7 @@ class HelperClient(
             group = msg["group"]?.jsonPrimitive?.contentOrNull,
             speech = (msg["speech"] as? JsonObject)?.get("available")?.jsonPrimitive?.booleanOrNull ?: false,
             chatModel = msg["chatModel"]?.jsonPrimitive?.contentOrNull,
+            vectorSpaces = (msg["vecSpaces"] as? JsonArray)?.mapNotNull { it.jsonPrimitive.contentOrNull }.orEmpty(),
         )
     }
 
@@ -343,7 +345,15 @@ data class HelperInfo(
     val group: String?,
     val speech: Boolean,
     val chatModel: String?,
-)
+    /** Separate vector stores the Helper keeps ("phone" from Helper 0.5.0 on). */
+    val vectorSpaces: List<String> = emptyList(),
+) {
+    /**
+     * False for Helpers before 0.5.0: they keep one store per group, so phones and PCs in the same group push each
+     * other's vectors out ([VECTOR_SPACE] is ignored there).
+     */
+    val separatesPhoneVectors: Boolean get() = HelperClient.VECTOR_SPACE in vectorSpaces
+}
 
 data class VectorKey(val messageId: String, val textHash: String)
 

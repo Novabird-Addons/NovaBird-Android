@@ -188,6 +188,7 @@ class ProtectionEngine private constructor(
          * @param aliases module names mapped to other module names in [sources] (tests, e.g. `node:test`).
          * @param entryModules modules imported at start; they register their API on `globalThis`.
          * @param extraBindings further functions for JavaScript (tests).
+         * @param evaluationTimeoutMillis longest a single call may run (a whole test suite needs more than one mail).
          */
         suspend fun create(
             sources: Map<String, String>,
@@ -195,6 +196,7 @@ class ProtectionEngine private constructor(
             aliases: Map<String, String> = emptyMap(),
             entryModules: List<String> = listOf(ENTRY_MODULE),
             extraBindings: QuickJs.() -> Unit = {},
+            evaluationTimeoutMillis: Long = EVALUATION_TIMEOUT_MILLIS,
         ): ProtectionEngine = withContext(dispatcher) {
             val loader = moduleLoader {
                 normalize { baseName, requestedName -> resolveModuleName(baseName, requestedName, aliases) }
@@ -208,7 +210,7 @@ class ProtectionEngine private constructor(
                 quickJs.extraBindings()
                 val boot = entryModules.joinToString("\n") { "import ${jsString(it)};" }
                 quickJs.evaluate<Any?>(boot, BOOT_NAME, true)
-                quickJs.evaluationTimeoutMillis = EVALUATION_TIMEOUT_MILLIS
+                quickJs.evaluationTimeoutMillis = evaluationTimeoutMillis
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                 quickJs.close()
                 throw e

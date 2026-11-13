@@ -2,6 +2,8 @@ package org.novabird.feature.vectors
 
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.isFalse
+import assertk.assertions.isTrue
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -35,7 +37,33 @@ class HelperClientSpaceTest {
         }
     }
 
-    private fun fakeHelper(requests: MutableList<JsonObject>): HttpServer {
+    @Test
+    fun `hello tells whether the Helper keeps phone vectors apart`() {
+        for ((spaces, separate) in listOf("""["phone"]""" to true, null to false)) {
+            val hello = if (spaces ==
+                null
+            ) {
+                """{"ok":true,"version":"0.4.2"}"""
+            } else {
+                """{"ok":true,"vecSpaces":$spaces}"""
+            }
+            val server = fakeHelper(mutableListOf(), hello)
+            try {
+                val info = HelperClient("http://127.0.0.1:${server.address.port}", key, "spacetest-01", "Test").hello()
+                if (separate) {
+                    assertThat(
+                        info.separatesPhoneVectors,
+                    ).isTrue()
+                } else {
+                    assertThat(info.separatesPhoneVectors).isFalse()
+                }
+            } finally {
+                server.stop(0)
+            }
+        }
+    }
+
+    private fun fakeHelper(requests: MutableList<JsonObject>, hello: String = """{"ok":true}"""): HttpServer {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext(HelperClient.PATH) { exchange ->
             val body = Json.parseToJsonElement(exchange.requestBody.readBytes().decodeToString()).jsonObject
@@ -49,6 +77,7 @@ class HelperClientSpaceTest {
             requests += request
             val answer = when (request["op"]?.jsonPrimitive?.content) {
                 "vlookup" -> """{"ok":true,"found":[],"vectors":""}"""
+                "hello" -> hello
                 else -> """{"ok":true,"vectors":"${Base64.encode(oneVector())}"}"""
             }
             val iv = ByteArray(12) { 3 }

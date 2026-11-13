@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="novabird_protect_title">Phishing protection</string>
+    <string name="novabird_protect_title">Phishing and spam protection</string>
     <string name="novabird_protect_switch_title">Warn about phishing</string>
     <string name="novabird_protect_on">On</string>
     <string name="novabird_protect_off">Off</string>

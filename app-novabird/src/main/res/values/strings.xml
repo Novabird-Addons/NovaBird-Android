@@ -25,7 +25,7 @@
     <string name="novabird_settings_search_checking">Checking Helper …</string>
     <string name="novabird_settings_search_phone">Computed on the phone (no Helper)</string>
     <string name="novabird_settings_search_off">Off</string>
-    <string name="novabird_settings_protect">Phishing protection</string>
+    <string name="novabird_settings_protect">Phishing and spam protection</string>
     <string name="novabird_settings_protect_on">On: new and opened mails are checked</string>
     <string name="novabird_settings_protect_off">Off</string>
     <!-- NovaBird: phishing banner in the message view and link dialog -->
@@ -40,7 +40,7 @@
     <string name="novabird_protect_trust_title">Trust this sender?</string>
     <string name="novabird_protect_trust_text">Warnings for this address will stop (forgery hints stay). You can undo this in the settings under “Trusted senders”.</string>
     <string name="novabird_protect_trust_yes">Trust</string>
-    <string name="novabird_protect_trust_done">Sender trusted. Undo: Settings › Phishing protection.</string>
+    <string name="novabird_protect_trust_done">Sender trusted. Undo: Settings › Phishing and spam protection.</string>
     <string name="novabird_protect_trust_blocked">Trusting not possible here</string>
     <string name="novabird_protect_trust_blocked_hint">A sender rated “dangerous” cannot be cleared with a tap. If you are sure, add the address in the settings.</string>
     <string name="novabird_protect_banner_spam">Recognized as spam.</string>
@@ -50,7 +50,7 @@
     <string name="novabird_protect_spam_reason_phishing">Rated dangerous by the phishing check.</string>
     <string name="novabird_protect_spam_reason_money">Typical signs of money spam.</string>
     <string name="novabird_protect_banner_not_spam">Not spam</string>
-    <string name="novabird_protect_not_spam_done">Sender allowed. Undo: Settings › Phishing protection › Allowed senders.</string>
+    <string name="novabird_protect_not_spam_done">Sender allowed. Undo: Settings › Phishing and spam protection › Allowed senders.</string>
     <string name="novabird_protect_banner_error_title">Check not possible.</string>
     <string name="novabird_protect_banner_error_text">This mail could not be checked. Please treat it as unchecked.</string>
     <string name="novabird_protect_link_title">Open link?</string>
@@ -85,4 +85,16 @@
     <string name="novabird_format_size_normal">Normal</string>
     <string name="novabird_format_size_large">Large</string>
     <string name="novabird_format_size_huge">Huge</string>
+    <!-- NovaBird: search setting, like the desktop's "Prefer newer mail" -->
+    <string name="novabird_settings_age">Prefer newer mail</string>
+    <string name="novabird_settings_age_normal">Normal</string>
+    <string name="novabird_settings_age_strong">Strong</string>
+    <string name="novabird_settings_age_off">Off</string>
+    <string name="novabird_settings_age_normal_long" formatted="false">Normal: older mail counts less (about half after 3 years, never below 40 %)</string>
+    <string name="novabird_settings_age_strong_long" formatted="false">Strong: never below 20 %</string>
+    <string name="novabird_settings_age_off_long">Off: age does not matter</string>
+    <!-- NovaBird: push notification "Waiting for new emails" -->
+    <string name="novabird_settings_push">Show push notification</string>
+    <string name="novabird_settings_push_note">“Waiting for new emails”. Switched off in Android\'s notification settings; push keeps running.</string>
+    <string name="novabird_settings_search_helper_old">Helper older than 0.5.0: please update (details in the vector search)</string>
 </resources>

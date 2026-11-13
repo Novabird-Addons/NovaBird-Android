@@ -44,13 +44,16 @@ val novaBirdSearchModule = module {
     }
     single<NovaBirdVectorIndexer> { get<SemanticIndex>() }
     single<NovaBirdMailTexts> { K9MailTexts(mailStore = get()) }
+    single { NovaBirdSearchSettings(androidContext()) }
     single<NovaBirdSearch> {
         val accounts = get<K9AccountProvider>()
+        val settings = get<NovaBirdSearchSettings>()
         NovaBirdSearchService(
             core = get(),
             ownEmails = { accounts.accounts().flatMap { it.emails } },
             semanticIndex = get(),
             defaultLanguages = { searchLanguages() },
+            ageLevel = { settings.ageLevel.value },
         )
     }
     single<NovaBirdSearchIndexer> {
