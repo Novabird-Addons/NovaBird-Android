@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "version": "0.8.0-beta1",
+  "versioncode": 80001,
+  "date": "2026-11-13",
+  "notes": [
+    {
+      "type": "new",
+      "text": "Search: setting \"Prefer newer mail\" (Normal, Strong, Off) in the NovaBird settings, like on the PC"
+    },
+    {
+      "type": "new",
+      "text": "Vector search: warning if the NovaBird Helper is older than 0.5.0, because phones and PCs in one group then push each other's vectors out"
+    },
+    {
+      "type": "new",
+      "text": "Settings: row for the push notification \"Waiting for new emails\"; it shows whether it is on and opens Android's switch for it (only you can hide it there, push keeps running)"
+    },
+    {
+      "type": "changed",
+      "text": "The settings entry is now called \"Phishing and spam protection\""
+    }
+  ]
+}
