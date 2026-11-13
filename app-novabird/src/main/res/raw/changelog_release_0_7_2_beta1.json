@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "version": "0.7.2-beta1",
+  "versioncode": 70201,
+  "date": "2026-11-13",
+  "notes": [
+    {
+      "type": "changed",
+      "text": "Based on Thunderbird 25.0 (before: 25.0b2)"
+    },
+    {
+      "type": "fixed",
+      "text": "Security: connections to mail servers whose certificate chain contains one of the compromised eMudhra certificates are refused (CVE-2026-11943, from Thunderbird 25.0)"
+    }
+  ]
+}

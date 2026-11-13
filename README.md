@@ -1,7 +1,7 @@
 # NovaBird Mail for Android
 
 NovaBird Mail is a fork of [Thunderbird for Android](https://github.com/thunderbird/thunderbird-android)
-(based on Thunderbird 25.0b2). It brings the features of the NovaBird add-on for Thunderbird on the desktop to the
+(based on Thunderbird 25.0). It brings the features of the NovaBird add-on for Thunderbird on the desktop to the
 phone and adds a few things to Thunderbird that we missed in everyday use.
 
 Search, phishing protection and the AI texts use the same core as the desktop add-on. Heavy work can be handed to the
