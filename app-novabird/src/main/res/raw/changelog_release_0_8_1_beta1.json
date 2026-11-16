@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "version": "0.8.1-beta1",
+  "versioncode": 80101,
+  "date": "2026-11-16",
+  "notes": [
+    {
+      "type": "fixed",
+      "text": "Search: an older hit (beyond the newest 500 mails of its folder) opened the folder list instead of the mail; the same for mails opened from \"What's new?\""
+    },
+    {
+      "type": "fixed",
+      "text": "Search: a query that is only a time hint (\"damals\", \"back then\") no longer lists all mails"
+    },
+    {
+      "type": "changed",
+      "text": "Pairing without the code uses the safer protocol of NovaBird Helper 0.5.2 and needs that version; confirm with \"Number matches\" after comparing. Pairing with the code works with every Helper"
+    }
+  ]
+}
