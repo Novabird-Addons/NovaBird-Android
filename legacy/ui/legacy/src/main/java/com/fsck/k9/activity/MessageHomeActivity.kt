@@ -593,15 +593,22 @@ open class MessageHomeActivity :
             val messageReference = MessageReference.parse(messageReferenceString)
 
             if (messageReference != null) {
+                val messageViewOnly = intent.getBooleanExtra(EXTRA_MESSAGE_VIEW_ONLY, false)
+
                 val search = if (intent.hasByteArrayExtra(EXTRA_SEARCH)) {
                     intent.getByteArrayExtra(EXTRA_SEARCH)?.let {
                         LocalMessageSearchSerializer.deserialize(it)
                     } ?: messageReference.toLocalSearch()
+                } else if (messageViewOnly) {
+                    // NovaBird: the list behind the view loads only the newest mails of the folder (listLimit), and
+                    // the message view closes itself when its mail is not in the list. An older mail opened from the
+                    // search fell straight back to the folder list. A view for one mail lists just that mail.
+                    messageReference.toLocalSearch().apply {
+                        and(SearchCondition(MessageSearchField.UID, SearchAttribute.EQUALS, messageReference.uid))
+                    }
                 } else {
                     messageReference.toLocalSearch()
                 }
-
-                val messageViewOnly = intent.getBooleanExtra(EXTRA_MESSAGE_VIEW_ONLY, false)
 
                 return LaunchData(
                     search = search,
@@ -1342,6 +1349,12 @@ open class MessageHomeActivity :
     }
 
     private fun returnToMessageList() {
+        // NovaBird: a view for one mail (search, AI overview, widget) goes back to where it came from, like "back".
+        if (messageViewOnly && displayMode != DisplayMode.SPLIT_VIEW) {
+            finish()
+            return
+        }
+
         if (displayMode == DisplayMode.SPLIT_VIEW) {
             showMessageViewPlaceHolder()
         } else {
