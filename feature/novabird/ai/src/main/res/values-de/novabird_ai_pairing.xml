@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pairing with the Helper without typing the code (Helper 0.4.1+) -->
+<!-- Pairing with the Helper without typing the code (protocol 2, Helper 0.5.2+) -->
 <resources>
     <string name="novabird_ai_pair_intro">Am PC im Helper: PCs → „Gerät über Kopplung hinzufügen“. Dann hier suchen.</string>
     <string name="novabird_ai_pair_search">Helper im Netz suchen</string>
@@ -8,7 +8,12 @@
     <string name="novabird_ai_pair_with">Mit %1$s koppeln (%2$s)</string>
     <string name="novabird_ai_pair_starting">Verbinde mit dem Helper …</string>
     <string name="novabird_ai_pair_compare">Vergleiche diese Zahl mit der am Helper „%1$s“ und klicke dort „Zulassen“:</string>
-    <string name="novabird_ai_pair_compare_note">Nur zulassen, wenn beide Zahlen gleich sind. Es wird bis zu 5 Minuten gewartet.</string>
+    <string name="novabird_ai_pair_compare_note">Nur wenn beide Zahlen gleich sind: dort „Zulassen“ und hier „Zahl stimmt“. Es wird bis zu 5 Minuten gewartet.</string>
+    <string name="novabird_ai_pair_confirm">Zahl stimmt</string>
+    <string name="novabird_ai_pair_confirmed_wait">Warte auf „Zulassen“ am Helper …</string>
+    <string name="novabird_ai_pair_confirm_now">Am Helper zugelassen. Tippe auf „Zahl stimmt“, wenn beide Zahlen gleich sind.</string>
+    <string name="novabird_ai_pair_old">Dieser Helper ist zu alt für die Kopplung ohne Code (ab 0.5.2). Aktualisiere ihn oder gib unten den Kopplungscode ein.</string>
+    <string name="novabird_ai_pair_busy">Zu viele Kopplungsversuche. Warte ein paar Minuten und starte den Kopplungsmodus am Helper neu.</string>
     <string name="novabird_ai_pair_cancel">Abbrechen</string>
     <string name="novabird_ai_pair_denied">Der Helper hat die Kopplung abgelehnt.</string>
     <string name="novabird_ai_pair_expired">Kopplung abgelaufen. Starte den Kopplungsmodus am Helper erneut.</string>

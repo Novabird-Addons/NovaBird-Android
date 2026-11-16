@@ -3,6 +3,7 @@ package org.novabird.feature.vectors
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
+import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.spec.ECGenParameterSpec
@@ -49,6 +50,8 @@ internal actual object PairCrypto {
             init(SecretKeySpec(key, "HmacSHA256"))
             doFinal(data)
         }
+
+    actual fun sha256(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(data)
 
     /** Unsigned big-endian value in exactly 32 bytes. */
     private fun fixed(value: BigInteger): ByteArray {

@@ -3,6 +3,7 @@ package org.novabird.feature.ai.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -61,7 +62,17 @@ sealed interface HelperSearch {
 /** Pairing without the code, as far as it got. */
 sealed interface AutoPair {
     data object Starting : AutoPair
-    data class Compare(val helperName: String, val number: String) : AutoPair
+
+    /**
+     * Number to compare. [confirmed]: the user tapped "Number matches"; [allowed]: the Helper allowed the request (the
+     * code is used only when both are true).
+     */
+    data class Compare(
+        val helperName: String,
+        val number: String,
+        val confirmed: Boolean = false,
+        val allowed: Boolean = false,
+    ) : AutoPair
     data class Failed(val reason: String) : AutoPair
 }
 
@@ -73,6 +84,7 @@ internal interface AiSettingsActions {
     fun searchHelpers()
     fun pairWith(url: String)
     fun cancelAutoPair()
+    fun confirmPairNumber()
     fun unpair()
     fun setHelperSearch(enabled: Boolean)
     fun setHelperChat(enabled: Boolean)
@@ -102,6 +114,7 @@ internal class AiSettingsViewModel(
     private val discovery: HelperDiscovery,
 ) : ViewModel(), AiSettingsActions {
     private var autoPairJob: Job? = null
+    private var numberConfirmed = CompletableDeferred<Unit>()
     private var renameJob: Job? = null
     private val mutableState = MutableStateFlow(
         AiSettingsUiState(settings = repository.settings.value, modelReady = files.isComplete()),
@@ -162,10 +175,13 @@ internal class AiSettingsViewModel(
 
     /**
      * Pairing without the code: key exchange with the Helper at [url], show the number to compare, wait until the admin
-     * allows it at the Helper (at most 5 minutes), then connect with the code the Helper sent.
+     * allows it at the Helper (at most 5 minutes) and the user confirmed the number here, then connect with the code the
+     * Helper sent. Without the confirmation a fake Helper answering the discovery could allow itself.
      */
     override fun pairWith(url: String) {
         autoPairJob?.cancel()
+        val confirmed = CompletableDeferred<Unit>()
+        numberConfirmed = confirmed
         mutableState.update { it.copy(autoPair = AutoPair.Starting, pairingError = null) }
         autoPairJob = viewModelScope.launch {
             val base = HelperClient.baseUrl(url)
@@ -173,7 +189,12 @@ internal class AiSettingsViewModel(
             val outcome = runCatching {
                 val started = withContext(Dispatchers.IO) { pairing.start() }
                 mutableState.update { it.copy(autoPair = AutoPair.Compare(started.helperName, started.number)) }
-                waitForApproval(pairing, started)
+                val result = waitForApproval(pairing, started)
+                if (result is HelperPairing.PollResult.Ok) {
+                    updateCompare { it.copy(allowed = true) }
+                    confirmed.await()
+                }
+                result
             }
             // "cancel" stops this job: that is no failed pairing, and a new one may already be running
             (outcome.exceptionOrNull() as? CancellationException)?.let { throw it }
@@ -200,6 +221,19 @@ internal class AiSettingsViewModel(
         autoPairJob?.cancel()
         autoPairJob = null
         mutableState.update { it.copy(autoPair = null) }
+    }
+
+    /** "Number matches": the user compared the number with the one at the Helper. */
+    override fun confirmPairNumber() {
+        if (mutableState.value.autoPair !is AutoPair.Compare) return
+        numberConfirmed.complete(Unit)
+        updateCompare { it.copy(confirmed = true) }
+    }
+
+    private fun updateCompare(change: (AutoPair.Compare) -> AutoPair.Compare) {
+        mutableState.update { state ->
+            (state.autoPair as? AutoPair.Compare)?.let { state.copy(autoPair = change(it)) } ?: state
+        }
     }
 
     private suspend fun waitForApproval(pairing: HelperPairing, started: HelperPairing.Started): Any {

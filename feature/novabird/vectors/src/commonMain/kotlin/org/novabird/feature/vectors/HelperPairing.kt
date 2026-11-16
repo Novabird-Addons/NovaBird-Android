@@ -10,9 +10,13 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
- * Pairing without typing the code (Helper 0.4.1+, docs/helper-kopplung.md, novabird-helper/Pairing.cs): ECDH P-256 with
- * the Helper, both sides show the same 6-digit number, the admin allows the request at the Helper, then the phone gets
- * the group's pairing code encrypted. Afterwards everything works as before (address + code, [HelperClient]).
+ * Pairing without typing the code (protocol 2, Helper 0.5.2+, docs/helper-kopplung.md, novabird-helper/Pairing.cs): ECDH
+ * P-256 with the Helper, both sides show the same 6-digit number, the admin allows the request at the Helper, then the
+ * phone gets the group's pairing code encrypted. Afterwards everything works as before (address + code, [HelperClient]).
+ *
+ * The phone first sends only the SHA-256 of its public key (commit) and reveals the key after it got the Helper's. Without
+ * the commit a man in the middle could pick his own key until both sides show the same number. The caller uses the code
+ * only after the user confirmed the number ("Number matches"), so a fake Helper in the network cannot allow itself.
  */
 class HelperPairing(
     url: String,
@@ -21,18 +25,38 @@ class HelperPairing(
 ) {
     private val endpoint = url.trim().trimEnd('/') + PATH
 
-    /** Sends our public key; the answer gives the request id and the number to compare at the Helper. */
+    /**
+     * Commits to our public key, reveals it right after the Helper sent its own (the Helper counts unfinished commits and
+     * ends pairing mode after a few, so there is no retry here), and returns the request id and the number to compare.
+     *
+     * @throws HelperException "old" for a Helper before 0.5.2 (protocol 1), otherwise the Helper's error ("pairing-off",
+     *   "busy", …).
+     */
     fun start(): Started {
         val (privateKey, publicRaw) = PairCrypto.newKeyPair()
         val clientPub = Base64.encode(publicRaw)
-        val body = buildJsonObject {
+        val start = buildJsonObject {
             put("op", "start")
-            put("pub", clientPub)
+            put("v", PROTOCOL)
+            put("commit", Base64.encode(PairCrypto.sha256(publicRaw)))
             put("label", label.take(MAX_LABEL))
         }
-        val answer = post(body)
+        val answer = try {
+            post(start)
+        } catch (e: HelperException) {
+            // protocol 1 Helpers ask for "pub"; a protocol 3 Helper would answer "update"
+            if (e.message in OLD_HELPER_ERRORS) throw HelperException("old", e)
+            throw e
+        }
         val req = answer.text("req") ?: throw HelperException("answer")
         val helperPub = answer.text("pub") ?: throw HelperException("answer")
+        post(
+            buildJsonObject {
+                put("op", "reveal")
+                put("req", req)
+                put("pub", clientPub)
+            },
+        )
         val shared = try {
             PairCrypto.sharedSecret(privateKey, Base64.decode(helperPub))
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -55,7 +79,7 @@ class HelperPairing(
         if (status == HTTP_NOT_FOUND) return PollResult.Expired
         val answer = parse(status, text)
         return when (answer.text("state")) {
-            "pending" -> PollResult.Pending
+            "pending", "committed" -> PollResult.Pending
 
             "denied" -> PollResult.Denied
 
@@ -109,6 +133,8 @@ class HelperPairing(
         const val PATH = "/nbhelper/pair"
         const val POLL_INTERVAL_MS = 1_500L
         const val MAX_WAIT_MS = 5 * 60_000L
+        private const val PROTOCOL = 2
+        private val OLD_HELPER_ERRORS = setOf("pub", "update", "op")
         private const val MAX_LABEL = 40
         private const val HTTP_OK = 200
         private const val HTTP_NOT_FOUND = 404
@@ -161,4 +187,6 @@ internal expect object PairCrypto {
     fun sharedSecret(privateKey: Any, peerPublic: ByteArray): ByteArray
 
     fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray
+
+    fun sha256(data: ByteArray): ByteArray
 }

@@ -1,6 +1,9 @@
 package org.novabird.feature.vectors
 
+import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.containsExactly
+import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import com.sun.net.httpserver.HttpServer
@@ -32,21 +35,38 @@ class HelperPairingTest {
     }
 
     @Test
-    fun `start, poll and the encrypted code against a small Helper`() {
+    fun `start commits to the key, reveals it, polls and decrypts the code (protocol 2)`() {
         val helperKey = PairCrypto.privateKey(ByteArray(32) { 0x11 })
         var approved = false
+        var commit = ""
         var clientPubSeen = ""
+        val ops = mutableListOf<String>()
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext(HelperPairing.PATH) { exchange ->
             val body = Json.parseToJsonElement(exchange.requestBody.readBytes().decodeToString()).jsonObject
-            val answer = when (body.getValue("op").jsonPrimitive.content) {
+            val op = body.getValue("op").jsonPrimitive.content
+            ops += op
+            var status = 200
+            val answer = when (op) {
                 "start" -> {
+                    // protocol 2: no key yet, only its SHA-256
+                    check(body["pub"] == null && body.getValue("v").jsonPrimitive.content == "2")
+                    commit = body.getValue("commit").jsonPrimitive.content
+                    """{"req":"r1","pub":"$helperPub","name":"Test-PC","v":2}"""
+                }
+
+                "reveal" -> {
                     clientPubSeen = body.getValue("pub").jsonPrimitive.content
-                    """{"req":"r1","pub":"$helperPub","name":"Test-PC"}"""
+                    if (Base64.encode(PairCrypto.sha256(Base64.decode(clientPubSeen))) == commit) {
+                        """{"state":"pending"}"""
+                    } else {
+                        status = 400
+                        """{"error":"commit"}"""
+                    }
                 }
 
                 else -> if (!approved) {
-                    """{"state":"pending"}"""
+                    if (ops.count { it == "poll" } == 1) """{"state":"committed"}""" else """{"state":"pending"}"""
                 } else {
                     val secret = PairCrypto.sharedSecret(helperKey, Base64.decode(clientPubSeen))
                     val (_, k) = HelperPairing.derive(secret, helperPub, clientPubSeen)
@@ -61,15 +81,17 @@ class HelperPairingTest {
                 }
             }
             val bytes = answer.encodeToByteArray()
-            exchange.sendResponseHeaders(200, bytes.size.toLong())
+            exchange.sendResponseHeaders(status, bytes.size.toLong())
             exchange.responseBody.use { it.write(bytes) }
         }
         server.start()
         try {
             val pairing = HelperPairing("http://127.0.0.1:${server.address.port}", "NovaBird Test")
             val started = pairing.start()
+            assertThat(ops).containsExactly("start", "reveal")
             assertThat(started.helperName).isEqualTo("Test-PC")
             assertThat(started.number.length).isEqualTo(6)
+            assertThat(pairing.poll(started)).isEqualTo(HelperPairing.PollResult.Pending)
             assertThat(pairing.poll(started)).isEqualTo(HelperPairing.PollResult.Pending)
 
             approved = true
@@ -77,6 +99,46 @@ class HelperPairingTest {
             assertThat(result).isInstanceOf<HelperPairing.PollResult.Ok>()
             assertThat((result as HelperPairing.PollResult.Ok).code).isEqualTo("ABCDE-FGHJK-LMNPQ-RSTUV")
             assertThat(result.group).isEqualTo("Handys")
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `a Helper before 0_5_2 is reported as old, without a second start`() {
+        var starts = 0
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext(HelperPairing.PATH) { exchange ->
+            exchange.requestBody.readBytes()
+            starts++
+            // protocol 1 Helper: "start" without "pub"
+            val bytes = """{"error":"pub"}""".encodeToByteArray()
+            exchange.sendResponseHeaders(400, bytes.size.toLong())
+            exchange.responseBody.use { it.write(bytes) }
+        }
+        server.start()
+        try {
+            val pairing = HelperPairing("http://127.0.0.1:${server.address.port}", "NovaBird Test")
+            assertFailure { pairing.start() }.hasMessage("old")
+            assertThat(starts).isEqualTo(1)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `the Helper's refusal reaches the caller unchanged`() {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext(HelperPairing.PATH) { exchange ->
+            exchange.requestBody.readBytes()
+            val bytes = """{"error":"pairing-off"}""".encodeToByteArray()
+            exchange.sendResponseHeaders(403, bytes.size.toLong())
+            exchange.responseBody.use { it.write(bytes) }
+        }
+        server.start()
+        try {
+            val pairing = HelperPairing("http://127.0.0.1:${server.address.port}", "NovaBird Test")
+            assertFailure { pairing.start() }.hasMessage("pairing-off")
         } finally {
             server.stop(0)
         }

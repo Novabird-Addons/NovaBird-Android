@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pairing with the Helper without typing the code (Helper 0.4.1+) -->
+<!-- Pairing with the Helper without typing the code (protocol 2, Helper 0.5.2+) -->
 <resources>
     <string name="novabird_ai_pair_intro">At the PC, in the Helper: PCs → "Add a device by pairing". Then search here.</string>
     <string name="novabird_ai_pair_search">Find Helper in the network</string>
@@ -8,7 +8,12 @@
     <string name="novabird_ai_pair_with">Pair with %1$s (%2$s)</string>
     <string name="novabird_ai_pair_starting">Connecting to the Helper …</string>
     <string name="novabird_ai_pair_compare">Compare this number with the one at the Helper „%1$s“ and click „Allow“ there:</string>
-    <string name="novabird_ai_pair_compare_note">Only allow it if both numbers are the same. Waiting up to 5 minutes.</string>
+    <string name="novabird_ai_pair_compare_note">Only if both numbers are the same: “Allow” there and “Number matches” here. Waiting up to 5 minutes.</string>
+    <string name="novabird_ai_pair_confirm">Number matches</string>
+    <string name="novabird_ai_pair_confirmed_wait">Waiting for “Allow” at the Helper …</string>
+    <string name="novabird_ai_pair_confirm_now">Allowed at the Helper. Tap “Number matches” if both numbers are the same.</string>
+    <string name="novabird_ai_pair_old">This Helper is too old for pairing without the code (needs 0.5.2). Update it or enter the pairing code below.</string>
+    <string name="novabird_ai_pair_busy">Too many pairing attempts. Wait a few minutes and start pairing mode at the Helper again.</string>
     <string name="novabird_ai_pair_cancel">Cancel</string>
     <string name="novabird_ai_pair_denied">The Helper declined the pairing.</string>
     <string name="novabird_ai_pair_expired">Pairing expired. Start pairing mode at the Helper again.</string>

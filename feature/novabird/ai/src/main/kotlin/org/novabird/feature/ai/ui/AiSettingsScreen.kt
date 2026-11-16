@@ -147,12 +147,25 @@ private fun AutoPairing(state: AiSettingsUiState, actions: AiSettingsActions) {
                 TextBodyMedium(text = stringResource(R.string.novabird_ai_pair_compare, auto.helperName))
                 TextDisplayMedium(text = auto.number.chunked(NUMBER_GROUP).joinToString(" "))
                 TextBodySmall(
-                    text = stringResource(R.string.novabird_ai_pair_compare_note),
+                    text = stringResource(
+                        when {
+                            !auto.confirmed && auto.allowed -> R.string.novabird_ai_pair_confirm_now
+                            auto.confirmed -> R.string.novabird_ai_pair_confirmed_wait
+                            else -> R.string.novabird_ai_pair_compare_note
+                        },
+                    ),
                     color = BoltTheme.colors.onSurfaceVariant,
                 )
-                ButtonText(text = stringResource(R.string.novabird_ai_pair_cancel), onClick = {
-                    actions.cancelAutoPair()
-                })
+                Row(horizontalArrangement = Arrangement.spacedBy(BoltTheme.spacings.default)) {
+                    ButtonFilled(
+                        text = stringResource(R.string.novabird_ai_pair_confirm),
+                        onClick = { actions.confirmPairNumber() },
+                        enabled = !auto.confirmed,
+                    )
+                    ButtonText(text = stringResource(R.string.novabird_ai_pair_cancel), onClick = {
+                        actions.cancelAutoPair()
+                    })
+                }
             }
 
             else -> {
@@ -192,6 +205,8 @@ private fun autoPairError(reason: String): String = when (reason) {
     "denied" -> stringResource(R.string.novabird_ai_pair_denied)
     "expired" -> stringResource(R.string.novabird_ai_pair_expired)
     "pairing-off" -> stringResource(R.string.novabird_ai_pair_off)
+    "old" -> stringResource(R.string.novabird_ai_pair_old)
+    "busy" -> stringResource(R.string.novabird_ai_pair_busy)
     else -> stringResource(R.string.novabird_ai_error_unreachable)
 }
 
